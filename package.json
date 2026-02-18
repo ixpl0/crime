@@ -1,0 +1,29 @@
+{
+  "name": "dream-ide-electron-vue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "dev": "concurrently -k \"bun run dev:renderer\" \"bun run dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 electron .",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "cross-env NODE_ENV=production electron ."
+  },
+  "dependencies": {
+    "vue": "^3.5.28"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.0",
+    "@vitejs/plugin-vue": "^6.0.4",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "daisyui": "^5.5.18",
+    "electron": "^40.4.1",
+    "tailwindcss": "^4.2.0",
+    "vite": "^7.3.1",
+    "wait-on": "^9.0.4"
+  }
+}
