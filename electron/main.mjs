@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -7,6 +7,7 @@ const __dirname = dirname(__filename);
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
+    title: "Dream IDE",
     width: 1280,
     height: 800,
     webPreferences: {
@@ -19,14 +20,34 @@ function createWindow() {
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
     mainWindow.loadURL(devServerUrl);
-    mainWindow.webContents.openDevTools({ mode: "detach" });
+    if (process.env.OPEN_DEVTOOLS === "1") {
+      mainWindow.webContents.openDevTools({ mode: "detach" });
+    }
     return;
   }
 
   mainWindow.loadFile(join(__dirname, "../dist/index.html"));
 }
 
+function registerIpcHandlers() {
+  ipcMain.removeHandler("project:open-folder");
+  ipcMain.handle("project:open-folder", async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
+    const result = await dialog.showOpenDialog(win, {
+      title: "Open Project Folder",
+      properties: ["openDirectory"]
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    return result.filePaths[0];
+  });
+}
+
 app.whenReady().then(() => {
+  registerIpcHandlers();
   createWindow();
 
   app.on("activate", () => {
