@@ -1,9 +1,45 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import * as pty from "node-pty";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const terminalSessions = new Map();
+
+function resolveShell() {
+  if (process.platform === "win32") {
+    return {
+      command: process.env.COMSPEC ?? "C:\\Windows\\System32\\cmd.exe",
+      args: []
+    };
+  }
+
+  return { command: process.env.SHELL ?? "/bin/bash", args: ["-i"] };
+}
+
+function sendTerminalEvent(webContents, channel, payload) {
+  if (webContents.isDestroyed()) {
+    return;
+  }
+
+  webContents.send(channel, payload);
+}
+
+function stopTerminalSession(webContentsId) {
+  const session = terminalSessions.get(webContentsId);
+  if (!session) {
+    return;
+  }
+
+  session.process.kill();
+  terminalSessions.delete(webContentsId);
+}
+
+function isActiveSession(webContentsId, shellProcess) {
+  const session = terminalSessions.get(webContentsId);
+  return session?.process === shellProcess;
+}
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -15,6 +51,11 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false
     }
+  });
+  const webContentsId = mainWindow.webContents.id;
+
+  mainWindow.on("closed", () => {
+    stopTerminalSession(webContentsId);
   });
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -31,6 +72,12 @@ function createWindow() {
 
 function registerIpcHandlers() {
   ipcMain.removeHandler("project:open-folder");
+  ipcMain.removeHandler("terminal:start");
+  ipcMain.removeHandler("terminal:run-command");
+  ipcMain.removeHandler("terminal:input");
+  ipcMain.removeHandler("terminal:resize");
+  ipcMain.removeHandler("terminal:stop");
+
   ipcMain.handle("project:open-folder", async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
     const result = await dialog.showOpenDialog(win, {
@@ -43,6 +90,154 @@ function registerIpcHandlers() {
     }
 
     return result.filePaths[0];
+  });
+
+  ipcMain.handle("terminal:start", async (event, cwd, size) => {
+    if (!cwd || typeof cwd !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    const webContentsId = event.sender.id;
+    stopTerminalSession(webContentsId);
+
+    const shell = resolveShell();
+    const cols =
+      size &&
+      typeof size === "object" &&
+      Number.isInteger(size.cols) &&
+      size.cols > 0
+        ? size.cols
+        : 120;
+    const rows =
+      size &&
+      typeof size === "object" &&
+      Number.isInteger(size.rows) &&
+      size.rows > 0
+        ? size.rows
+        : 30;
+    let shellProcess;
+
+    try {
+      shellProcess = pty.spawn(shell.command, shell.args, {
+        name: "xterm-256color",
+        cols,
+        rows,
+        cwd,
+        env: process.env
+      });
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to start terminal."
+      };
+    }
+
+    terminalSessions.set(webContentsId, { process: shellProcess });
+
+    shellProcess.onData((data) => {
+      if (!isActiveSession(webContentsId, shellProcess)) {
+        return;
+      }
+
+      sendTerminalEvent(event.sender, "terminal:data", data);
+    });
+
+    shellProcess.onExit(({ exitCode }) => {
+      if (!isActiveSession(webContentsId, shellProcess)) {
+        return;
+      }
+
+      terminalSessions.delete(webContentsId);
+      sendTerminalEvent(event.sender, "terminal:exit", exitCode ?? null);
+    });
+
+    return { ok: true };
+  });
+
+  ipcMain.handle("terminal:run-command", async (event, command) => {
+    if (!command || typeof command !== "string") {
+      return { ok: false, error: "Command is required." };
+    }
+
+    const session = terminalSessions.get(event.sender.id);
+    if (!session) {
+      return { ok: false, error: "Terminal session is not running." };
+    }
+
+    try {
+      session.process.write(`${command}\r`);
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to write command."
+      };
+    }
+
+    return { ok: true };
+  });
+
+  ipcMain.handle("terminal:input", async (event, data) => {
+    if (typeof data !== "string") {
+      return { ok: false, error: "Input must be a string." };
+    }
+
+    const session = terminalSessions.get(event.sender.id);
+    if (!session) {
+      return { ok: false, error: "Terminal session is not running." };
+    }
+
+    try {
+      session.process.write(data);
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to write input."
+      };
+    }
+
+    return { ok: true };
+  });
+
+  ipcMain.handle("terminal:resize", async (event, size) => {
+    const session = terminalSessions.get(event.sender.id);
+    if (!session) {
+      return { ok: false, error: "Terminal session is not running." };
+    }
+
+    const cols =
+      size &&
+      typeof size === "object" &&
+      Number.isInteger(size.cols) &&
+      size.cols > 0
+        ? size.cols
+        : null;
+    const rows =
+      size &&
+      typeof size === "object" &&
+      Number.isInteger(size.rows) &&
+      size.rows > 0
+        ? size.rows
+        : null;
+
+    if (!cols || !rows) {
+      return { ok: false, error: "Valid terminal size is required." };
+    }
+
+    try {
+      session.process.resize(cols, rows);
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to resize terminal."
+      };
+    }
+
+    return { ok: true };
+  });
+
+  ipcMain.handle("terminal:stop", async (event) => {
+    stopTerminalSession(event.sender.id);
+    return { ok: true };
   });
 }
 
