@@ -107,6 +107,7 @@ const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const SLASH_COMMAND_CHAR_DELAY_MS = 10;
 const SLASH_COMMAND_AFTER_PREFIX_DELAY_MS = 60;
 const SLASH_COMMAND_ENTER_DELAY_MS = 60;
+const PASTE_ENTER_DELAY_MS = 100;
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
@@ -465,9 +466,9 @@ async function sendTextareaToTerminal() {
   }
 
   errorMessage.value = "";
-  const normalizedText = text.replace(/\r?\n/g, "\r");
 
   if (isSlashCommandInput(text)) {
+    const normalizedText = text.replace(/\r?\n/g, "\r");
     const slashCommandText = normalizedText.trimStart();
     for (let index = 0; index < slashCommandText.length; index += 1) {
       const char = slashCommandText[index];
@@ -481,10 +482,13 @@ async function sendTextareaToTerminal() {
 
     await delay(SLASH_COMMAND_ENTER_DELAY_MS);
   } else {
-    const ok = await sendTerminalInput(normalizedText, "Failed to send input to terminal.");
+    const cleanedText = text.replace(/[\r\n]+$/, "");
+    const ok = await sendTerminalInput(cleanedText, "Failed to send input to terminal.");
     if (!ok) {
       return;
     }
+
+    await delay(PASTE_ENTER_DELAY_MS);
   }
 
   const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
