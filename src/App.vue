@@ -30,22 +30,29 @@
             <span>{{ errorMessage }}</span>
           </div>
 
-          <div class="flex justify-end">
-            <div class="join">
-              <button
-                class="btn btn-sm join-item"
-                :disabled="!isTerminalReady"
-                @click="runTerminalCommand('claude')"
+          <div class="flex gap-2">
+            <div class="dropdown">
+              <div tabindex="0" role="button" class="btn btn-sm">Агенты ▾</div>
+              <ul
+                tabindex="0"
+                class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 shadow"
               >
-                Claude Code
-              </button>
-              <button
-                class="btn btn-sm join-item"
-                :disabled="!isTerminalReady"
-                @click="runTerminalCommand('codex')"
-              >
-                Codex CLI
-              </button>
+                <li>
+                  <button :disabled="!isTerminalReady" @click="runTerminalCommand('claude')">
+                    Запустить Claude Code
+                  </button>
+                </li>
+                <li>
+                  <button :disabled="!isTerminalReady" @click="runTerminalCommand('codex')">
+                    Запустить Codex CLI
+                  </button>
+                </li>
+                <li>
+                  <button :disabled="!isTerminalReady" @click="sendCtrlC">
+                    Отправить Ctrl+C
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -76,12 +83,6 @@
               </button>
             </div>
           </form>
-
-          <div class="flex justify-end">
-            <button class="btn btn-xs btn-ghost" :disabled="!isTerminalReady" @click="sendCtrlC">
-              Ctrl+C
-            </button>
-          </div>
         </div>
       </div>
     </section>
