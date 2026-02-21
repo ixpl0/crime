@@ -50,25 +50,39 @@
             @click="focusTerminal"
           />
 
-          <form class="flex flex-col gap-2" @submit.prevent="sendTextareaToTerminal">
-            <textarea
-              ref="terminalInputTextarea"
-              v-model="terminalInputText"
-              class="textarea textarea-bordered h-24 w-full resize-y"
-              :disabled="!isTerminalReady"
-              placeholder="Введите текст для отправки в терминал"
-              @keydown="handleTextareaKeydown"
-              @input="handleTextareaInput"
-              @paste="handleTextareaPaste"
-            />
-            <div class="flex justify-end">
-              <button
-                class="btn btn-sm"
-                type="submit"
-                :disabled="!isTerminalReady || !terminalInputText.trim()"
-              >
-                Отправить
-              </button>
+          <form class="flex gap-3" @submit.prevent="sendTextareaToTerminal">
+            <div class="flex flex-1 flex-col gap-2">
+              <textarea
+                ref="terminalInputTextarea"
+                v-model="terminalInputText"
+                class="textarea textarea-bordered h-24 w-full resize-y"
+                :disabled="!isTerminalReady"
+                placeholder="Введите текст для отправки в терминал"
+                @keydown="handleTextareaKeydown"
+                @input="handleTextareaInput"
+                @paste="handleTextareaPaste"
+              />
+              <div class="flex justify-end">
+                <button
+                  class="btn btn-sm"
+                  type="submit"
+                  :disabled="!isTerminalReady || !terminalInputText.trim()"
+                >
+                  Отправить
+                </button>
+              </div>
+            </div>
+
+            <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
+              <button v-for="n in 4" :key="`num-${String(n)}`" type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey(String(n))">{{ n }}</button>
+              <span />
+              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[A')">▲</button>
+              <span />
+              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b')">Esc</button>
+              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[D')">◀</button>
+              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[B')">▼</button>
+              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[C')">▶</button>
+              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\r')">↵</button>
             </div>
           </form>
         </div>
@@ -435,6 +449,18 @@ function executeToolbarAction(action: ToolbarAction) {
   void window.projectApi.terminal.input(action.input).then((response) => {
     if (!response.ok) {
       errorMessage.value = response.error ?? "Не удалось отправить данные в терминал.";
+    }
+  });
+}
+
+function sendQuickKey(data: string) {
+  if (!isTerminalReady.value) {
+    return;
+  }
+
+  void window.projectApi.terminal.input(data).then((response) => {
+    if (!response.ok) {
+      errorMessage.value = response.error ?? "Не удалось отправить клавишу в терминал.";
     }
   });
 }
