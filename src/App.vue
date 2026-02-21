@@ -103,6 +103,9 @@ const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
 const TERMINAL_INPUT_HISTORY_STORAGE_KEY = "dream-ide:terminal-input-history:v1";
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
+const SLASH_COMMAND_CHAR_DELAY_MS = 10;
+const SLASH_COMMAND_AFTER_PREFIX_DELAY_MS = 60;
+const SLASH_COMMAND_ENTER_DELAY_MS = 60;
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
@@ -272,6 +275,27 @@ function handleTextareaInput() {
   terminalInputDraft.value = terminalInputText.value;
 }
 
+function isSlashCommandInput(text: string) {
+  const trimmedStart = text.trimStart();
+  return !trimmedStart.includes("\n") && trimmedStart.startsWith("/");
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function sendTerminalInput(data: string, fallbackErrorMessage: string) {
+  const response = await window.projectApi.terminal.input(data);
+  if (!response.ok) {
+    errorMessage.value = response.error ?? fallbackErrorMessage;
+    return false;
+  }
+
+  return true;
+}
+
 function initializeTerminalView() {
   if (terminal || !terminalContainer.value) {
     return;
@@ -430,7 +454,7 @@ async function sendAltVToTerminal(shouldFocusTerminal = true) {
 
 async function sendTextareaToTerminal() {
   if (!isTerminalReady.value) {
-    errorMessage.value = "Терминал ещё не готов к отправке текста.";
+    errorMessage.value = "Terminal is not ready to send input.";
     return;
   }
 
@@ -439,10 +463,31 @@ async function sendTextareaToTerminal() {
     return;
   }
 
+  errorMessage.value = "";
   const normalizedText = text.replace(/\r?\n/g, "\r");
-  const response = await window.projectApi.terminal.input(`${normalizedText}\r`);
-  if (!response.ok) {
-    errorMessage.value = response.error ?? "Не удалось отправить текст в терминал.";
+
+  if (isSlashCommandInput(text)) {
+    const slashCommandText = normalizedText.trimStart();
+    for (let index = 0; index < slashCommandText.length; index += 1) {
+      const char = slashCommandText[index];
+      const ok = await sendTerminalInput(char, "Failed to send slash command character to terminal.");
+      if (!ok) {
+        return;
+      }
+
+      await delay(index === 0 ? SLASH_COMMAND_AFTER_PREFIX_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
+    }
+
+    await delay(SLASH_COMMAND_ENTER_DELAY_MS);
+  } else {
+    const ok = await sendTerminalInput(normalizedText, "Failed to send input to terminal.");
+    if (!ok) {
+      return;
+    }
+  }
+
+  const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
+  if (!enterOk) {
     return;
   }
 
