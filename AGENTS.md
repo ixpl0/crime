@@ -8,3 +8,7 @@
   - `git rebase`
   - `git cherry-pick`
 - Do not run the commands above until the user has approved them in the current conversation.
+
+## Architecture docs
+
+- SDK migration and fallback strategy: `sdk-fallback-plan.md`
