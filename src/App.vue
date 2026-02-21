@@ -30,31 +30,19 @@
             <span>{{ errorMessage }}</span>
           </div>
 
-          <div class="flex gap-2">
-            <div class="dropdown">
-              <div tabindex="0" role="button" class="btn btn-sm">Агенты ▾</div>
-              <ul
-                tabindex="0"
-                class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 shadow"
-              >
-                <li>
-                  <button :disabled="!isTerminalReady" @click="runTerminalCommand('claude')">
-                    Запустить Claude Code
-                  </button>
-                </li>
-                <li>
-                  <button :disabled="!isTerminalReady" @click="runTerminalCommand('codex')">
-                    Запустить Codex CLI
-                  </button>
-                </li>
-                <li>
-                  <button :disabled="!isTerminalReady" @click="sendCtrlC">
-                    Отправить Ctrl+C
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
+          <ToolbarPanel
+            :toolbar-config="toolbarConfig"
+            :is-terminal-ready="isTerminalReady"
+            @execute-action="executeToolbarAction"
+            @open-config-editor="isConfigEditorOpen = true"
+          />
+
+          <ToolbarConfigEditor
+            :current-config="toolbarConfig"
+            :open="isConfigEditorOpen"
+            @save="handleConfigSave"
+            @close="isConfigEditorOpen = false"
+          />
 
           <div
             ref="terminalContainer"
@@ -94,6 +82,11 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "xterm/css/xterm.css";
+import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
+import { loadToolbarConfig, saveToolbarConfig } from "./toolbar/toolbar-storage";
+import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
+import ToolbarPanel from "./components/ToolbarPanel.vue";
+import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
 
 const isOpening = ref(false);
 const isTerminalReady = ref(false);
@@ -111,12 +104,16 @@ const PASTE_ENTER_DELAY_MS = 100;
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
+const toolbarConfig = ref<ToolbarConfig>(loadToolbarConfig());
+const isConfigEditorOpen = ref(false);
 
 let terminal: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
 let unsubscribeTerminalData: (() => void) | null = null;
 let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
+
+useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
 function loadTerminalInputHistory() {
   if (typeof window === "undefined") {
@@ -425,15 +422,27 @@ async function runTerminalCommand(command: string) {
   }
 }
 
-async function sendCtrlC() {
+function executeToolbarAction(action: ToolbarAction) {
   if (!isTerminalReady.value) {
     return;
   }
 
-  const response = await window.projectApi.terminal.input("\u0003");
-  if (!response.ok) {
-    errorMessage.value = response.error ?? "Не удалось отправить Ctrl+C в терминал.";
+  if (action.type === "run-command") {
+    void runTerminalCommand(action.command);
+    return;
   }
+
+  void window.projectApi.terminal.input(action.input).then((response) => {
+    if (!response.ok) {
+      errorMessage.value = response.error ?? "Не удалось отправить данные в терминал.";
+    }
+  });
+}
+
+function handleConfigSave(config: ToolbarConfig) {
+  toolbarConfig.value = config;
+  saveToolbarConfig(config);
+  isConfigEditorOpen.value = false;
 }
 
 async function sendAltVToTerminal(shouldFocusTerminal = true) {

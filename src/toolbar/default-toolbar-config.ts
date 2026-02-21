@@ -1,0 +1,46 @@
+import { type ToolbarConfig } from "../types/toolbar";
+
+export const defaultToolbarConfig: ToolbarConfig = {
+  version: 1,
+  elements: [
+    {
+      type: "dropdown",
+      id: "agents",
+      label: "Агенты",
+      items: [
+        {
+          id: "claude-code",
+          label: "Claude Code",
+          shortcut: "alt+1",
+          action: { type: "run-command", command: "claude" },
+        },
+        {
+          id: "codex-cli",
+          label: "Codex CLI",
+          shortcut: "alt+2",
+          action: { type: "run-command", command: "codex" },
+        },
+        {
+          id: "aider",
+          label: "Aider",
+          shortcut: "alt+3",
+          action: { type: "run-command", command: "aider" },
+        },
+      ],
+    },
+    {
+      type: "button",
+      id: "ctrl-c",
+      label: "Ctrl+C",
+      shortcut: "alt+c",
+      action: { type: "send-input", input: "\u0003" },
+    },
+    {
+      type: "button",
+      id: "yes",
+      label: "Yes",
+      shortcut: "alt+y",
+      action: { type: "send-input", input: "yes\r" },
+    },
+  ],
+};
