@@ -74,15 +74,15 @@
             </div>
 
             <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
-              <button v-for="n in 4" :key="`num-${String(n)}`" type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey(String(n))">{{ n }}</button>
+              <button v-for="n in 4" :key="`num-${String(n)}`" type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey(String(n))">{{ n }}</button>
               <span />
-              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[A')">▲</button>
+              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[A')">▲</button>
               <span />
-              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b')">Esc</button>
-              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[D')">◀</button>
-              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[B')">▼</button>
-              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[C')">▶</button>
-              <button type="button" class="btn btn-xs btn-outline h-7 min-h-0 w-9 min-w-0 px-0" :disabled="!isTerminalReady" @click="sendQuickKey('\r')">↵</button>
+              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b')">Esc</button>
+              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[D')">◀</button>
+              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[B')">▼</button>
+              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[C')">▶</button>
+              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\r')">↵</button>
             </div>
           </form>
         </div>
