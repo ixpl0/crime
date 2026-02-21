@@ -127,7 +127,7 @@ function loadTerminalInputHistory() {
       return [];
     }
 
-    const parsedHistory = JSON.parse(storedHistory);
+    const parsedHistory: unknown = JSON.parse(storedHistory);
     if (!Array.isArray(parsedHistory)) {
       return [];
     }
@@ -531,7 +531,7 @@ onMounted(() => {
 
   unsubscribeTerminalExit = window.projectApi.terminal.onExit((code) => {
     isTerminalReady.value = false;
-    terminal?.writeln(`\r\n[terminal exited: ${code ?? "unknown"}]`);
+    terminal?.writeln(`\r\n[terminal exited: ${String(code ?? "unknown")}]`);
   });
 
   const handleWindowResize = () => {
