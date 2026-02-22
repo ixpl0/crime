@@ -53,6 +53,7 @@ interface FileEntry {
   name: string;
   isDirectory: boolean;
   path: string;
+  isVirtual?: boolean;
 }
 
 interface FilesystemReadResponse {
@@ -61,8 +62,51 @@ interface FilesystemReadResponse {
   error?: string;
 }
 
+interface FilesystemReadFileResponse {
+  ok: boolean;
+  content?: string;
+  error?: string;
+}
+
 interface FilesystemApi {
   readDirectory: (path: string) => Promise<FilesystemReadResponse>;
+  readFile: (projectPath: string, filePath: string) => Promise<FilesystemReadFileResponse>;
+}
+
+type GitFileStatus = "added" | "modified" | "deleted";
+
+interface GitStatusEntry {
+  path: string;
+  status: GitFileStatus;
+}
+
+interface GitStatusResponse {
+  ok: boolean;
+  available?: boolean;
+  reason?: "git-not-installed" | "not-a-repository";
+  entries?: GitStatusEntry[];
+  error?: string;
+}
+
+type GitDiffLineType = "context" | "added" | "removed";
+
+interface GitDiffLine {
+  type: GitDiffLineType;
+  text: string;
+}
+
+interface GitFileDiffResponse {
+  ok: boolean;
+  available?: boolean;
+  reason?: "git-not-installed" | "not-a-repository";
+  status?: GitFileStatus | null;
+  lines?: GitDiffLine[];
+  error?: string;
+}
+
+interface GitApi {
+  getStatus: (projectPath: string) => Promise<GitStatusResponse>;
+  getFileDiff: (projectPath: string, filePath: string) => Promise<GitFileDiffResponse>;
 }
 
 interface ProjectApi {
@@ -70,6 +114,7 @@ interface ProjectApi {
   settings: SettingsApi;
   terminal: TerminalApi;
   filesystem: FilesystemApi;
+  git: GitApi;
   onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }
 

@@ -34,10 +34,10 @@
 
     <button
       class="btn btn-sm btn-ghost ml-auto"
-      title="Настройки панели"
+      title="Edit toolbar"
       @click="$emit('open-config-editor')"
     >
-      <Settings :size="16" />
+      <Pencil :size="16" />
     </button>
   </div>
 </template>
@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { type ToolbarConfig, type ToolbarAction } from "../types/toolbar";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
-import { ChevronDown, Settings } from "lucide-vue-next";
+import { ChevronDown, Pencil } from "lucide-vue-next";
 
 defineProps<{
   toolbarConfig: ToolbarConfig;
@@ -57,3 +57,4 @@ defineEmits<{
   "open-config-editor": [];
 }>();
 </script>
+

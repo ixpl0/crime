@@ -30,7 +30,8 @@
             <span>{{ errorMessage }}</span>
           </div>
 
-          <div role="tablist" class="tabs tabs-bordered">
+          <div class="flex items-center gap-2">
+            <div role="tablist" class="tabs tabs-bordered">
             <button
               role="tab"
               class="tab"
@@ -46,6 +47,15 @@
               @click="activeTab = 'files'"
             >
               Файлы
+            </button>
+            </div>
+
+            <button
+              class="btn btn-sm btn-ghost ml-auto"
+              title="Project settings"
+              @click="isConfigEditorOpen = true"
+            >
+              <Settings :size="16" />
             </button>
           </div>
 
@@ -111,11 +121,19 @@
           </div>
 
           <div v-show="activeTab === 'files'">
-            <FileManagerPanel
-              v-if="projectPath"
-              :project-path="projectPath"
-              @select-file="handleFileSelect"
-            />
+            <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+              <FileManagerPanel
+                v-if="projectPath"
+                :project-path="projectPath"
+                @select-file="handleFileSelect"
+              />
+
+              <FileContentViewer
+                v-if="projectPath"
+                :project-path="projectPath"
+                :file-path="selectedFilePath"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -135,7 +153,8 @@ import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft } from "lucide-vue-next";
+import FileContentViewer from "./components/FileContentViewer.vue";
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, Settings } from "lucide-vue-next";
 
 const isOpening = ref(false);
 const isTerminalReady = ref(false);
@@ -147,7 +166,7 @@ const terminalContainer = ref<HTMLElement | null>(null);
 const TERMINAL_INPUT_HISTORY_STORAGE_KEY = "dream-ide:terminal-input-history:v1";
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const SLASH_COMMAND_CHAR_DELAY_MS = 10;
-const SLASH_COMMAND_AFTER_SLASH_DELAY_MS = 80;
+const SLASH_COMMAND_AFTER_SLASH_DELAY_MS = 200;
 const SLASH_COMMAND_ENTER_DELAY_MS = 60;
 const PASTE_ENTER_DELAY_MS = 100;
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
@@ -156,6 +175,7 @@ const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
 const isConfigEditorOpen = ref(false);
 const activeTab = ref<"agent" | "files">("agent");
+const selectedFilePath = ref<string | null>(null);
 
 let terminal: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -441,6 +461,7 @@ async function openProjectFolder() {
     const selectedPath = await window.projectApi.openFolder();
     if (selectedPath) {
       projectPath.value = selectedPath;
+      selectedFilePath.value = null;
       toolbarConfig.value = await loadToolbarConfig(selectedPath);
       await startSettingsWatcher(selectedPath);
       await nextTick();
@@ -518,7 +539,7 @@ function executeToolbarAction(action: ToolbarAction) {
 }
 
 function handleFileSelect(path: string) {
-  console.log("File selected:", path);
+  selectedFilePath.value = path;
 }
 
 function sendQuickKey(data: string) {

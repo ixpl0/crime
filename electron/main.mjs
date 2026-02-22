@@ -1,8 +1,9 @@
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
-import { dirname, join, resolve, normalize } from "node:path";
+import { dirname, join, resolve, normalize, relative } from "node:path";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { watch } from "node:fs";
+import { spawn } from "node:child_process";
 import * as pty from "node-pty";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,6 +12,263 @@ const terminalSessions = new Map();
 const settingsWatchers = new Map();
 
 const SETTINGS_WATCH_DEBOUNCE_MS = 300;
+const GIT_STATUS_PRIORITY = {
+  modified: 1,
+  added: 2,
+  deleted: 3
+};
+
+function runCommand(command, args, cwd) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(command, args, {
+      cwd,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+
+    const stdoutChunks = [];
+    const stderrChunks = [];
+
+    child.stdout.on("data", (chunk) => {
+      stdoutChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+
+    child.stderr.on("data", (chunk) => {
+      stderrChunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+
+    child.on("error", (error) => {
+      rejectPromise(error);
+    });
+
+    child.on("close", (code) => {
+      resolvePromise({
+        code: typeof code === "number" ? code : -1,
+        stdout: Buffer.concat(stdoutChunks),
+        stderr: Buffer.concat(stderrChunks)
+      });
+    });
+  });
+}
+
+function getGitStatusKind(x, y) {
+  if (x === "D" || y === "D") {
+    return "deleted";
+  }
+
+  if (x === "A" || y === "A" || x === "?" || y === "?") {
+    return "added";
+  }
+
+  return "modified";
+}
+
+function upsertGitStatus(statusByPath, absolutePath, nextStatus) {
+  const currentStatus = statusByPath.get(absolutePath);
+  if (!currentStatus) {
+    statusByPath.set(absolutePath, nextStatus);
+    return;
+  }
+
+  if (GIT_STATUS_PRIORITY[nextStatus] > GIT_STATUS_PRIORITY[currentStatus]) {
+    statusByPath.set(absolutePath, nextStatus);
+  }
+}
+
+function parseGitStatusPorcelain(output, cwd) {
+  const statusByPath = new Map();
+  const records = output.split("\0");
+
+  for (let index = 0; index < records.length; index += 1) {
+    const record = records[index];
+    if (!record || record.length < 4 || record[2] !== " ") {
+      continue;
+    }
+
+    const x = record[0];
+    const y = record[1];
+    const firstPath = record.slice(3);
+    const isRenameOrCopy = x === "R" || x === "C" || y === "R" || y === "C";
+
+    if (isRenameOrCopy) {
+      const secondPath = records[index + 1];
+      index += 1;
+
+      if (firstPath) {
+        upsertGitStatus(statusByPath, resolve(cwd, firstPath), "modified");
+      }
+      if (typeof secondPath === "string" && secondPath.length > 0) {
+        upsertGitStatus(statusByPath, resolve(cwd, secondPath), "modified");
+      }
+      continue;
+    }
+
+    const path = firstPath;
+    if (!path) {
+      continue;
+    }
+
+    upsertGitStatus(statusByPath, resolve(cwd, path), getGitStatusKind(x, y));
+  }
+
+  return Array.from(statusByPath.entries()).map(([path, status]) => ({ path, status }));
+}
+
+function toPathKey(path) {
+  const normalizedPath = normalize(resolve(path));
+  return process.platform === "win32" ? normalizedPath.toLowerCase() : normalizedPath;
+}
+
+function toLineEntries(content, type = "context") {
+  const rawLines = content.split(/\r?\n/);
+  if (rawLines.length > 0 && rawLines[rawLines.length - 1] === "") {
+    rawLines.pop();
+  }
+
+  return rawLines.map((text) => ({ type, text }));
+}
+
+function parseGitDiffLines(diffOutput) {
+  const lines = [];
+  let isInHunk = false;
+  const rawLines = diffOutput.split(/\r?\n/);
+
+  for (const rawLine of rawLines) {
+    if (rawLine.startsWith("diff --git ")) {
+      isInHunk = false;
+      continue;
+    }
+
+    if (rawLine.startsWith("@@")) {
+      isInHunk = true;
+      continue;
+    }
+
+    if (!isInHunk || rawLine.startsWith("\\ No newline at end of file")) {
+      continue;
+    }
+
+    if (rawLine.startsWith("+")) {
+      lines.push({ type: "added", text: rawLine.slice(1) });
+      continue;
+    }
+
+    if (rawLine.startsWith("-")) {
+      lines.push({ type: "removed", text: rawLine.slice(1) });
+      continue;
+    }
+
+    if (rawLine.startsWith(" ")) {
+      lines.push({ type: "context", text: rawLine.slice(1) });
+    }
+  }
+
+  return lines;
+}
+
+async function getGitRepositoryState(projectPath) {
+  let revParseResult;
+  try {
+    revParseResult = await runCommand("git", ["rev-parse", "--is-inside-work-tree"], projectPath);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return { ok: true, available: false, reason: "git-not-installed" };
+    }
+
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Failed to check git availability."
+    };
+  }
+
+  if (revParseResult.code !== 0 || revParseResult.stdout.toString("utf-8").trim() !== "true") {
+    return { ok: true, available: false, reason: "not-a-repository" };
+  }
+
+  return { ok: true, available: true };
+}
+
+async function getGitStatusForPath(projectPath, relativePath) {
+  let statusResult;
+  try {
+    statusResult = await runCommand(
+      "git",
+      ["-c", "core.quotepath=false", "status", "--porcelain=v1", "-z", "--", relativePath],
+      projectPath
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return { ok: true, available: false, reason: "git-not-installed", status: null };
+    }
+
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Failed to read file git status."
+    };
+  }
+
+  if (statusResult.code !== 0) {
+    const stderr = statusResult.stderr.toString("utf-8").trim();
+    return { ok: false, error: stderr.length > 0 ? stderr : "Failed to read file git status." };
+  }
+
+  const entries = parseGitStatusPorcelain(statusResult.stdout.toString("utf-8"), projectPath);
+  const filePathKey = toPathKey(resolve(projectPath, relativePath));
+  const match = entries.find((entry) => toPathKey(entry.path) === filePathKey);
+  return { ok: true, available: true, status: match?.status ?? null };
+}
+
+async function getGitStatusForProject(projectPath) {
+  const repositoryState = await getGitRepositoryState(projectPath);
+  if (!repositoryState.ok) {
+    return repositoryState;
+  }
+
+  if (!repositoryState.available) {
+    return { ...repositoryState, entries: [] };
+  }
+
+  let statusResult;
+  try {
+    statusResult = await runCommand(
+      "git",
+      [
+        "-c",
+        "core.quotepath=false",
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--untracked-files=all",
+        "--",
+        "."
+      ],
+      projectPath
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return { ok: true, available: false, reason: "git-not-installed", entries: [] };
+    }
+
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Failed to read git status."
+    };
+  }
+
+  if (statusResult.code !== 0) {
+    const stderr = statusResult.stderr.toString("utf-8").trim();
+    return {
+      ok: false,
+      error: stderr.length > 0 ? stderr : "Failed to read git status."
+    };
+  }
+
+  return {
+    ok: true,
+    available: true,
+    entries: parseGitStatusPorcelain(statusResult.stdout.toString("utf-8"), projectPath)
+  };
+}
 
 function stopSettingsWatcher(webContentsId) {
   const watcher = settingsWatchers.get(webContentsId);
@@ -104,6 +362,9 @@ function registerIpcHandlers() {
   ipcMain.removeHandler("terminal:resize");
   ipcMain.removeHandler("terminal:stop");
   ipcMain.removeHandler("filesystem:read-directory");
+  ipcMain.removeHandler("filesystem:read-file");
+  ipcMain.removeHandler("git:status");
+  ipcMain.removeHandler("git:file-diff");
 
   ipcMain.handle("project:open-folder", async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
@@ -401,6 +662,154 @@ function registerIpcHandlers() {
         error: error instanceof Error ? error.message : "Failed to read directory."
       };
     }
+  });
+
+  ipcMain.handle("filesystem:read-file", async (_event, projectPath, filePath) => {
+    if (typeof projectPath !== "string" || typeof filePath !== "string") {
+      return { ok: false, error: "Project path and file path are required." };
+    }
+
+    const resolvedFilePath = resolve(filePath);
+    if (!isPathInsideBase(projectPath, resolvedFilePath)) {
+      return { ok: false, error: "Invalid file path." };
+    }
+
+    try {
+      const content = await readFile(resolvedFilePath, "utf-8");
+      return { ok: true, content };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to read file."
+      };
+    }
+  });
+
+  ipcMain.handle("git:file-diff", async (_event, projectPath, filePath) => {
+    if (typeof projectPath !== "string" || typeof filePath !== "string") {
+      return { ok: false, error: "Project path and file path are required." };
+    }
+
+    const resolvedProjectPath = resolve(projectPath);
+    const resolvedFilePath = resolve(filePath);
+    if (!isPathInsideBase(resolvedProjectPath, resolvedFilePath)) {
+      return { ok: false, error: "Invalid file path." };
+    }
+
+    const relativePath = relative(resolvedProjectPath, resolvedFilePath).split("\\").join("/");
+    if (
+      relativePath.length === 0 ||
+      relativePath === ".." ||
+      relativePath.startsWith("../")
+    ) {
+      return { ok: false, error: "Invalid file path." };
+    }
+
+    const repositoryState = await getGitRepositoryState(resolvedProjectPath);
+    if (!repositoryState.ok) {
+      return repositoryState;
+    }
+
+    if (!repositoryState.available) {
+      return { ...repositoryState, lines: [], status: null };
+    }
+
+    const fileStatusResponse = await getGitStatusForPath(resolvedProjectPath, relativePath);
+    if (!fileStatusResponse.ok) {
+      return fileStatusResponse;
+    }
+
+    const runDiffForPath = async (extraArgs = []) => {
+      const diffResult = await runCommand(
+        "git",
+        [
+          "-c",
+          "core.quotepath=false",
+          "diff",
+          "--no-color",
+          "--unified=999999",
+          "--no-ext-diff",
+          ...extraArgs,
+          "--",
+          relativePath
+        ],
+        resolvedProjectPath
+      );
+
+      if (diffResult.code !== 0) {
+        const stderr = diffResult.stderr.toString("utf-8").trim();
+        return { ok: false, error: stderr.length > 0 ? stderr : "Failed to get file diff." };
+      }
+
+      return { ok: true, lines: parseGitDiffLines(diffResult.stdout.toString("utf-8")) };
+    };
+
+    let diffLines;
+    try {
+      const initialDiffResponse = await runDiffForPath();
+      if (!initialDiffResponse.ok) {
+        return initialDiffResponse;
+      }
+      diffLines = initialDiffResponse.lines;
+
+      if (diffLines.length === 0 && fileStatusResponse.status === "modified") {
+        const cachedDiffResponse = await runDiffForPath(["--cached"]);
+        if (!cachedDiffResponse.ok) {
+          return cachedDiffResponse;
+        }
+
+        diffLines = cachedDiffResponse.lines;
+      }
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to get file diff."
+      };
+    }
+
+    if (!diffLines) {
+      diffLines = [];
+    }
+
+    if (diffLines.length === 0 && fileStatusResponse.status === "added") {
+      try {
+        const content = await readFile(resolvedFilePath, "utf-8");
+        diffLines = toLineEntries(content, "added");
+      } catch {
+        diffLines = [];
+      }
+    }
+
+    if (diffLines.length === 0 && fileStatusResponse.status === "deleted") {
+      try {
+        const showResult = await runCommand(
+          "git",
+          ["-c", "core.quotepath=false", "show", `HEAD:${relativePath}`],
+          resolvedProjectPath
+        );
+
+        if (showResult.code === 0) {
+          diffLines = toLineEntries(showResult.stdout.toString("utf-8"), "removed");
+        }
+      } catch {
+        diffLines = [];
+      }
+    }
+
+    return {
+      ok: true,
+      available: true,
+      status: fileStatusResponse.status ?? null,
+      lines: diffLines
+    };
+  });
+
+  ipcMain.handle("git:status", async (_event, projectPath) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    return getGitStatusForProject(projectPath);
   });
 }
 

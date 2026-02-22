@@ -36,7 +36,14 @@ contextBridge.exposeInMainWorld("projectApi", {
     }
   },
   filesystem: {
-    readDirectory: (dirPath) => ipcRenderer.invoke("filesystem:read-directory", dirPath)
+    readDirectory: (dirPath) => ipcRenderer.invoke("filesystem:read-directory", dirPath),
+    readFile: (projectPath, filePath) =>
+      ipcRenderer.invoke("filesystem:read-file", projectPath, filePath)
+  },
+  git: {
+    getStatus: (projectPath) => ipcRenderer.invoke("git:status", projectPath),
+    getFileDiff: (projectPath, filePath) =>
+      ipcRenderer.invoke("git:file-diff", projectPath, filePath)
   },
   onGlobalQuickKey: (listener) => {
     const handler = (_event, input) => listener(input);
