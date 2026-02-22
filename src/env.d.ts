@@ -36,9 +36,17 @@ interface SettingsWriteResponse {
   error?: string;
 }
 
+interface SettingsWatchResponse {
+  ok: boolean;
+  error?: string;
+}
+
 interface SettingsApi {
   read: (projectPath: string, filename: string) => Promise<SettingsReadResponse>;
   write: (projectPath: string, filename: string, content: string) => Promise<SettingsWriteResponse>;
+  watch: (projectPath: string, filename: string) => Promise<SettingsWatchResponse>;
+  unwatch: () => Promise<SettingsWatchResponse>;
+  onFileChanged: (listener: (filename: string) => void) => () => void;
 }
 
 interface ProjectApi {

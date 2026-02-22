@@ -42,5 +42,17 @@ export const defaultToolbarConfig: ToolbarConfig = {
       shortcut: "alt+y",
       action: { type: "send-input", input: "yes\r" },
     },
+    {
+      type: "button",
+      id: "resume",
+      label: "/resume",
+      action: { type: "send-input", input: "/resume\r" },
+    },
+    {
+      type: "button",
+      id: "commit-push",
+      label: "Коммит пуш",
+      action: { type: "run-command", command: "коммит пуш" },
+    },
   ],
 };

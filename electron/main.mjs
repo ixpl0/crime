@@ -2,11 +2,25 @@ import { app, BrowserWindow, dialog, globalShortcut, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, normalize } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { watch } from "node:fs";
 import * as pty from "node-pty";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const terminalSessions = new Map();
+const settingsWatchers = new Map();
+
+const SETTINGS_WATCH_DEBOUNCE_MS = 300;
+
+function stopSettingsWatcher(webContentsId) {
+  const watcher = settingsWatchers.get(webContentsId);
+  if (!watcher) {
+    return;
+  }
+
+  watcher.close();
+  settingsWatchers.delete(webContentsId);
+}
 
 function resolveShell() {
   if (process.platform === "win32") {
@@ -57,6 +71,7 @@ function createWindow() {
 
   mainWindow.on("closed", () => {
     stopTerminalSession(webContentsId);
+    stopSettingsWatcher(webContentsId);
   });
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -81,6 +96,8 @@ function registerIpcHandlers() {
   ipcMain.removeHandler("project:open-folder");
   ipcMain.removeHandler("settings:read");
   ipcMain.removeHandler("settings:write");
+  ipcMain.removeHandler("settings:watch");
+  ipcMain.removeHandler("settings:unwatch");
   ipcMain.removeHandler("terminal:start");
   ipcMain.removeHandler("terminal:run-command");
   ipcMain.removeHandler("terminal:input");
@@ -147,6 +164,51 @@ function registerIpcHandlers() {
         error: error instanceof Error ? error.message : "Failed to write settings file."
       };
     }
+  });
+
+  ipcMain.handle("settings:watch", (event, projectPath, filename) => {
+    if (typeof projectPath !== "string" || typeof filename !== "string") {
+      return { ok: false, error: "Project path and filename are required." };
+    }
+
+    const filePath = join(projectPath, ".dream", filename);
+    if (!isPathInsideBase(join(projectPath, ".dream"), filePath)) {
+      return { ok: false, error: "Invalid filename." };
+    }
+
+    const webContentsId = event.sender.id;
+    stopSettingsWatcher(webContentsId);
+
+    let debounceTimer = null;
+
+    try {
+      const fsWatcher = watch(filePath, () => {
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+        }
+
+        debounceTimer = setTimeout(() => {
+          debounceTimer = null;
+          if (!event.sender.isDestroyed()) {
+            event.sender.send("settings:file-changed", filename);
+          }
+        }, SETTINGS_WATCH_DEBOUNCE_MS);
+      });
+
+      fsWatcher.on("error", () => {
+        stopSettingsWatcher(webContentsId);
+      });
+
+      settingsWatchers.set(webContentsId, fsWatcher);
+      return { ok: true };
+    } catch {
+      return { ok: true };
+    }
+  });
+
+  ipcMain.handle("settings:unwatch", (event) => {
+    stopSettingsWatcher(event.sender.id);
+    return { ok: true };
   });
 
   ipcMain.handle("terminal:start", async (event, cwd, size) => {

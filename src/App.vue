@@ -39,6 +39,7 @@
 
           <ToolbarConfigEditor
             :current-config="toolbarConfig"
+            :config-file-path="`${projectPath}/.dream/toolbar.json`"
             :open="isConfigEditorOpen"
             @save="handleConfigSave"
             @close="isConfigEditorOpen = false"
@@ -129,6 +130,7 @@ let unsubscribeTerminalData: (() => void) | null = null;
 let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
 let unsubscribeGlobalQuickKey: (() => void) | null = null;
+let unsubscribeSettingsFileChanged: (() => void) | null = null;
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
@@ -407,6 +409,7 @@ async function openProjectFolder() {
     if (selectedPath) {
       projectPath.value = selectedPath;
       toolbarConfig.value = await loadToolbarConfig(selectedPath);
+      await startSettingsWatcher(selectedPath);
       await nextTick();
       await startTerminal(selectedPath);
     }
@@ -469,12 +472,33 @@ function sendQuickKey(data: string) {
   });
 }
 
+const TOOLBAR_CONFIG_FILENAME = "toolbar.json";
+
 function handleConfigSave(config: ToolbarConfig) {
   toolbarConfig.value = config;
   if (projectPath.value) {
     void saveToolbarConfig(projectPath.value, config);
   }
   isConfigEditorOpen.value = false;
+}
+
+async function handleSettingsFileChanged(filename: string) {
+  if (filename !== TOOLBAR_CONFIG_FILENAME || !projectPath.value) {
+    return;
+  }
+
+  toolbarConfig.value = await loadToolbarConfig(projectPath.value);
+}
+
+async function startSettingsWatcher(path: string) {
+  unsubscribeSettingsFileChanged?.();
+  await window.projectApi.settings.unwatch();
+
+  unsubscribeSettingsFileChanged = window.projectApi.settings.onFileChanged(
+    (filename) => void handleSettingsFileChanged(filename)
+  );
+
+  await window.projectApi.settings.watch(path, TOOLBAR_CONFIG_FILENAME);
 }
 
 async function sendAltVToTerminal(shouldFocusTerminal = true) {
@@ -598,7 +622,9 @@ onBeforeUnmount(() => {
   unsubscribeTerminalData?.();
   unsubscribeTerminalExit?.();
   unsubscribeGlobalQuickKey?.();
+  unsubscribeSettingsFileChanged?.();
   removeWindowResizeListener?.();
+  void window.projectApi.settings.unwatch();
   void window.projectApi.terminal.stop();
   terminal?.dispose();
   terminal = null;

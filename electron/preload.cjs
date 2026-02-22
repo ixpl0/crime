@@ -9,7 +9,14 @@ contextBridge.exposeInMainWorld("projectApi", {
   openFolder: () => ipcRenderer.invoke("project:open-folder"),
   settings: {
     read: (projectPath, filename) => ipcRenderer.invoke("settings:read", projectPath, filename),
-    write: (projectPath, filename, content) => ipcRenderer.invoke("settings:write", projectPath, filename, content)
+    write: (projectPath, filename, content) => ipcRenderer.invoke("settings:write", projectPath, filename, content),
+    watch: (projectPath, filename) => ipcRenderer.invoke("settings:watch", projectPath, filename),
+    unwatch: () => ipcRenderer.invoke("settings:unwatch"),
+    onFileChanged: (listener) => {
+      const handler = (_event, filename) => listener(filename);
+      ipcRenderer.on("settings:file-changed", handler);
+      return () => ipcRenderer.removeListener("settings:file-changed", handler);
+    }
   },
   terminal: {
     start: (cwd, size) => ipcRenderer.invoke("terminal:start", cwd, size),
