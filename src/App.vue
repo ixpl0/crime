@@ -128,6 +128,7 @@ let fitAddon: FitAddon | null = null;
 let unsubscribeTerminalData: (() => void) | null = null;
 let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
+let unsubscribeGlobalQuickKey: (() => void) | null = null;
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
@@ -252,7 +253,7 @@ function handleTextareaKeydown(event: KeyboardEvent) {
   const textarea =
     event.currentTarget instanceof HTMLTextAreaElement ? event.currentTarget : null;
 
-  if (event.key === "Enter" && event.ctrlKey && !event.altKey && !event.metaKey) {
+  if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
     event.preventDefault();
     void sendTextareaToTerminal();
     return;
@@ -587,11 +588,16 @@ onMounted(() => {
   removeWindowResizeListener = () => {
     window.removeEventListener("resize", handleWindowResize);
   };
+
+  unsubscribeGlobalQuickKey = window.projectApi.onGlobalQuickKey((input) => {
+    sendQuickKey(input);
+  });
 });
 
 onBeforeUnmount(() => {
   unsubscribeTerminalData?.();
   unsubscribeTerminalExit?.();
+  unsubscribeGlobalQuickKey?.();
   removeWindowResizeListener?.();
   void window.projectApi.terminal.stop();
   terminal?.dispose();

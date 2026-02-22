@@ -27,5 +27,10 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.on("terminal:exit", handler);
       return () => ipcRenderer.removeListener("terminal:exit", handler);
     }
+  },
+  onGlobalQuickKey: (listener) => {
+    const handler = (_event, input) => listener(input);
+    ipcRenderer.on("global:quick-key", handler);
+    return () => ipcRenderer.removeListener("global:quick-key", handler);
   }
 });

@@ -45,6 +45,7 @@ interface ProjectApi {
   openFolder: () => Promise<string | null>;
   settings: SettingsApi;
   terminal: TerminalApi;
+  onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }
 
 interface Window {

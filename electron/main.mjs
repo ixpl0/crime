@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, normalize } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -298,15 +298,46 @@ function registerIpcHandlers() {
   });
 }
 
+const globalQuickKeyBindings = [
+  { accelerator: "CommandOrControl+Alt+Shift+1", input: "1" },
+  { accelerator: "CommandOrControl+Alt+Shift+2", input: "2" },
+  { accelerator: "CommandOrControl+Alt+Shift+3", input: "3" },
+  { accelerator: "CommandOrControl+Alt+Shift+4", input: "4" },
+  { accelerator: "CommandOrControl+Alt+Shift+Up", input: "\x1b[A" },
+  { accelerator: "CommandOrControl+Alt+Shift+Down", input: "\x1b[B" },
+  { accelerator: "CommandOrControl+Alt+Shift+Left", input: "\x1b[D" },
+  { accelerator: "CommandOrControl+Alt+Shift+Right", input: "\x1b[C" },
+  { accelerator: "CommandOrControl+Alt+Shift+E", input: "\x1b" },
+  { accelerator: "CommandOrControl+Alt+Shift+Enter", input: "\r" }
+];
+
+function registerGlobalQuickKeys() {
+  for (const binding of globalQuickKeyBindings) {
+    globalShortcut.register(binding.accelerator, () => {
+      const windows = BrowserWindow.getAllWindows();
+      for (const win of windows) {
+        if (!win.isDestroyed()) {
+          win.webContents.send("global:quick-key", binding.input);
+        }
+      }
+    });
+  }
+}
+
 app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
+  registerGlobalQuickKeys();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+});
+
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on("window-all-closed", () => {
