@@ -30,21 +30,6 @@
             <span>{{ errorMessage }}</span>
           </div>
 
-          <ToolbarPanel
-            :toolbar-config="toolbarConfig"
-            :is-terminal-ready="isTerminalReady"
-            @execute-action="executeToolbarAction"
-            @open-config-editor="isConfigEditorOpen = true"
-          />
-
-          <ToolbarConfigEditor
-            :current-config="toolbarConfig"
-            :config-file-path="`${projectPath}/.dream/toolbar.json`"
-            :open="isConfigEditorOpen"
-            @save="handleConfigSave"
-            @close="isConfigEditorOpen = false"
-          />
-
           <div role="tablist" class="tabs tabs-bordered">
             <button
               role="tab"
@@ -63,6 +48,21 @@
               Файлы
             </button>
           </div>
+
+          <ToolbarPanel
+            :toolbar-config="toolbarConfig"
+            :is-terminal-ready="isTerminalReady"
+            @execute-action="executeToolbarAction"
+            @open-config-editor="isConfigEditorOpen = true"
+          />
+
+          <ToolbarConfigEditor
+            :current-config="toolbarConfig"
+            :config-file-path="`${projectPath}/.dream/toolbar.json`"
+            :open="isConfigEditorOpen"
+            @save="handleConfigSave"
+            @close="isConfigEditorOpen = false"
+          />
 
           <div v-show="activeTab === 'agent'">
             <div class="space-y-4">
