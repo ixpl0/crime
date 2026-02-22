@@ -65,7 +65,8 @@ const GIT_STATUS_REFRESH_INTERVAL_MS = 3000;
 let loadRequestId = 0;
 let refreshIntervalId: ReturnType<typeof setInterval> | null = null;
 let isAutoRefreshInFlight = false;
-let lastTreeSnapshot = "";
+let lastStateSnapshot = "";
+let lastStructureSnapshot = "";
 
 function normalizeGitState(response: GitStatusResponse) {
   if (!response.ok) {
@@ -147,6 +148,17 @@ function buildTreeSnapshot(payload: {
   ].join("\n---\n");
 }
 
+function buildStructureSnapshot(payload: {
+  entries: FileEntry[];
+  deletedChildren: DeletedChildrenByParent;
+}) {
+  return [
+    props.projectPath,
+    buildEntriesSnapshot(payload.entries),
+    buildDeletedChildrenSnapshot(payload.deletedChildren)
+  ].join("\n---\n");
+}
+
 const loadRootDirectory = async (isBackgroundRefresh = false) => {
   const requestId = ++loadRequestId;
   if (!isBackgroundRefresh) {
@@ -179,25 +191,33 @@ const loadRootDirectory = async (isBackgroundRefresh = false) => {
       )
     : [];
 
-  const nextSnapshot = buildTreeSnapshot({
+  const nextStateSnapshot = buildTreeSnapshot({
     entries: nextEntries,
     statuses: normalizedGitState.statuses,
     deletedChildren: normalizedGitState.deletedChildren,
     infoMessage: normalizedGitState.infoMessage,
     loadError: nextLoadError
   });
+  const nextStructureSnapshot = buildStructureSnapshot({
+    entries: nextEntries,
+    deletedChildren: normalizedGitState.deletedChildren
+  });
 
-  if (nextSnapshot === lastTreeSnapshot) {
+  if (nextStateSnapshot === lastStateSnapshot) {
     return;
   }
 
-  lastTreeSnapshot = nextSnapshot;
+  const hasStructureChanged = nextStructureSnapshot !== lastStructureSnapshot;
+  lastStateSnapshot = nextStateSnapshot;
+  lastStructureSnapshot = nextStructureSnapshot;
   loadError.value = nextLoadError;
   gitStatuses.value = normalizedGitState.statuses;
   deletedChildrenByParent.value = normalizedGitState.deletedChildren;
   gitInfoMessage.value = normalizedGitState.infoMessage;
   entries.value = nextEntries;
-  refreshToken.value += 1;
+  if (hasStructureChanged) {
+    refreshToken.value += 1;
+  }
 };
 
 const stopAutoRefresh = () => {
@@ -237,7 +257,8 @@ onBeforeUnmount(() => {
 });
 
 watch(() => props.projectPath, () => {
-  lastTreeSnapshot = "";
+  lastStateSnapshot = "";
+  lastStructureSnapshot = "";
   void loadRootDirectory();
   startAutoRefresh();
 });

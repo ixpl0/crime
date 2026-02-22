@@ -67,6 +67,7 @@ const isLoading = ref(false);
 const loadError = ref("");
 const children = ref<FileEntry[]>([]);
 let hasLoaded = false;
+let lastChildrenSnapshot = "";
 
 const entryStatus = computed<GitFileStatus | null>(() => {
   if (props.entry.isVirtual) {
@@ -122,15 +123,30 @@ const fileIconClasses = computed(() => {
   return "text-base-content/50";
 });
 
-async function loadChildren(forceReload = false) {
+function buildChildrenSnapshot(value: FileEntry[]) {
+  return value
+    .map(
+      (entry) =>
+        `${entry.path}|${entry.isDirectory ? "d" : "f"}|${entry.isVirtual ? "v" : "r"}`
+    )
+    .join("\n");
+}
+
+async function loadChildren(options: { forceReload?: boolean; silent?: boolean } = {}) {
   if (!props.entry.isDirectory) {
     return;
   }
 
+  const { forceReload = false, silent = false } = options;
   const virtualChildren = props.deletedChildrenByParent[props.entry.path] ?? [];
 
   if (props.entry.isVirtual) {
-    children.value = mergeDirectoryEntries([], virtualChildren);
+    const nextChildren = mergeDirectoryEntries([], virtualChildren);
+    const nextSnapshot = buildChildrenSnapshot(nextChildren);
+    if (nextSnapshot !== lastChildrenSnapshot) {
+      lastChildrenSnapshot = nextSnapshot;
+      children.value = nextChildren;
+    }
     hasLoaded = true;
     return;
   }
@@ -139,25 +155,41 @@ async function loadChildren(forceReload = false) {
     return;
   }
 
-  isLoading.value = true;
-  loadError.value = "";
+  if (!silent) {
+    isLoading.value = true;
+    loadError.value = "";
+  }
 
   const response = await window.projectApi.filesystem.readDirectory(props.entry.path);
 
-  isLoading.value = false;
+  if (!silent) {
+    isLoading.value = false;
+  }
 
   if (!response.ok) {
     if (virtualChildren.length > 0) {
-      children.value = mergeDirectoryEntries([], virtualChildren);
+      const nextChildren = mergeDirectoryEntries([], virtualChildren);
+      const nextSnapshot = buildChildrenSnapshot(nextChildren);
+      if (nextSnapshot !== lastChildrenSnapshot) {
+        lastChildrenSnapshot = nextSnapshot;
+        children.value = nextChildren;
+      }
       hasLoaded = true;
       return;
     }
 
-    loadError.value = response.error ?? "Failed to read directory.";
+    if (!silent) {
+      loadError.value = response.error ?? "Failed to read directory.";
+    }
     return;
   }
 
-  children.value = mergeDirectoryEntries(response.entries ?? [], virtualChildren);
+  const nextChildren = mergeDirectoryEntries(response.entries ?? [], virtualChildren);
+  const nextSnapshot = buildChildrenSnapshot(nextChildren);
+  if (nextSnapshot !== lastChildrenSnapshot) {
+    lastChildrenSnapshot = nextSnapshot;
+    children.value = nextChildren;
+  }
   hasLoaded = true;
 }
 
@@ -189,12 +221,12 @@ watch(
     }
 
     if (props.entry.isVirtual) {
-      void loadChildren(true);
+      void loadChildren({ forceReload: true, silent: true });
       return;
     }
 
     if (isExpanded.value) {
-      void loadChildren(true);
+      void loadChildren({ forceReload: true, silent: true });
       return;
     }
 
