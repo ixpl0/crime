@@ -45,47 +45,78 @@
             @close="isConfigEditorOpen = false"
           />
 
-          <div
-            ref="terminalContainer"
-            class="terminal-host h-96 w-full rounded-box border border-base-300 bg-[#05070d]"
-            @click="focusTerminal"
-          />
+          <div role="tablist" class="tabs tabs-bordered">
+            <button
+              role="tab"
+              class="tab"
+              :class="{ 'tab-active': activeTab === 'agent' }"
+              @click="activeTab = 'agent'"
+            >
+              Агент
+            </button>
+            <button
+              role="tab"
+              class="tab"
+              :class="{ 'tab-active': activeTab === 'files' }"
+              @click="activeTab = 'files'"
+            >
+              Файлы
+            </button>
+          </div>
 
-          <form class="flex gap-3" @submit.prevent="sendTextareaToTerminal">
-            <div class="flex flex-1 flex-col gap-2">
-              <textarea
-                ref="terminalInputTextarea"
-                v-model="terminalInputText"
-                class="textarea textarea-bordered h-24 w-full resize-y"
-                :disabled="!isTerminalReady"
-                placeholder="Введите текст для отправки в терминал"
-                @keydown="handleTextareaKeydown"
-                @input="handleTextareaInput"
-                @paste="handleTextareaPaste"
+          <div v-show="activeTab === 'agent'">
+            <div class="space-y-4">
+              <div
+                ref="terminalContainer"
+                class="terminal-host h-96 w-full rounded-box border border-base-300 bg-[#05070d]"
+                @click="focusTerminal"
               />
-              <div class="flex justify-end">
-                <button
-                  class="btn btn-sm"
-                  type="submit"
-                  :disabled="!isTerminalReady || !terminalInputText.trim()"
-                >
-                  Отправить
-                </button>
-              </div>
-            </div>
 
-            <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
-              <button v-for="n in 4" :key="`num-${String(n)}`" type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey(String(n))">{{ n }}</button>
-              <span />
-              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[A')"><ArrowUp :size="14" /></button>
-              <span />
-              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b')">Esc</button>
-              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[D')"><ArrowLeft :size="14" /></button>
-              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[B')"><ArrowDown :size="14" /></button>
-              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[C')"><ArrowRight :size="14" /></button>
-              <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\r')"><CornerDownLeft :size="14" /></button>
+              <form class="flex gap-3" @submit.prevent="sendTextareaToTerminal">
+                <div class="flex flex-1 flex-col gap-2">
+                  <textarea
+                    ref="terminalInputTextarea"
+                    v-model="terminalInputText"
+                    class="textarea textarea-bordered h-24 w-full resize-y"
+                    :disabled="!isTerminalReady"
+                    placeholder="Введите текст для отправки в терминал"
+                    @keydown="handleTextareaKeydown"
+                    @input="handleTextareaInput"
+                    @paste="handleTextareaPaste"
+                  />
+                  <div class="flex justify-end">
+                    <button
+                      class="btn btn-sm"
+                      type="submit"
+                      :disabled="!isTerminalReady || !terminalInputText.trim()"
+                    >
+                      Отправить
+                    </button>
+                  </div>
+                </div>
+
+                <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
+                  <button v-for="n in 4" :key="`num-${String(n)}`" type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey(String(n))">{{ n }}</button>
+                  <span />
+                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[A')"><ArrowUp :size="14" /></button>
+                  <span />
+                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b')">Esc</button>
+                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[D')"><ArrowLeft :size="14" /></button>
+                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[B')"><ArrowDown :size="14" /></button>
+                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[C')"><ArrowRight :size="14" /></button>
+                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\r')"><CornerDownLeft :size="14" /></button>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
+
+          <div v-show="activeTab === 'files'">
+            <FileManagerPanel
+              v-if="projectPath"
+              :project-path="projectPath"
+              @select-file="handleFileSelect"
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -103,6 +134,7 @@ import { defaultToolbarConfig } from "./toolbar/default-toolbar-config";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
+import FileManagerPanel from "./components/FileManagerPanel.vue";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft } from "lucide-vue-next";
 
 const isOpening = ref(false);
@@ -123,6 +155,7 @@ const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
 const isConfigEditorOpen = ref(false);
+const activeTab = ref<"agent" | "files">("agent");
 
 let terminal: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -482,6 +515,10 @@ function executeToolbarAction(action: ToolbarAction) {
       errorMessage.value = response.error ?? "Не удалось отправить данные в терминал.";
     }
   });
+}
+
+function handleFileSelect(path: string) {
+  console.log("File selected:", path);
 }
 
 function sendQuickKey(data: string) {

@@ -49,10 +49,27 @@ interface SettingsApi {
   onFileChanged: (listener: (filename: string) => void) => () => void;
 }
 
+interface FileEntry {
+  name: string;
+  isDirectory: boolean;
+  path: string;
+}
+
+interface FilesystemReadResponse {
+  ok: boolean;
+  entries?: FileEntry[];
+  error?: string;
+}
+
+interface FilesystemApi {
+  readDirectory: (path: string) => Promise<FilesystemReadResponse>;
+}
+
 interface ProjectApi {
   openFolder: () => Promise<string | null>;
   settings: SettingsApi;
   terminal: TerminalApi;
+  filesystem: FilesystemApi;
   onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }
 

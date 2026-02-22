@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, normalize } from "node:path";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { watch } from "node:fs";
 import * as pty from "node-pty";
 
@@ -103,6 +103,7 @@ function registerIpcHandlers() {
   ipcMain.removeHandler("terminal:input");
   ipcMain.removeHandler("terminal:resize");
   ipcMain.removeHandler("terminal:stop");
+  ipcMain.removeHandler("filesystem:read-directory");
 
   ipcMain.handle("project:open-folder", async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
@@ -370,6 +371,36 @@ function registerIpcHandlers() {
   ipcMain.handle("terminal:stop", async (event) => {
     stopTerminalSession(event.sender.id);
     return { ok: true };
+  });
+
+  ipcMain.handle("filesystem:read-directory", async (_event, dirPath) => {
+    if (!dirPath || typeof dirPath !== "string") {
+      return { ok: false, error: "Directory path is required." };
+    }
+
+    try {
+      const dirents = await readdir(dirPath, { withFileTypes: true });
+      const entries = dirents
+        .filter((dirent) => !dirent.name.startsWith("."))
+        .map((dirent) => ({
+          name: dirent.name,
+          isDirectory: dirent.isDirectory(),
+          path: join(dirPath, dirent.name)
+        }))
+        .sort((a, b) => {
+          if (a.isDirectory !== b.isDirectory) {
+            return a.isDirectory ? -1 : 1;
+          }
+          return a.name.localeCompare(b.name);
+        });
+
+      return { ok: true, entries };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to read directory."
+      };
+    }
   });
 }
 

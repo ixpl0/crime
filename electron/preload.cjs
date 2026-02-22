@@ -35,6 +35,9 @@ contextBridge.exposeInMainWorld("projectApi", {
       return () => ipcRenderer.removeListener("terminal:exit", handler);
     }
   },
+  filesystem: {
+    readDirectory: (dirPath) => ipcRenderer.invoke("filesystem:read-directory", dirPath)
+  },
   onGlobalQuickKey: (listener) => {
     const handler = (_event, input) => listener(input);
     ipcRenderer.on("global:quick-key", handler);
