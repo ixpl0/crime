@@ -166,23 +166,34 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("settings:watch", (event, projectPath, filename) => {
+  ipcMain.handle("settings:watch", async (event, projectPath, filename) => {
     if (typeof projectPath !== "string" || typeof filename !== "string") {
       return { ok: false, error: "Project path and filename are required." };
     }
 
-    const filePath = join(projectPath, ".dream", filename);
-    if (!isPathInsideBase(join(projectPath, ".dream"), filePath)) {
+    const dirPath = join(projectPath, ".dream");
+    const filePath = join(dirPath, filename);
+    if (!isPathInsideBase(dirPath, filePath)) {
       return { ok: false, error: "Invalid filename." };
     }
 
     const webContentsId = event.sender.id;
     stopSettingsWatcher(webContentsId);
 
+    try {
+      await mkdir(dirPath, { recursive: true });
+    } catch {
+      return { ok: true };
+    }
+
     let debounceTimer = null;
 
     try {
-      const fsWatcher = watch(filePath, () => {
+      const fsWatcher = watch(dirPath, (_eventType, changedFile) => {
+        if (changedFile !== filename) {
+          return;
+        }
+
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }

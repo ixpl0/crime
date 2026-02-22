@@ -50,6 +50,12 @@ export const defaultToolbarConfig: ToolbarConfig = {
     },
     {
       type: "button",
+      id: "new",
+      label: "/new",
+      action: { type: "run-command", command: "/new" },
+    },
+    {
+      type: "button",
       id: "commit-push",
       label: "Коммит пуш",
       action: { type: "run-command", command: "коммит пуш" },
