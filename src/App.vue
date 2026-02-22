@@ -147,7 +147,7 @@ const terminalContainer = ref<HTMLElement | null>(null);
 const TERMINAL_INPUT_HISTORY_STORAGE_KEY = "dream-ide:terminal-input-history:v1";
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const SLASH_COMMAND_CHAR_DELAY_MS = 10;
-const SLASH_COMMAND_AFTER_PREFIX_DELAY_MS = 60;
+const SLASH_COMMAND_AFTER_SLASH_DELAY_MS = 80;
 const SLASH_COMMAND_ENTER_DELAY_MS = 60;
 const PASTE_ENTER_DELAY_MS = 100;
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
@@ -472,7 +472,7 @@ async function runTerminalCommand(command: string) {
         return;
       }
 
-      await delay(index === 0 ? SLASH_COMMAND_AFTER_PREFIX_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
+      await delay(char === "/" ? SLASH_COMMAND_AFTER_SLASH_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
     }
 
     await delay(SLASH_COMMAND_ENTER_DELAY_MS);
@@ -603,7 +603,7 @@ async function sendTextareaToTerminal() {
         return;
       }
 
-      await delay(index === 0 ? SLASH_COMMAND_AFTER_PREFIX_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
+      await delay(char === "/" ? SLASH_COMMAND_AFTER_SLASH_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
     }
 
     await delay(SLASH_COMMAND_ENTER_DELAY_MS);
