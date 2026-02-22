@@ -98,6 +98,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import "xterm/css/xterm.css";
 import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
 import { loadToolbarConfig, saveToolbarConfig } from "./toolbar/toolbar-storage";
+import { defaultToolbarConfig } from "./toolbar/default-toolbar-config";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
@@ -119,7 +120,7 @@ const PASTE_ENTER_DELAY_MS = 100;
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
-const toolbarConfig = ref<ToolbarConfig>(loadToolbarConfig());
+const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
 const isConfigEditorOpen = ref(false);
 
 let terminal: Terminal | null = null;
@@ -404,6 +405,7 @@ async function openProjectFolder() {
     const selectedPath = await window.projectApi.openFolder();
     if (selectedPath) {
       projectPath.value = selectedPath;
+      toolbarConfig.value = await loadToolbarConfig(selectedPath);
       await nextTick();
       await startTerminal(selectedPath);
     }
@@ -468,7 +470,9 @@ function sendQuickKey(data: string) {
 
 function handleConfigSave(config: ToolbarConfig) {
   toolbarConfig.value = config;
-  saveToolbarConfig(config);
+  if (projectPath.value) {
+    void saveToolbarConfig(projectPath.value, config);
+  }
   isConfigEditorOpen.value = false;
 }
 

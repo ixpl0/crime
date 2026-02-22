@@ -7,6 +7,10 @@ contextBridge.exposeInMainWorld("appMeta", {
 
 contextBridge.exposeInMainWorld("projectApi", {
   openFolder: () => ipcRenderer.invoke("project:open-folder"),
+  settings: {
+    read: (projectPath, filename) => ipcRenderer.invoke("settings:read", projectPath, filename),
+    write: (projectPath, filename, content) => ipcRenderer.invoke("settings:write", projectPath, filename, content)
+  },
   terminal: {
     start: (cwd, size) => ipcRenderer.invoke("terminal:start", cwd, size),
     runCommand: (command) => ipcRenderer.invoke("terminal:run-command", command),

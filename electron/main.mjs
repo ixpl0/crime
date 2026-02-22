@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve, normalize } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import * as pty from "node-pty";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,8 +71,16 @@ function createWindow() {
   mainWindow.loadFile(join(__dirname, "../dist/index.html"));
 }
 
+function isPathInsideBase(base, target) {
+  const normalizedBase = normalize(resolve(base));
+  const normalizedTarget = normalize(resolve(target));
+  return normalizedTarget.startsWith(normalizedBase);
+}
+
 function registerIpcHandlers() {
   ipcMain.removeHandler("project:open-folder");
+  ipcMain.removeHandler("settings:read");
+  ipcMain.removeHandler("settings:write");
   ipcMain.removeHandler("terminal:start");
   ipcMain.removeHandler("terminal:run-command");
   ipcMain.removeHandler("terminal:input");
@@ -90,6 +99,54 @@ function registerIpcHandlers() {
     }
 
     return result.filePaths[0];
+  });
+
+  ipcMain.handle("settings:read", async (_event, projectPath, filename) => {
+    if (typeof projectPath !== "string" || typeof filename !== "string") {
+      return { ok: false, error: "Project path and filename are required." };
+    }
+
+    const filePath = join(projectPath, ".dream", filename);
+    if (!isPathInsideBase(join(projectPath, ".dream"), filePath)) {
+      return { ok: false, error: "Invalid filename." };
+    }
+
+    try {
+      const content = await readFile(filePath, "utf-8");
+      return { ok: true, content };
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+        return { ok: true, content: null };
+      }
+
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to read settings file."
+      };
+    }
+  });
+
+  ipcMain.handle("settings:write", async (_event, projectPath, filename, content) => {
+    if (typeof projectPath !== "string" || typeof filename !== "string" || typeof content !== "string") {
+      return { ok: false, error: "Project path, filename and content are required." };
+    }
+
+    const dreamDir = join(projectPath, ".dream");
+    const filePath = join(dreamDir, filename);
+    if (!isPathInsideBase(dreamDir, filePath)) {
+      return { ok: false, error: "Invalid filename." };
+    }
+
+    try {
+      await mkdir(dreamDir, { recursive: true });
+      await writeFile(filePath, content, "utf-8");
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to write settings file."
+      };
+    }
   });
 
   ipcMain.handle("terminal:start", async (event, cwd, size) => {

@@ -1,7 +1,7 @@
 import { type ToolbarConfig, type ToolbarElement, type ToolbarAction, type ToolbarButton } from "../types/toolbar";
 import { defaultToolbarConfig } from "./default-toolbar-config";
 
-const STORAGE_KEY = "dream-ide:toolbar-config:v1";
+const SETTINGS_FILENAME = "toolbar.json";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -92,18 +92,14 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
   return { version: 1, elements };
 };
 
-export const loadToolbarConfig = (): ToolbarConfig => {
-  if (typeof window === "undefined") {
-    return defaultToolbarConfig;
-  }
-
+export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
+    const response = await window.projectApi.settings.read(projectPath, SETTINGS_FILENAME);
+    if (!response.ok || !response.content) {
       return defaultToolbarConfig;
     }
 
-    const parsed: unknown = JSON.parse(stored);
+    const parsed: unknown = JSON.parse(response.content);
     const config = parseToolbarConfig(parsed);
 
     return config ?? defaultToolbarConfig;
@@ -112,25 +108,24 @@ export const loadToolbarConfig = (): ToolbarConfig => {
   }
 };
 
-export const saveToolbarConfig = (config: ToolbarConfig): void => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
+export const saveToolbarConfig = async (projectPath: string, config: ToolbarConfig): Promise<void> => {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    const content = JSON.stringify(config, null, 2);
+    const response = await window.projectApi.settings.write(projectPath, SETTINGS_FILENAME, content);
+    if (!response.ok) {
+      console.error("Failed to save toolbar config:", response.error);
+    }
   } catch (error) {
     console.error("Failed to save toolbar config.", error);
   }
 };
 
-export const resetToolbarConfig = (): ToolbarConfig => {
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {
-      console.error("Failed to reset toolbar config.", error);
-    }
+export const resetToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
+  try {
+    const content = JSON.stringify(defaultToolbarConfig, null, 2);
+    await window.projectApi.settings.write(projectPath, SETTINGS_FILENAME, content);
+  } catch (error) {
+    console.error("Failed to reset toolbar config.", error);
   }
 
   return defaultToolbarConfig;

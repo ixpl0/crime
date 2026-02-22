@@ -25,8 +25,25 @@ interface TerminalApi {
   onExit: (listener: (code: number | null) => void) => () => void;
 }
 
+interface SettingsReadResponse {
+  ok: boolean;
+  content?: string | null;
+  error?: string;
+}
+
+interface SettingsWriteResponse {
+  ok: boolean;
+  error?: string;
+}
+
+interface SettingsApi {
+  read: (projectPath: string, filename: string) => Promise<SettingsReadResponse>;
+  write: (projectPath: string, filename: string, content: string) => Promise<SettingsWriteResponse>;
+}
+
 interface ProjectApi {
   openFolder: () => Promise<string | null>;
+  settings: SettingsApi;
   terminal: TerminalApi;
 }
 
