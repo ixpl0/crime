@@ -1,7 +1,10 @@
 <template>
   <dialog ref="dialogElement" class="modal" @close="$emit('close')">
     <div class="modal-box max-w-3xl">
-      <h3 class="text-lg font-bold">Настройки панели инструментов</h3>
+      <div class="flex items-baseline gap-2">
+        <h3 class="text-lg font-bold">Настройки панели инструментов</h3>
+        <span class="text-xs text-base-content/50 font-mono truncate">{{ configFilePath }}</span>
+      </div>
 
       <div class="form-control mt-4">
         <textarea
@@ -51,6 +54,7 @@ import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
 
 const props = defineProps<{
   currentConfig: ToolbarConfig;
+  configFilePath: string;
   open: boolean;
 }>();
 

@@ -429,6 +429,30 @@ async function runTerminalCommand(command: string) {
   }
 
   errorMessage.value = "";
+
+  if (isSlashCommandInput(command)) {
+    const slashCommandText = command.trimStart();
+    for (let index = 0; index < slashCommandText.length; index += 1) {
+      const char = slashCommandText[index];
+      const ok = await sendTerminalInput(char, "Не удалось отправить символ команды в терминал.");
+      if (!ok) {
+        return;
+      }
+
+      await delay(index === 0 ? SLASH_COMMAND_AFTER_PREFIX_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
+    }
+
+    await delay(SLASH_COMMAND_ENTER_DELAY_MS);
+
+    const enterOk = await sendTerminalInput("\r", "Не удалось отправить Enter в терминал.");
+    if (!enterOk) {
+      return;
+    }
+
+    focusTerminal();
+    return;
+  }
+
   try {
     const response = await window.projectApi.terminal.runCommand(command);
     if (!response.ok) {

@@ -284,7 +284,9 @@ function registerIpcHandlers() {
     }
 
     try {
-      session.process.write(`${command}\r`);
+      session.process.write(command);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      session.process.write("\r");
     } catch (error) {
       return {
         ok: false,

@@ -46,7 +46,7 @@ export const defaultToolbarConfig: ToolbarConfig = {
       type: "button",
       id: "resume",
       label: "/resume",
-      action: { type: "send-input", input: "/resume\r" },
+      action: { type: "run-command", command: "/resume" },
     },
     {
       type: "button",
