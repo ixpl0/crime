@@ -132,6 +132,7 @@
                 v-if="projectPath"
                 :project-path="projectPath"
                 :file-path="selectedFilePath"
+                :is-active="activeTab === 'files'"
               />
             </div>
           </div>

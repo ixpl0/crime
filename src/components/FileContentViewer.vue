@@ -62,6 +62,7 @@ import { computed, ref, watch } from "vue";
 const props = defineProps<{
   projectPath: string;
   filePath: string | null;
+  isActive: boolean;
 }>();
 
 type ViewerLine = GitDiffLine;
@@ -125,6 +126,10 @@ async function loadFilePreview() {
     return;
   }
 
+  if (!props.isActive) {
+    return;
+  }
+
   isLoading.value = true;
   loadError.value = "";
   diffInfoMessage.value = "";
@@ -185,7 +190,7 @@ async function loadFilePreview() {
 }
 
 watch(
-  () => [props.projectPath, props.filePath],
+  () => [props.projectPath, props.filePath, props.isActive],
   () => {
     void loadFilePreview();
   },
