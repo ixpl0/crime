@@ -258,6 +258,106 @@ function toPathKey(path) {
   return process.platform === "win32" ? normalizedPath.toLowerCase() : normalizedPath;
 }
 
+function getFileEntrySortGroup(entry) {
+  if (entry.isDirectory) {
+    return entry.isIgnored === true ? 0 : 1;
+  }
+
+  return entry.isIgnored === true ? 2 : 3;
+}
+
+function toGitRelativePath(basePath, targetPath) {
+  const relativePath = relative(basePath, targetPath).split("\\").join("/");
+  if (
+    relativePath.length === 0 ||
+    relativePath === "." ||
+    relativePath === ".." ||
+    relativePath.startsWith("../")
+  ) {
+    return null;
+  }
+
+  return relativePath;
+}
+
+async function getGitRepositoryRoot(path) {
+  let revParseResult;
+  try {
+    revParseResult = await runCommand("git", ["rev-parse", "--show-toplevel"], path);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return null;
+    }
+
+    return null;
+  }
+
+  if (revParseResult.code !== 0) {
+    return null;
+  }
+
+  const repositoryRoot = revParseResult.stdout.toString("utf-8").trim();
+  return repositoryRoot.length > 0 ? repositoryRoot : null;
+}
+
+async function getIgnoredEntryPathKeySet(dirPath, entries) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return new Set();
+  }
+
+  const repositoryRoot = await getGitRepositoryRoot(dirPath);
+  if (!repositoryRoot) {
+    return new Set();
+  }
+
+  const relativeEntryPaths = [];
+  for (const entry of entries) {
+    const relativeEntryPath = toGitRelativePath(repositoryRoot, entry.path);
+    if (relativeEntryPath) {
+      relativeEntryPaths.push(relativeEntryPath);
+    }
+  }
+
+  if (relativeEntryPaths.length === 0) {
+    return new Set();
+  }
+
+  let checkIgnoreResult;
+  try {
+    checkIgnoreResult = await runCommand(
+      "git",
+      ["-c", "core.quotepath=false", "check-ignore", "--", ...relativeEntryPaths],
+      repositoryRoot
+    );
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      return new Set();
+    }
+
+    return new Set();
+  }
+
+  if (checkIgnoreResult.code !== 0 && checkIgnoreResult.code !== 1) {
+    return new Set();
+  }
+
+  if (checkIgnoreResult.stdout.length === 0) {
+    return new Set();
+  }
+
+  const ignoredPaths = checkIgnoreResult.stdout
+    .toString("utf-8")
+    .split(/\r?\n/)
+    .filter((value) => value.length > 0);
+  const ignoredPathKeySet = new Set();
+
+  for (const ignoredPath of ignoredPaths) {
+    ignoredPathKeySet.add(toPathKey(resolve(repositoryRoot, ignoredPath)));
+  }
+
+  return ignoredPathKeySet;
+}
+
 function toLineEntries(content, type = "context") {
   const rawLines = content.split(/\r?\n/);
   if (rawLines.length > 0 && rawLines[rawLines.length - 1] === "") {
@@ -846,20 +946,27 @@ function registerIpcHandlers() {
 
     try {
       const dirents = await readdir(dirPath, { withFileTypes: true });
-      const entries = dirents
-        .map((dirent) => ({
-          name: dirent.name,
-          isDirectory: dirent.isDirectory(),
-          path: join(dirPath, dirent.name)
+      const entries = dirents.map((dirent) => ({
+        name: dirent.name,
+        isDirectory: dirent.isDirectory(),
+        path: join(dirPath, dirent.name)
+      }));
+      const ignoredEntryPathKeySet = await getIgnoredEntryPathKeySet(dirPath, entries);
+      const entriesWithIgnoredState = entries
+        .map((entry) => ({
+          ...entry,
+          isIgnored: ignoredEntryPathKeySet.has(toPathKey(entry.path))
         }))
         .sort((a, b) => {
-          if (a.isDirectory !== b.isDirectory) {
-            return a.isDirectory ? -1 : 1;
+          const groupDiff = getFileEntrySortGroup(a) - getFileEntrySortGroup(b);
+          if (groupDiff !== 0) {
+            return groupDiff;
           }
+
           return a.name.localeCompare(b.name);
         });
 
-      return { ok: true, entries };
+      return { ok: true, entries: entriesWithIgnoredState };
     } catch (error) {
       return {
         ok: false,

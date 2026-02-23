@@ -65,6 +65,7 @@ interface FileEntry {
   isDirectory: boolean;
   path: string;
   isVirtual?: boolean;
+  isIgnored?: boolean;
 }
 
 interface FilesystemReadResponse {

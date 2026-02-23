@@ -82,8 +82,13 @@ const entryStatus = computed<GitFileStatus | null>(() => {
 });
 
 const isDeletedEntry = computed(() => entryStatus.value === "deleted");
+const isIgnoredEntry = computed(() => props.entry.isIgnored === true);
 
 const buttonClasses = computed(() => {
+  if (isIgnoredEntry.value) {
+    return "opacity-[0.55]";
+  }
+
   return isDeletedEntry.value ? "opacity-90" : "";
 });
 

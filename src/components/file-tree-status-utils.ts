@@ -57,10 +57,20 @@ function addVirtualChild(
 }
 
 function sortEntries(entries: FileEntry[]) {
-  return [...entries].sort((a, b) => {
-    if (a.isDirectory !== b.isDirectory) {
-      return a.isDirectory ? -1 : 1;
+  const getSortGroup = (entry: FileEntry) => {
+    if (entry.isDirectory) {
+      return entry.isIgnored ? 0 : 1;
     }
+
+    return entry.isIgnored ? 2 : 3;
+  };
+
+  return [...entries].sort((a, b) => {
+    const groupDiff = getSortGroup(a) - getSortGroup(b);
+    if (groupDiff !== 0) {
+      return groupDiff;
+    }
+
     return a.name.localeCompare(b.name);
   });
 }
@@ -68,7 +78,7 @@ function sortEntries(entries: FileEntry[]) {
 export function buildEntryListSnapshot(entries: FileEntry[]) {
   return entries
     .map((entry) =>
-      `${entry.path}|${entry.isDirectory ? "d" : "f"}|${entry.isVirtual ? "v" : "r"}`
+      `${entry.path}|${entry.isDirectory ? "d" : "f"}|${entry.isVirtual ? "v" : "r"}|${entry.isIgnored ? "i" : "n"}`
     )
     .join("\n");
 }
