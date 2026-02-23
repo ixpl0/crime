@@ -626,23 +626,6 @@ async function sendTerminalInput(data: string, fallbackErrorMessage: string) {
   });
 }
 
-async function sendTerminalCommand(command: string, fallbackErrorMessage: string) {
-  return enqueueTerminalOperation(async () => {
-    try {
-      const response = await window.projectApi.terminal.runCommand(command);
-      if (!response.ok) {
-        errorMessage.value = response.error ?? fallbackErrorMessage;
-        return false;
-      }
-    } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : fallbackErrorMessage;
-      return false;
-    }
-
-    return true;
-  });
-}
-
 async function sendTextareaTextInput(text: string) {
   for (let index = 0; index < text.length; index += TERMINAL_INPUT_CHUNK_SIZE) {
     const chunk = text.slice(index, index + TERMINAL_INPUT_CHUNK_SIZE);
@@ -880,9 +863,23 @@ async function runTerminalCommand(command: string) {
     return;
   }
 
-  const sent = await sendTerminalCommand(command, "Failed to run command in terminal.");
-  if (!sent) {
-    errorMessage.value ||= "Failed to send command to terminal.";
+  const cleanedCommand = command.replace(/[\r\n]+$/, "");
+  if (!cleanedCommand.trim()) {
+    return;
+  }
+
+  const versionBeforeTextSend = terminalDataVersion;
+  const inputOk = await sendTextareaTextInput(cleanedCommand);
+  if (!inputOk) {
+    errorMessage.value ||= "Failed to send command text to terminal.";
+    return;
+  }
+
+  await waitForTextareaSubmitReadiness(versionBeforeTextSend);
+
+  const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
+  if (!enterOk) {
+    errorMessage.value ||= "Failed to submit command in terminal.";
     return;
   }
 

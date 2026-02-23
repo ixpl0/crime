@@ -36,6 +36,29 @@
       ]
     },
     {
+      "type": "dropdown",
+      "id": "review",
+      "label": "Ревью",
+      "items": [
+        {
+          "id": "review-dry",
+          "label": "DRY ревью",
+          "action": {
+            "type": "run-command",
+            "command": "DRY ревью (поиск дублей и единый источник истины в проекте)"
+          }
+        },
+        {
+          "id": "review-unused",
+          "label": "Неиспользуемый мусор",
+          "action": {
+            "type": "run-command",
+            "command": "Ревью на поиск неиспользуемого мусора в проекте"
+          }
+        }
+      ]
+    },
+    {
       "type": "button",
       "id": "ctrl-c",
       "label": "Ctrl+C",
