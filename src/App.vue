@@ -327,9 +327,185 @@ function navigateTerminalInputHistory(direction: -1 | 1) {
   setTerminalInputText(terminalInputHistory.value[nextIndex]);
 }
 
+function getCsiModifierValue(event: KeyboardEvent) {
+  let modifier = 1;
+  if (event.shiftKey) {
+    modifier += 1;
+  }
+  if (event.altKey) {
+    modifier += 2;
+  }
+  if (event.ctrlKey) {
+    modifier += 4;
+  }
+  return modifier;
+}
+
+function getCtrlCharacterInput(event: KeyboardEvent) {
+  if (/^Key[A-Z]$/.test(event.code)) {
+    const code = event.code.charCodeAt(3) - 64;
+    return String.fromCharCode(code);
+  }
+
+  switch (event.code) {
+    case "Digit2":
+    case "Backquote":
+    case "Space":
+      return "\u0000";
+    case "Digit3":
+    case "BracketLeft":
+      return "\u001b";
+    case "Digit4":
+    case "Backslash":
+      return "\u001c";
+    case "Digit5":
+    case "BracketRight":
+      return "\u001d";
+    case "Digit6":
+      return "\u001e";
+    case "Digit7":
+    case "Minus":
+    case "Slash":
+      return "\u001f";
+    case "Digit8":
+      return "\u007f";
+    default:
+      return null;
+  }
+}
+
+function getCtrlSpecialKeyInput(event: KeyboardEvent) {
+  const modifier = getCsiModifierValue(event);
+  switch (event.key) {
+    case "ArrowUp":
+      return `\u001b[1;${String(modifier)}A`;
+    case "ArrowDown":
+      return `\u001b[1;${String(modifier)}B`;
+    case "ArrowRight":
+      return `\u001b[1;${String(modifier)}C`;
+    case "ArrowLeft":
+      return `\u001b[1;${String(modifier)}D`;
+    case "Home":
+      return `\u001b[1;${String(modifier)}H`;
+    case "End":
+      return `\u001b[1;${String(modifier)}F`;
+    case "Insert":
+      return `\u001b[2;${String(modifier)}~`;
+    case "Delete":
+      return `\u001b[3;${String(modifier)}~`;
+    case "PageUp":
+      return `\u001b[5;${String(modifier)}~`;
+    case "PageDown":
+      return `\u001b[6;${String(modifier)}~`;
+    case "F1":
+      return `\u001b[1;${String(modifier)}P`;
+    case "F2":
+      return `\u001b[1;${String(modifier)}Q`;
+    case "F3":
+      return `\u001b[1;${String(modifier)}R`;
+    case "F4":
+      return `\u001b[1;${String(modifier)}S`;
+    case "F5":
+      return `\u001b[15;${String(modifier)}~`;
+    case "F6":
+      return `\u001b[17;${String(modifier)}~`;
+    case "F7":
+      return `\u001b[18;${String(modifier)}~`;
+    case "F8":
+      return `\u001b[19;${String(modifier)}~`;
+    case "F9":
+      return `\u001b[20;${String(modifier)}~`;
+    case "F10":
+      return `\u001b[21;${String(modifier)}~`;
+    case "F11":
+      return `\u001b[23;${String(modifier)}~`;
+    case "F12":
+      return `\u001b[24;${String(modifier)}~`;
+    case "Enter":
+      return "\r";
+    case "Backspace":
+      return "\u007f";
+    case "Escape":
+    case "Esc":
+      return "\u001b";
+    default:
+      return null;
+  }
+}
+
+function getCtrlKeyInput(event: KeyboardEvent) {
+  const controlCharacter = getCtrlCharacterInput(event);
+  if (controlCharacter !== null) {
+    return event.altKey ? `\u001b${controlCharacter}` : controlCharacter;
+  }
+
+  return getCtrlSpecialKeyInput(event);
+}
+
+function getEmptyTextareaPassthroughInput(
+  event: KeyboardEvent,
+  textarea: HTMLTextAreaElement
+) {
+  if (textarea.value.trim().length > 0 || event.isComposing || event.metaKey) {
+    return null;
+  }
+
+  if (event.ctrlKey) {
+    return getCtrlKeyInput(event);
+  }
+
+  if (event.altKey || event.shiftKey) {
+    return null;
+  }
+
+  switch (event.key) {
+    case "Escape":
+    case "Esc":
+      return "\u001b";
+    case "Enter":
+      return "\r";
+    case "Backspace":
+      return "\u007f";
+    case "Delete":
+      return "\u001b[3~";
+    default:
+      return null;
+  }
+}
+
 function handleTextareaKeydown(event: KeyboardEvent) {
   const textarea =
     event.currentTarget instanceof HTMLTextAreaElement ? event.currentTarget : null;
+
+  if (textarea && !event.isComposing && (event.key === "Escape" || event.key === "Esc")) {
+    event.preventDefault();
+    void sendTerminalInput("\u001b", "Failed to send Esc to terminal.");
+    return;
+  }
+
+  if (
+    textarea &&
+    !event.isComposing &&
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    event.code === "KeyC" &&
+    textarea.selectionStart === textarea.selectionEnd
+  ) {
+    const ctrlCInput = getCtrlKeyInput(event) ?? "\u0003";
+    event.preventDefault();
+    void sendTerminalInput(ctrlCInput, "Failed to send Ctrl+C to terminal.");
+    return;
+  }
+
+  if (textarea) {
+    const passthroughInput = getEmptyTextareaPassthroughInput(event, textarea);
+    if (passthroughInput !== null) {
+      event.preventDefault();
+      void sendTerminalInput(passthroughInput, "Failed to send keyboard input to terminal.");
+      return;
+    }
+  }
 
   if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
     event.preventDefault();
