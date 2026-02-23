@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, globalShortcut, ipcMain, nativeTheme } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, normalize, relative } from "node:path";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
@@ -314,11 +314,35 @@ function isActiveSession(webContentsId, shellProcess) {
   return session?.process === shellProcess;
 }
 
+function getThemeIconPath() {
+  const isDarkTheme = nativeTheme.shouldUseDarkColors;
+  if (process.platform === "win32") {
+    return join(__dirname, "assets", isDarkTheme ? "icon-dark.ico" : "icon-light.ico");
+  }
+
+  return join(__dirname, "assets", isDarkTheme ? "icon-dark.png" : "icon-light.png");
+}
+
+function applyThemeIcon(win) {
+  if (win.isDestroyed()) {
+    return;
+  }
+
+  const iconPath = getThemeIconPath();
+  if (process.platform === "darwin") {
+    app.dock?.setIcon(iconPath);
+    return;
+  }
+
+  win.setIcon(iconPath);
+}
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     title: "Dream IDE",
     width: 1280,
     height: 800,
+    icon: getThemeIconPath(),
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -331,6 +355,8 @@ function createWindow() {
     stopTerminalSession(webContentsId);
     stopSettingsWatcher(webContentsId);
   });
+
+  applyThemeIcon(mainWindow);
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
@@ -860,6 +886,12 @@ app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
   registerGlobalQuickKeys();
+  nativeTheme.on("updated", () => {
+    const windows = BrowserWindow.getAllWindows();
+    for (const win of windows) {
+      applyThemeIcon(win);
+    }
+  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
