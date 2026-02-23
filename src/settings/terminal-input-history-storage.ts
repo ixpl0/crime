@@ -1,12 +1,15 @@
+import {
+  isRecord,
+  loadJsonProjectSetting,
+  saveJsonProjectSetting
+} from "./settings-storage-helpers";
+
 export const TERMINAL_INPUT_HISTORY_FILENAME = "terminal-input-history.json";
 
 interface TerminalInputHistoryPayload {
   version: 1;
   entries: string[];
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const toHistoryEntries = (value: unknown, limit: number): string[] => {
   if (Array.isArray(value)) {
@@ -28,20 +31,12 @@ export const loadTerminalInputHistory = async (
   projectPath: string,
   limit: number
 ): Promise<string[]> => {
-  try {
-    const response = await window.projectApi.settings.read(
-      projectPath,
-      TERMINAL_INPUT_HISTORY_FILENAME
-    );
-    if (!response.ok || !response.content) {
-      return [];
-    }
-
-    const parsed: unknown = JSON.parse(response.content);
-    return toHistoryEntries(parsed, limit);
-  } catch {
-    return [];
-  }
+  return loadJsonProjectSetting(
+    projectPath,
+    TERMINAL_INPUT_HISTORY_FILENAME,
+    (value) => toHistoryEntries(value, limit),
+    []
+  );
 };
 
 export const saveTerminalInputHistory = async (
@@ -54,17 +49,10 @@ export const saveTerminalInputHistory = async (
     entries: entries.slice(-limit)
   };
 
-  try {
-    const content = JSON.stringify(payload, null, 2);
-    const response = await window.projectApi.settings.write(
-      projectPath,
-      TERMINAL_INPUT_HISTORY_FILENAME,
-      content
-    );
-    if (!response.ok) {
-      console.error("Failed to save terminal input history:", response.error);
-    }
-  } catch (error) {
-    console.error("Failed to save terminal input history.", error);
-  }
+  await saveJsonProjectSetting(
+    projectPath,
+    TERMINAL_INPUT_HISTORY_FILENAME,
+    payload,
+    "terminal input history"
+  );
 };

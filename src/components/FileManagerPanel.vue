@@ -40,6 +40,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import FileTreeNode from "./FileTreeNode.vue";
 import {
+  buildEntryListSnapshot,
   buildDeletedChildrenByParent,
   mergeDirectoryEntries,
   toGitStatusMap,
@@ -103,14 +104,6 @@ function normalizeGitState(response: GitStatusResponse) {
   };
 }
 
-function buildEntriesSnapshot(value: FileEntry[]) {
-  return value
-    .map((entry) =>
-      `${entry.path}|${entry.isDirectory ? "d" : "f"}|${entry.isVirtual ? "v" : "r"}`
-    )
-    .join("\n");
-}
-
 function buildGitStatusesSnapshot(value: Record<string, GitFileStatus>) {
   const paths = Object.keys(value).sort();
   return paths.map((path) => `${path}:${value[path]}`).join("\n");
@@ -142,7 +135,7 @@ function buildTreeSnapshot(payload: {
     props.projectPath,
     payload.loadError,
     payload.infoMessage,
-    buildEntriesSnapshot(payload.entries),
+    buildEntryListSnapshot(payload.entries),
     buildGitStatusesSnapshot(payload.statuses),
     buildDeletedChildrenSnapshot(payload.deletedChildren)
   ].join("\n---\n");
@@ -154,7 +147,7 @@ function buildStructureSnapshot(payload: {
 }) {
   return [
     props.projectPath,
-    buildEntriesSnapshot(payload.entries),
+    buildEntryListSnapshot(payload.entries),
     buildDeletedChildrenSnapshot(payload.deletedChildren)
   ].join("\n---\n");
 }

@@ -68,7 +68,7 @@
 
           <ToolbarConfigEditor
             :current-config="toolbarConfig"
-            :config-file-path="`${projectPath}/.ide/${TOOLBAR_CONFIG_FILENAME}`"
+            :config-file-path="`${projectPath}/${settingsDirectoryName}/${TOOLBAR_CONFIG_FILENAME}`"
             :open="isToolbarConfigEditorOpen"
             @save="handleToolbarConfigSave"
             @close="isToolbarConfigEditorOpen = false"
@@ -76,7 +76,7 @@
 
           <ProjectSettingsEditor
             :current-settings="projectSettings"
-            :config-file-path="`${projectPath}/.ide/${PROJECT_SETTINGS_FILENAME}`"
+            :config-file-path="`${projectPath}/${settingsDirectoryName}/${PROJECT_SETTINGS_FILENAME}`"
             :open="isProjectSettingsEditorOpen"
             @save="handleProjectSettingsSave"
             @close="isProjectSettingsEditorOpen = false"
@@ -114,15 +114,24 @@
                 </div>
 
                 <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
-                  <button v-for="n in 4" :key="`num-${String(n)}`" type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey(String(n))">{{ n }}</button>
-                  <span />
-                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[A')"><ArrowUp :size="14" /></button>
-                  <span />
-                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b')">Esc</button>
-                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[D')"><ArrowLeft :size="14" /></button>
-                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[B')"><ArrowDown :size="14" /></button>
-                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\x1b[C')"><ArrowRight :size="14" /></button>
-                  <button type="button" class="btn btn-sm min-w-0 px-2" :disabled="!isTerminalReady" @click="sendQuickKey('\r')"><CornerDownLeft :size="14" /></button>
+                  <template v-for="(quickKey, index) in quickKeyGridSlots" :key="`quick-key-${index}`">
+                    <button
+                      v-if="quickKey"
+                      type="button"
+                      class="btn btn-sm min-w-0 px-2"
+                      :disabled="!isTerminalReady"
+                      :title="quickKey.accelerator"
+                      @click="sendQuickKey(quickKey.input)"
+                    >
+                      <ArrowUp v-if="quickKey.icon === 'arrow-up'" :size="14" />
+                      <ArrowDown v-else-if="quickKey.icon === 'arrow-down'" :size="14" />
+                      <ArrowLeft v-else-if="quickKey.icon === 'arrow-left'" :size="14" />
+                      <ArrowRight v-else-if="quickKey.icon === 'arrow-right'" :size="14" />
+                      <CornerDownLeft v-else-if="quickKey.icon === 'enter'" :size="14" />
+                      <template v-else>{{ quickKey.label }}</template>
+                    </button>
+                    <span v-else />
+                  </template>
                 </div>
               </form>
             </div>
@@ -180,6 +189,20 @@ import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import FileContentViewer from "./components/FileContentViewer.vue";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, Settings } from "lucide-vue-next";
+
+const settingsDirectoryName = window.projectApi.settings.directoryName;
+const QUICK_KEY_GRID_SIZE = 12;
+const quickKeyGridSlots: Array<QuickKeyBinding | null> = Array.from(
+  { length: QUICK_KEY_GRID_SIZE },
+  () => null
+);
+for (const quickKey of window.projectApi.quickKeys) {
+  if (quickKey.gridIndex < 1 || quickKey.gridIndex > QUICK_KEY_GRID_SIZE) {
+    continue;
+  }
+
+  quickKeyGridSlots[quickKey.gridIndex - 1] = quickKey;
+}
 
 const isOpening = ref(false);
 const isTerminalReady = ref(false);
@@ -586,10 +609,6 @@ function getSlashCommandText(text: string) {
   return trimmedStart;
 }
 
-function isSlashCommandInput(text: string) {
-  return getSlashCommandText(text) !== null;
-}
-
 function enqueueTerminalOperation<T>(operation: () => Promise<T>) {
   const queuedOperation = terminalInputQueue.then(operation, operation);
   terminalInputQueue = queuedOperation.then(
@@ -716,6 +735,51 @@ async function sendSlashCommand(slashCommandText: string) {
   return sendTerminalInput("\r", "Failed to send Enter to terminal.");
 }
 
+type SubmitTerminalTextResult = "submitted" | "empty" | "failed";
+
+interface SubmitTerminalTextMessages {
+  sendSlash: string;
+  sendText: string;
+  submit: string;
+}
+
+async function submitTerminalText(
+  rawText: string,
+  messages: SubmitTerminalTextMessages
+): Promise<SubmitTerminalTextResult> {
+  const slashCommandText = getSlashCommandText(rawText);
+  if (slashCommandText) {
+    const ok = await sendSlashCommand(slashCommandText);
+    if (!ok) {
+      errorMessage.value ||= messages.sendSlash;
+      return "failed";
+    }
+
+    return "submitted";
+  }
+
+  const cleanedText = rawText.replace(/[\r\n]+$/, "");
+  if (!cleanedText.trim()) {
+    return "empty";
+  }
+
+  const versionBeforeTextSend = terminalDataVersion;
+  const inputOk = await sendTextareaTextInput(cleanedText);
+  if (!inputOk) {
+    errorMessage.value ||= messages.sendText;
+    return "failed";
+  }
+
+  await waitForTextareaSubmitReadiness(versionBeforeTextSend);
+
+  const enterOk = await sendTerminalInput("\r", messages.submit);
+  if (!enterOk) {
+    return "failed";
+  }
+
+  return "submitted";
+}
+
 function initializeTerminalView() {
   if (terminal || !terminalContainer.value) {
     return;
@@ -838,41 +902,12 @@ async function runTerminalCommand(command: string) {
   }
 
   errorMessage.value = "";
-
-  if (isSlashCommandInput(command)) {
-    const slashCommandText = getSlashCommandText(command);
-    if (!slashCommandText) {
-      errorMessage.value = "Failed to normalize slash command.";
-      return;
-    }
-
-    const sent = await sendSlashCommand(slashCommandText);
-    if (!sent) {
-      errorMessage.value ||= "Failed to send slash command to terminal.";
-      return;
-    }
-
-    focusTerminal();
-    return;
-  }
-
-  const cleanedCommand = command.replace(/[\r\n]+$/, "");
-  if (!cleanedCommand.trim()) {
-    return;
-  }
-
-  const versionBeforeTextSend = terminalDataVersion;
-  const inputOk = await sendTextareaTextInput(cleanedCommand);
-  if (!inputOk) {
-    errorMessage.value ||= "Failed to send command text to terminal.";
-    return;
-  }
-
-  await waitForTextareaSubmitReadiness(versionBeforeTextSend);
-
-  const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
-  if (!enterOk) {
-    errorMessage.value ||= "Failed to submit command in terminal.";
+  const result = await submitTerminalText(command, {
+    sendSlash: "Failed to send slash command to terminal.",
+    sendText: "Failed to send command text to terminal.",
+    submit: "Failed to submit command in terminal."
+  });
+  if (result !== "submitted") {
     return;
   }
 
@@ -976,27 +1011,13 @@ async function sendTextareaToTerminal() {
   }
 
   errorMessage.value = "";
-
-  const slashCommandText = getSlashCommandText(text);
-  if (slashCommandText) {
-    const ok = await sendSlashCommand(slashCommandText);
-    if (!ok) {
-      return;
-    }
-  } else {
-    const cleanedText = text.replace(/[\r\n]+$/, "");
-    const versionBeforeTextSend = terminalDataVersion;
-    const inputOk = await sendTextareaTextInput(cleanedText);
-    if (!inputOk) {
-      return;
-    }
-
-    await waitForTextareaSubmitReadiness(versionBeforeTextSend);
-
-    const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
-    if (!enterOk) {
-      return;
-    }
+  const result = await submitTerminalText(text, {
+    sendSlash: "Failed to send slash command to terminal.",
+    sendText: "Failed to send input to terminal.",
+    submit: "Failed to send Enter to terminal."
+  });
+  if (result !== "submitted") {
+    return;
   }
 
   appendTerminalInputHistory(text);

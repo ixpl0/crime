@@ -48,7 +48,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { Folder, FolderOpen, File as FileIcon } from "lucide-vue-next";
-import { mergeDirectoryEntries, type DeletedChildrenByParent } from "./file-tree-status-utils";
+import {
+  buildEntryListSnapshot,
+  mergeDirectoryEntries,
+  type DeletedChildrenByParent
+} from "./file-tree-status-utils";
 
 const props = defineProps<{
   entry: FileEntry;
@@ -123,15 +127,6 @@ const fileIconClasses = computed(() => {
   return "text-base-content/50";
 });
 
-function buildChildrenSnapshot(value: FileEntry[]) {
-  return value
-    .map(
-      (entry) =>
-        `${entry.path}|${entry.isDirectory ? "d" : "f"}|${entry.isVirtual ? "v" : "r"}`
-    )
-    .join("\n");
-}
-
 async function loadChildren(options: { forceReload?: boolean; silent?: boolean } = {}) {
   if (!props.entry.isDirectory) {
     return;
@@ -142,7 +137,7 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
 
   if (props.entry.isVirtual) {
     const nextChildren = mergeDirectoryEntries([], virtualChildren);
-    const nextSnapshot = buildChildrenSnapshot(nextChildren);
+    const nextSnapshot = buildEntryListSnapshot(nextChildren);
     if (nextSnapshot !== lastChildrenSnapshot) {
       lastChildrenSnapshot = nextSnapshot;
       children.value = nextChildren;
@@ -169,7 +164,7 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
   if (!response.ok) {
     if (virtualChildren.length > 0) {
       const nextChildren = mergeDirectoryEntries([], virtualChildren);
-      const nextSnapshot = buildChildrenSnapshot(nextChildren);
+      const nextSnapshot = buildEntryListSnapshot(nextChildren);
       if (nextSnapshot !== lastChildrenSnapshot) {
         lastChildrenSnapshot = nextSnapshot;
         children.value = nextChildren;
@@ -185,7 +180,7 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
   }
 
   const nextChildren = mergeDirectoryEntries(response.entries ?? [], virtualChildren);
-  const nextSnapshot = buildChildrenSnapshot(nextChildren);
+  const nextSnapshot = buildEntryListSnapshot(nextChildren);
   if (nextSnapshot !== lastChildrenSnapshot) {
     lastChildrenSnapshot = nextSnapshot;
     children.value = nextChildren;

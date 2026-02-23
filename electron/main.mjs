@@ -5,18 +5,21 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { watch, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import * as pty from "node-pty";
+import ipcChannelsModule from "./ipc-channels.cjs";
+import settingsConstantsModule from "./settings-constants.cjs";
+import quickKeyBindingsModule from "./quick-key-bindings.cjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const terminalSessions = new Map();
 const settingsWatchers = new Map();
+const { IPC_CHANNELS } = ipcChannelsModule;
+const { SETTINGS_DIRNAME, LEGACY_SETTINGS_DIRNAME } = settingsConstantsModule;
+const { quickKeyBindings } = quickKeyBindingsModule;
 
 const SETTINGS_WATCH_DEBOUNCE_MS = 300;
-const TERMINAL_COMMAND_CHUNK_SIZE = 2048;
 const WINDOW_STATE_FILENAME = "window-state.json";
 const WINDOW_STATE_SAVE_DEBOUNCE_MS = 250;
-const SETTINGS_DIRNAME = ".ide";
-const LEGACY_SETTINGS_DIRNAME = ".dream";
 const DEFAULT_WINDOW_WIDTH = 1280;
 const DEFAULT_WINDOW_HEIGHT = 800;
 const GIT_STATUS_PRIORITY = {
@@ -185,20 +188,6 @@ function runCommand(command, args, cwd) {
       });
     });
   });
-}
-
-function writeTerminalCommand(shellProcess, command) {
-  if (command.length <= TERMINAL_COMMAND_CHUNK_SIZE) {
-    shellProcess.write(command);
-    shellProcess.write("\r");
-    return;
-  }
-
-  for (let index = 0; index < command.length; index += TERMINAL_COMMAND_CHUNK_SIZE) {
-    shellProcess.write(command.slice(index, index + TERMINAL_COMMAND_CHUNK_SIZE));
-  }
-
-  shellProcess.write("\r");
 }
 
 function getGitStatusKind(x, y) {
@@ -578,22 +567,21 @@ function getLegacySettingsDirPath(projectPath) {
 }
 
 function registerIpcHandlers() {
-  ipcMain.removeHandler("project:open-folder");
-  ipcMain.removeHandler("settings:read");
-  ipcMain.removeHandler("settings:write");
-  ipcMain.removeHandler("settings:watch");
-  ipcMain.removeHandler("settings:unwatch");
-  ipcMain.removeHandler("terminal:start");
-  ipcMain.removeHandler("terminal:run-command");
-  ipcMain.removeHandler("terminal:input");
-  ipcMain.removeHandler("terminal:resize");
-  ipcMain.removeHandler("terminal:stop");
-  ipcMain.removeHandler("filesystem:read-directory");
-  ipcMain.removeHandler("filesystem:read-file");
-  ipcMain.removeHandler("git:status");
-  ipcMain.removeHandler("git:file-diff");
+  ipcMain.removeHandler(IPC_CHANNELS.projectOpenFolder);
+  ipcMain.removeHandler(IPC_CHANNELS.settingsRead);
+  ipcMain.removeHandler(IPC_CHANNELS.settingsWrite);
+  ipcMain.removeHandler(IPC_CHANNELS.settingsWatch);
+  ipcMain.removeHandler(IPC_CHANNELS.settingsUnwatch);
+  ipcMain.removeHandler(IPC_CHANNELS.terminalStart);
+  ipcMain.removeHandler(IPC_CHANNELS.terminalInput);
+  ipcMain.removeHandler(IPC_CHANNELS.terminalResize);
+  ipcMain.removeHandler(IPC_CHANNELS.terminalStop);
+  ipcMain.removeHandler(IPC_CHANNELS.filesystemReadDirectory);
+  ipcMain.removeHandler(IPC_CHANNELS.filesystemReadFile);
+  ipcMain.removeHandler(IPC_CHANNELS.gitStatus);
+  ipcMain.removeHandler(IPC_CHANNELS.gitFileDiff);
 
-  ipcMain.handle("project:open-folder", async (event) => {
+  ipcMain.handle(IPC_CHANNELS.projectOpenFolder, async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
     const result = await dialog.showOpenDialog(win, {
       title: "Open Project Folder",
@@ -607,7 +595,7 @@ function registerIpcHandlers() {
     return result.filePaths[0];
   });
 
-  ipcMain.handle("settings:read", async (_event, projectPath, filename) => {
+  ipcMain.handle(IPC_CHANNELS.settingsRead, async (_event, projectPath, filename) => {
     if (typeof projectPath !== "string" || typeof filename !== "string") {
       return { ok: false, error: "Project path and filename are required." };
     }
@@ -657,7 +645,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("settings:write", async (_event, projectPath, filename, content) => {
+  ipcMain.handle(IPC_CHANNELS.settingsWrite, async (_event, projectPath, filename, content) => {
     if (typeof projectPath !== "string" || typeof filename !== "string" || typeof content !== "string") {
       return { ok: false, error: "Project path, filename and content are required." };
     }
@@ -680,7 +668,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("settings:watch", async (event, projectPath, filename) => {
+  ipcMain.handle(IPC_CHANNELS.settingsWatch, async (event, projectPath, filename) => {
     if (typeof projectPath !== "string" || typeof filename !== "string") {
       return { ok: false, error: "Project path and filename are required." };
     }
@@ -732,7 +720,7 @@ function registerIpcHandlers() {
           pendingFilename = null;
           debounceTimer = null;
           if (!event.sender.isDestroyed() && changedName) {
-            event.sender.send("settings:file-changed", changedName);
+            event.sender.send(IPC_CHANNELS.settingsFileChanged, changedName);
           }
         }, SETTINGS_WATCH_DEBOUNCE_MS);
       });
@@ -748,12 +736,12 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("settings:unwatch", (event) => {
+  ipcMain.handle(IPC_CHANNELS.settingsUnwatch, (event) => {
     stopSettingsWatcher(event.sender.id);
     return { ok: true };
   });
 
-  ipcMain.handle("terminal:start", async (event, cwd, size) => {
+  ipcMain.handle(IPC_CHANNELS.terminalStart, async (event, cwd, size) => {
     if (!cwd || typeof cwd !== "string") {
       return { ok: false, error: "Project path is required." };
     }
@@ -800,7 +788,7 @@ function registerIpcHandlers() {
         return;
       }
 
-      sendTerminalEvent(event.sender, "terminal:data", data);
+      sendTerminalEvent(event.sender, IPC_CHANNELS.terminalData, data);
     });
 
     shellProcess.onExit(({ exitCode }) => {
@@ -809,35 +797,13 @@ function registerIpcHandlers() {
       }
 
       terminalSessions.delete(webContentsId);
-      sendTerminalEvent(event.sender, "terminal:exit", exitCode ?? null);
+      sendTerminalEvent(event.sender, IPC_CHANNELS.terminalExit, exitCode ?? null);
     });
 
     return { ok: true };
   });
 
-  ipcMain.handle("terminal:run-command", async (event, command) => {
-    if (!command || typeof command !== "string") {
-      return { ok: false, error: "Command is required." };
-    }
-
-    const session = terminalSessions.get(event.sender.id);
-    if (!session) {
-      return { ok: false, error: "Terminal session is not running." };
-    }
-
-    try {
-      writeTerminalCommand(session.process, command);
-    } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to write command."
-      };
-    }
-
-    return { ok: true };
-  });
-
-  ipcMain.handle("terminal:input", async (event, data) => {
+  ipcMain.handle(IPC_CHANNELS.terminalInput, async (event, data) => {
     if (typeof data !== "string") {
       return { ok: false, error: "Input must be a string." };
     }
@@ -859,7 +825,7 @@ function registerIpcHandlers() {
     return { ok: true };
   });
 
-  ipcMain.handle("terminal:resize", async (event, size) => {
+  ipcMain.handle(IPC_CHANNELS.terminalResize, async (event, size) => {
     const session = terminalSessions.get(event.sender.id);
     if (!session) {
       return { ok: false, error: "Terminal session is not running." };
@@ -896,12 +862,12 @@ function registerIpcHandlers() {
     return { ok: true };
   });
 
-  ipcMain.handle("terminal:stop", async (event) => {
+  ipcMain.handle(IPC_CHANNELS.terminalStop, async (event) => {
     stopTerminalSession(event.sender.id);
     return { ok: true };
   });
 
-  ipcMain.handle("filesystem:read-directory", async (_event, dirPath) => {
+  ipcMain.handle(IPC_CHANNELS.filesystemReadDirectory, async (_event, dirPath) => {
     if (!dirPath || typeof dirPath !== "string") {
       return { ok: false, error: "Directory path is required." };
     }
@@ -931,7 +897,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("filesystem:read-file", async (_event, projectPath, filePath) => {
+  ipcMain.handle(IPC_CHANNELS.filesystemReadFile, async (_event, projectPath, filePath) => {
     if (typeof projectPath !== "string" || typeof filePath !== "string") {
       return { ok: false, error: "Project path and file path are required." };
     }
@@ -952,7 +918,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle("git:file-diff", async (_event, projectPath, filePath) => {
+  ipcMain.handle(IPC_CHANNELS.gitFileDiff, async (_event, projectPath, filePath) => {
     if (typeof projectPath !== "string" || typeof filePath !== "string") {
       return { ok: false, error: "Project path and file path are required." };
     }
@@ -1071,7 +1037,7 @@ function registerIpcHandlers() {
     };
   });
 
-  ipcMain.handle("git:status", async (_event, projectPath) => {
+  ipcMain.handle(IPC_CHANNELS.gitStatus, async (_event, projectPath) => {
     if (!projectPath || typeof projectPath !== "string") {
       return { ok: false, error: "Project path is required." };
     }
@@ -1080,26 +1046,13 @@ function registerIpcHandlers() {
   });
 }
 
-const globalQuickKeyBindings = [
-  { accelerator: "CommandOrControl+Alt+Shift+1", input: "1" },
-  { accelerator: "CommandOrControl+Alt+Shift+2", input: "2" },
-  { accelerator: "CommandOrControl+Alt+Shift+3", input: "3" },
-  { accelerator: "CommandOrControl+Alt+Shift+4", input: "4" },
-  { accelerator: "CommandOrControl+Alt+Shift+Up", input: "\x1b[A" },
-  { accelerator: "CommandOrControl+Alt+Shift+Down", input: "\x1b[B" },
-  { accelerator: "CommandOrControl+Alt+Shift+Left", input: "\x1b[D" },
-  { accelerator: "CommandOrControl+Alt+Shift+Right", input: "\x1b[C" },
-  { accelerator: "CommandOrControl+Alt+Shift+E", input: "\x1b" },
-  { accelerator: "CommandOrControl+Alt+Shift+Enter", input: "\r" }
-];
-
 function registerGlobalQuickKeys() {
-  for (const binding of globalQuickKeyBindings) {
+  for (const binding of quickKeyBindings) {
     globalShortcut.register(binding.accelerator, () => {
       const windows = BrowserWindow.getAllWindows();
       for (const win of windows) {
         if (!win.isDestroyed()) {
-          win.webContents.send("global:quick-key", binding.input);
+          win.webContents.send(IPC_CHANNELS.globalQuickKey, binding.input);
         }
       }
     });

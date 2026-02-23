@@ -1,4 +1,9 @@
 import { type ProjectSettings, type SlashCommandSettings } from "../types/project-settings";
+import {
+  isRecord,
+  loadJsonProjectSetting,
+  saveJsonProjectSetting
+} from "./settings-storage-helpers";
 
 export const PROJECT_SETTINGS_FILENAME = "settings.json";
 
@@ -13,9 +18,6 @@ export const defaultProjectSettings: ProjectSettings = {
     dataPollIntervalMs: 15
   }
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isNonNegativeFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0;
@@ -66,35 +68,17 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
 };
 
 export const loadProjectSettings = async (projectPath: string): Promise<ProjectSettings> => {
-  try {
-    const response = await window.projectApi.settings.read(projectPath, PROJECT_SETTINGS_FILENAME);
-    if (!response.ok || !response.content) {
-      return defaultProjectSettings;
-    }
-
-    const parsed: unknown = JSON.parse(response.content);
-    const config = parseProjectSettings(parsed);
-    return config ?? defaultProjectSettings;
-  } catch {
-    return defaultProjectSettings;
-  }
+  return loadJsonProjectSetting(
+    projectPath,
+    PROJECT_SETTINGS_FILENAME,
+    parseProjectSettings,
+    defaultProjectSettings
+  );
 };
 
 export const saveProjectSettings = async (
   projectPath: string,
   settings: ProjectSettings
 ): Promise<void> => {
-  try {
-    const content = JSON.stringify(settings, null, 2);
-    const response = await window.projectApi.settings.write(
-      projectPath,
-      PROJECT_SETTINGS_FILENAME,
-      content
-    );
-    if (!response.ok) {
-      console.error("Failed to save project settings:", response.error);
-    }
-  } catch (error) {
-    console.error("Failed to save project settings.", error);
-  }
+  await saveJsonProjectSetting(projectPath, PROJECT_SETTINGS_FILENAME, settings, "project settings");
 };

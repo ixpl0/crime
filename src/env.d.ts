@@ -17,7 +17,6 @@ interface TerminalSize {
 
 interface TerminalApi {
   start: (cwd: string, size?: TerminalSize) => Promise<TerminalResponse>;
-  runCommand: (command: string) => Promise<TerminalResponse>;
   input: (data: string) => Promise<TerminalResponse>;
   resize: (size: TerminalSize) => Promise<TerminalResponse>;
   stop: () => Promise<TerminalResponse>;
@@ -42,11 +41,23 @@ interface SettingsWatchResponse {
 }
 
 interface SettingsApi {
+  directoryName: string;
   read: (projectPath: string, filename: string) => Promise<SettingsReadResponse>;
   write: (projectPath: string, filename: string, content: string) => Promise<SettingsWriteResponse>;
   watch: (projectPath: string, filename: string) => Promise<SettingsWatchResponse>;
   unwatch: () => Promise<SettingsWatchResponse>;
   onFileChanged: (listener: (filename: string) => void) => () => void;
+}
+
+type QuickKeyIcon = "arrow-up" | "arrow-down" | "arrow-left" | "arrow-right" | "enter";
+
+interface QuickKeyBinding {
+  id: string;
+  accelerator: string;
+  input: string;
+  label: string;
+  icon: QuickKeyIcon | null;
+  gridIndex: number;
 }
 
 interface FileEntry {
@@ -110,6 +121,7 @@ interface GitApi {
 }
 
 interface ProjectApi {
+  quickKeys: readonly QuickKeyBinding[];
   openFolder: () => Promise<string | null>;
   settings: SettingsApi;
   terminal: TerminalApi;

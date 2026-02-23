@@ -1,58 +1,24 @@
 <template>
-  <dialog ref="dialogElement" class="modal" @close="$emit('close')">
-    <div class="modal-box max-w-3xl">
-      <div class="flex items-baseline gap-2">
-        <h3 class="text-lg font-bold">Настройки панели инструментов</h3>
-        <span class="text-xs text-base-content/50 font-mono truncate">{{ configFilePath }}</span>
-      </div>
-
-      <div class="form-control mt-4">
-        <textarea
-          v-model="jsonText"
-          class="textarea textarea-bordered font-mono text-sm h-96 w-full resize-y"
-          spellcheck="false"
-          @input="validateJson"
-        />
-      </div>
-
-      <div v-if="validationError" class="alert alert-error mt-2 text-sm">
-        <span>{{ validationError }}</span>
-      </div>
-
-      <div v-if="!validationError && isDirty" class="alert alert-success mt-2 text-sm">
-        <span>JSON валиден</span>
-      </div>
-
-      <div class="modal-action">
-        <button class="btn btn-ghost" @click="resetToDefault">
-          Сбросить
-        </button>
-        <div class="flex-1" />
-        <button class="btn" @click="$emit('close')">
-          Отмена
-        </button>
-        <button
-          class="btn btn-primary"
-          :disabled="!!validationError || !isDirty"
-          @click="save"
-        >
-          Сохранить
-        </button>
-      </div>
-    </div>
-    <form method="dialog" class="modal-backdrop">
-      <button>close</button>
-    </form>
-  </dialog>
+  <JsonConfigEditorDialog
+    :open="open"
+    title="Toolbar Settings"
+    :file-path="configFilePath"
+    :current-value="currentConfig"
+    :default-value="defaultToolbarConfig"
+    :parser="parseToolbarConfig"
+    invalid-structure-message="Invalid toolbar configuration structure"
+    @save="handleSave"
+    @close="$emit('close')"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import JsonConfigEditorDialog from "./JsonConfigEditorDialog.vue";
 import { type ToolbarConfig } from "../types/toolbar";
 import { parseToolbarConfig } from "../toolbar/toolbar-storage";
 import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
 
-const props = defineProps<{
+defineProps<{
   currentConfig: ToolbarConfig;
   configFilePath: string;
   open: boolean;
@@ -63,64 +29,12 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const dialogElement = ref<HTMLDialogElement | null>(null);
-const jsonText = ref("");
-const validationError = ref("");
-const isDirty = ref(false);
-
-const initializeText = () => {
-  jsonText.value = JSON.stringify(props.currentConfig, null, 2);
-  validationError.value = "";
-  isDirty.value = false;
-};
-
-const validateJson = () => {
-  isDirty.value = true;
-
-  try {
-    const parsed: unknown = JSON.parse(jsonText.value);
-    const config = parseToolbarConfig(parsed);
-    if (!config) {
-      validationError.value = "Невалидная структура конфигурации";
-      return;
-    }
-    validationError.value = "";
-  } catch {
-    validationError.value = "Невалидный JSON";
+function handleSave(value: unknown) {
+  const config = parseToolbarConfig(value);
+  if (!config) {
+    return;
   }
-};
 
-const save = () => {
-  try {
-    const parsed: unknown = JSON.parse(jsonText.value);
-    const config = parseToolbarConfig(parsed);
-    if (config) {
-      emit("save", config);
-    }
-  } catch {
-    validationError.value = "Невалидный JSON";
-  }
-};
-
-const resetToDefault = () => {
-  jsonText.value = JSON.stringify(defaultToolbarConfig, null, 2);
-  validationError.value = "";
-  isDirty.value = true;
-};
-
-watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    initializeText();
-    dialogElement.value?.showModal();
-  } else {
-    dialogElement.value?.close();
-  }
-});
-
-onMounted(() => {
-  if (props.open) {
-    initializeText();
-    dialogElement.value?.showModal();
-  }
-});
+  emit("save", config);
+}
 </script>

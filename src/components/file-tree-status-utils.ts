@@ -65,6 +65,14 @@ function sortEntries(entries: FileEntry[]) {
   });
 }
 
+export function buildEntryListSnapshot(entries: FileEntry[]) {
+  return entries
+    .map((entry) =>
+      `${entry.path}|${entry.isDirectory ? "d" : "f"}|${entry.isVirtual ? "v" : "r"}`
+    )
+    .join("\n");
+}
+
 export function mergeDirectoryEntries(actualEntries: FileEntry[], virtualEntries: FileEntry[]) {
   if (virtualEntries.length === 0) {
     return sortEntries(actualEntries);

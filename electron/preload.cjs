@@ -1,53 +1,171 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+const IPC_CHANNELS = Object.freeze({
+  projectOpenFolder: "project:open-folder",
+  settingsRead: "settings:read",
+  settingsWrite: "settings:write",
+  settingsWatch: "settings:watch",
+  settingsUnwatch: "settings:unwatch",
+  settingsFileChanged: "settings:file-changed",
+  terminalStart: "terminal:start",
+  terminalInput: "terminal:input",
+  terminalResize: "terminal:resize",
+  terminalStop: "terminal:stop",
+  terminalData: "terminal:data",
+  terminalExit: "terminal:exit",
+  filesystemReadDirectory: "filesystem:read-directory",
+  filesystemReadFile: "filesystem:read-file",
+  gitStatus: "git:status",
+  gitFileDiff: "git:file-diff",
+  globalQuickKey: "global:quick-key"
+});
+
+const SETTINGS_DIRNAME = ".ide";
+
+const quickKeyBindings = Object.freeze([
+  {
+    id: "quick-1",
+    accelerator: "CommandOrControl+Alt+Shift+1",
+    input: "1",
+    label: "1",
+    icon: null,
+    gridIndex: 1
+  },
+  {
+    id: "quick-2",
+    accelerator: "CommandOrControl+Alt+Shift+2",
+    input: "2",
+    label: "2",
+    icon: null,
+    gridIndex: 2
+  },
+  {
+    id: "quick-3",
+    accelerator: "CommandOrControl+Alt+Shift+3",
+    input: "3",
+    label: "3",
+    icon: null,
+    gridIndex: 3
+  },
+  {
+    id: "quick-4",
+    accelerator: "CommandOrControl+Alt+Shift+4",
+    input: "4",
+    label: "4",
+    icon: null,
+    gridIndex: 4
+  },
+  {
+    id: "quick-up",
+    accelerator: "CommandOrControl+Alt+Shift+Up",
+    input: "\x1b[A",
+    label: "Up",
+    icon: "arrow-up",
+    gridIndex: 6
+  },
+  {
+    id: "quick-esc",
+    accelerator: "CommandOrControl+Alt+Shift+E",
+    input: "\x1b",
+    label: "Esc",
+    icon: null,
+    gridIndex: 8
+  },
+  {
+    id: "quick-left",
+    accelerator: "CommandOrControl+Alt+Shift+Left",
+    input: "\x1b[D",
+    label: "Left",
+    icon: "arrow-left",
+    gridIndex: 9
+  },
+  {
+    id: "quick-down",
+    accelerator: "CommandOrControl+Alt+Shift+Down",
+    input: "\x1b[B",
+    label: "Down",
+    icon: "arrow-down",
+    gridIndex: 10
+  },
+  {
+    id: "quick-right",
+    accelerator: "CommandOrControl+Alt+Shift+Right",
+    input: "\x1b[C",
+    label: "Right",
+    icon: "arrow-right",
+    gridIndex: 11
+  },
+  {
+    id: "quick-enter",
+    accelerator: "CommandOrControl+Alt+Shift+Enter",
+    input: "\r",
+    label: "Enter",
+    icon: "enter",
+    gridIndex: 12
+  }
+]);
+
 contextBridge.exposeInMainWorld("appMeta", {
   framework: "Electron + Vue + Tailwind + daisyUI",
   runtime: "Bun"
 });
 
+const exposedQuickKeys = quickKeyBindings.map((binding) => ({
+  id: binding.id,
+  accelerator: binding.accelerator,
+  input: binding.input,
+  label: binding.label,
+  icon: binding.icon,
+  gridIndex: binding.gridIndex
+}));
+
 contextBridge.exposeInMainWorld("projectApi", {
-  openFolder: () => ipcRenderer.invoke("project:open-folder"),
+  quickKeys: exposedQuickKeys,
+  openFolder: () => ipcRenderer.invoke(IPC_CHANNELS.projectOpenFolder),
   settings: {
-    read: (projectPath, filename) => ipcRenderer.invoke("settings:read", projectPath, filename),
-    write: (projectPath, filename, content) => ipcRenderer.invoke("settings:write", projectPath, filename, content),
-    watch: (projectPath, filename) => ipcRenderer.invoke("settings:watch", projectPath, filename),
-    unwatch: () => ipcRenderer.invoke("settings:unwatch"),
+    directoryName: SETTINGS_DIRNAME,
+    read: (projectPath, filename) =>
+      ipcRenderer.invoke(IPC_CHANNELS.settingsRead, projectPath, filename),
+    write: (projectPath, filename, content) =>
+      ipcRenderer.invoke(IPC_CHANNELS.settingsWrite, projectPath, filename, content),
+    watch: (projectPath, filename) =>
+      ipcRenderer.invoke(IPC_CHANNELS.settingsWatch, projectPath, filename),
+    unwatch: () => ipcRenderer.invoke(IPC_CHANNELS.settingsUnwatch),
     onFileChanged: (listener) => {
       const handler = (_event, filename) => listener(filename);
-      ipcRenderer.on("settings:file-changed", handler);
-      return () => ipcRenderer.removeListener("settings:file-changed", handler);
+      ipcRenderer.on(IPC_CHANNELS.settingsFileChanged, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.settingsFileChanged, handler);
     }
   },
   terminal: {
-    start: (cwd, size) => ipcRenderer.invoke("terminal:start", cwd, size),
-    runCommand: (command) => ipcRenderer.invoke("terminal:run-command", command),
-    input: (data) => ipcRenderer.invoke("terminal:input", data),
-    resize: (size) => ipcRenderer.invoke("terminal:resize", size),
-    stop: () => ipcRenderer.invoke("terminal:stop"),
+    start: (cwd, size) => ipcRenderer.invoke(IPC_CHANNELS.terminalStart, cwd, size),
+    input: (data) => ipcRenderer.invoke(IPC_CHANNELS.terminalInput, data),
+    resize: (size) => ipcRenderer.invoke(IPC_CHANNELS.terminalResize, size),
+    stop: () => ipcRenderer.invoke(IPC_CHANNELS.terminalStop),
     onData: (listener) => {
       const handler = (_event, data) => listener(data);
-      ipcRenderer.on("terminal:data", handler);
-      return () => ipcRenderer.removeListener("terminal:data", handler);
+      ipcRenderer.on(IPC_CHANNELS.terminalData, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalData, handler);
     },
     onExit: (listener) => {
       const handler = (_event, code) => listener(code);
-      ipcRenderer.on("terminal:exit", handler);
-      return () => ipcRenderer.removeListener("terminal:exit", handler);
+      ipcRenderer.on(IPC_CHANNELS.terminalExit, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalExit, handler);
     }
   },
   filesystem: {
-    readDirectory: (dirPath) => ipcRenderer.invoke("filesystem:read-directory", dirPath),
+    readDirectory: (dirPath) => ipcRenderer.invoke(IPC_CHANNELS.filesystemReadDirectory, dirPath),
     readFile: (projectPath, filePath) =>
-      ipcRenderer.invoke("filesystem:read-file", projectPath, filePath)
+      ipcRenderer.invoke(IPC_CHANNELS.filesystemReadFile, projectPath, filePath)
   },
   git: {
-    getStatus: (projectPath) => ipcRenderer.invoke("git:status", projectPath),
+    getStatus: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, projectPath),
     getFileDiff: (projectPath, filePath) =>
-      ipcRenderer.invoke("git:file-diff", projectPath, filePath)
+      ipcRenderer.invoke(IPC_CHANNELS.gitFileDiff, projectPath, filePath)
   },
   onGlobalQuickKey: (listener) => {
     const handler = (_event, input) => listener(input);
-    ipcRenderer.on("global:quick-key", handler);
-    return () => ipcRenderer.removeListener("global:quick-key", handler);
+    ipcRenderer.on(IPC_CHANNELS.globalQuickKey, handler);
+    return () => ipcRenderer.removeListener(IPC_CHANNELS.globalQuickKey, handler);
   }
 });

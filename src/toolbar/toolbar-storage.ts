@@ -1,10 +1,12 @@
 import { type ToolbarConfig, type ToolbarElement, type ToolbarAction, type ToolbarButton } from "../types/toolbar";
 import { defaultToolbarConfig } from "./default-toolbar-config";
+import {
+  isRecord,
+  loadJsonProjectSetting,
+  saveJsonProjectSetting
+} from "../settings/settings-storage-helpers";
 
 export const TOOLBAR_CONFIG_FILENAME = "toolbar.json";
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const parseToolbarAction = (value: unknown): ToolbarAction | null => {
   if (!isRecord(value)) {
@@ -93,29 +95,14 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
 };
 
 export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
-  try {
-    const response = await window.projectApi.settings.read(projectPath, TOOLBAR_CONFIG_FILENAME);
-    if (!response.ok || !response.content) {
-      return defaultToolbarConfig;
-    }
-
-    const parsed: unknown = JSON.parse(response.content);
-    const config = parseToolbarConfig(parsed);
-
-    return config ?? defaultToolbarConfig;
-  } catch {
-    return defaultToolbarConfig;
-  }
+  return loadJsonProjectSetting(
+    projectPath,
+    TOOLBAR_CONFIG_FILENAME,
+    parseToolbarConfig,
+    defaultToolbarConfig
+  );
 };
 
 export const saveToolbarConfig = async (projectPath: string, config: ToolbarConfig): Promise<void> => {
-  try {
-    const content = JSON.stringify(config, null, 2);
-    const response = await window.projectApi.settings.write(projectPath, TOOLBAR_CONFIG_FILENAME, content);
-    if (!response.ok) {
-      console.error("Failed to save toolbar config:", response.error);
-    }
-  } catch (error) {
-    console.error("Failed to save toolbar config.", error);
-  }
+  await saveJsonProjectSetting(projectPath, TOOLBAR_CONFIG_FILENAME, config, "toolbar config");
 };
