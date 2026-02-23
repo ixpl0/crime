@@ -186,7 +186,9 @@ const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
 const TERMINAL_INPUT_HISTORY_STORAGE_KEY = "dream-ide:terminal-input-history:v1";
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
-const PASTE_ENTER_DELAY_MS = 100;
+const TERMINAL_INPUT_CHUNK_SIZE = 2048;
+const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
+const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
 const terminalInputHistoryIndex = ref<number | null>(null);
@@ -341,6 +343,16 @@ function getCsiModifierValue(event: KeyboardEvent) {
   return modifier;
 }
 
+const nativeTextareaCtrlEditingCodes = new Set([
+  "KeyA",
+  "KeyC",
+  "KeyV",
+  "KeyX",
+  "KeyY",
+  "KeyZ",
+  "Insert",
+]);
+
 function getCtrlCharacterInput(event: KeyboardEvent) {
   if (/^Key[A-Z]$/.test(event.code)) {
     const code = event.code.charCodeAt(3) - 64;
@@ -442,11 +454,34 @@ function getCtrlKeyInput(event: KeyboardEvent) {
   return getCtrlSpecialKeyInput(event);
 }
 
+function isTextareaNativeEditingShortcut(event: KeyboardEvent) {
+  if (event.metaKey) {
+    return true;
+  }
+
+  if (event.altKey) {
+    return false;
+  }
+
+  if (event.ctrlKey) {
+    return nativeTextareaCtrlEditingCodes.has(event.code);
+  }
+
+  return (
+    event.shiftKey &&
+    (event.code === "Insert" || event.code === "Delete")
+  );
+}
+
 function getEmptyTextareaPassthroughInput(
   event: KeyboardEvent,
   textarea: HTMLTextAreaElement
 ) {
-  if (textarea.value.trim().length > 0 || event.isComposing || event.metaKey) {
+  if (textarea.value.trim().length > 0 || event.isComposing) {
+    return null;
+  }
+
+  if (isTextareaNativeEditingShortcut(event)) {
     return null;
   }
 
@@ -591,6 +626,55 @@ async function sendTerminalInput(data: string, fallbackErrorMessage: string) {
   });
 }
 
+async function sendTerminalCommand(command: string, fallbackErrorMessage: string) {
+  return enqueueTerminalOperation(async () => {
+    try {
+      const response = await window.projectApi.terminal.runCommand(command);
+      if (!response.ok) {
+        errorMessage.value = response.error ?? fallbackErrorMessage;
+        return false;
+      }
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : fallbackErrorMessage;
+      return false;
+    }
+
+    return true;
+  });
+}
+
+async function sendTextareaTextInput(text: string) {
+  for (let index = 0; index < text.length; index += TERMINAL_INPUT_CHUNK_SIZE) {
+    const chunk = text.slice(index, index + TERMINAL_INPUT_CHUNK_SIZE);
+    const ok = await sendTerminalInput(chunk, "Failed to send input to terminal.");
+    if (!ok) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+async function waitForTextareaSubmitReadiness(versionBeforeTextSend: number) {
+  const timings = projectSettings.value.slashCommand;
+  const activityTimeoutMs = Math.min(
+    timings.activityTimeoutMs,
+    TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS
+  );
+  const quietTimeoutMs = Math.min(
+    timings.quietTimeoutMs,
+    TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS
+  );
+
+  const sawActivity = await waitForTerminalDataAfter(versionBeforeTextSend, activityTimeoutMs);
+  if (!sawActivity) {
+    await delay(timings.enterDelayMs);
+    return;
+  }
+
+  await waitForTerminalQuiet(timings.enterDelayMs, quietTimeoutMs);
+}
+
 async function waitForTerminalDataAfter(version: number, timeoutMs: number) {
   const startedAt = Date.now();
   const pollIntervalMs = Math.max(projectSettings.value.slashCommand.dataPollIntervalMs, 1);
@@ -617,14 +701,20 @@ async function waitForTerminalQuiet(idleMs: number, timeoutMs: number) {
   }
 }
 
-async function waitForSlashCommandReadiness(versionAfterSlashSend: number) {
+async function waitForSlashCommandReadiness(versionBeforeSlashSend: number) {
   const timings = projectSettings.value.slashCommand;
+  const readinessStartedAt = Date.now();
   const sawActivity = await waitForTerminalDataAfter(
-    versionAfterSlashSend,
+    versionBeforeSlashSend,
     timings.activityTimeoutMs
   );
+  const elapsedMs = Date.now() - readinessStartedAt;
+  const remainingAfterSlashDelayMs = timings.afterSlashDelayMs - elapsedMs;
+  if (remainingAfterSlashDelayMs > 0) {
+    await delay(remainingAfterSlashDelayMs);
+  }
+
   if (!sawActivity) {
-    await delay(timings.afterSlashDelayMs);
     return;
   }
 
@@ -635,13 +725,14 @@ async function sendSlashCommand(slashCommandText: string) {
   const timings = projectSettings.value.slashCommand;
   for (let index = 0; index < slashCommandText.length; index += 1) {
     const char = slashCommandText[index];
+    const versionBeforeSend = terminalDataVersion;
     const ok = await sendTerminalInput(char, "Failed to send slash command character to terminal.");
     if (!ok) {
       return false;
     }
 
     if (char === "/") {
-      await waitForSlashCommandReadiness(terminalDataVersion);
+      await waitForSlashCommandReadiness(versionBeforeSend);
       continue;
     }
 
@@ -789,20 +880,13 @@ async function runTerminalCommand(command: string) {
     return;
   }
 
-  try {
-    const response = await enqueueTerminalOperation(() =>
-      window.projectApi.terminal.runCommand(command)
-    );
-    if (!response.ok) {
-      errorMessage.value = response.error ?? "Failed to run command in terminal.";
-      return;
-    }
-
-    focusTerminal();
-  } catch (error) {
-    errorMessage.value = "Failed to send command to terminal.";
-    console.error(error);
+  const sent = await sendTerminalCommand(command, "Failed to run command in terminal.");
+  if (!sent) {
+    errorMessage.value ||= "Failed to send command to terminal.";
+    return;
   }
+
+  focusTerminal();
 }
 
 function executeToolbarAction(action: ToolbarAction) {
@@ -911,12 +995,14 @@ async function sendTextareaToTerminal() {
     }
   } else {
     const cleanedText = text.replace(/[\r\n]+$/, "");
-    const ok = await sendTerminalInput(cleanedText, "Failed to send input to terminal.");
-    if (!ok) {
+    const versionBeforeTextSend = terminalDataVersion;
+    const inputOk = await sendTextareaTextInput(cleanedText);
+    if (!inputOk) {
       return;
     }
 
-    await delay(PASTE_ENTER_DELAY_MS);
+    await waitForTextareaSubmitReadiness(versionBeforeTextSend);
+
     const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
     if (!enterOk) {
       return;

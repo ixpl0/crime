@@ -32,15 +32,8 @@ export const defaultToolbarConfig: ToolbarConfig = {
       type: "button",
       id: "ctrl-c",
       label: "Ctrl+C",
-      shortcut: "alt+c",
+      shortcut: "ctrl+c",
       action: { type: "send-input", input: "\u0003" },
-    },
-    {
-      type: "button",
-      id: "yes",
-      label: "Yes",
-      shortcut: "alt+y",
-      action: { type: "send-input", input: "yes\r" },
     },
     {
       type: "button",

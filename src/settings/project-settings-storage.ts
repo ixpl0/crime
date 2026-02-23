@@ -5,12 +5,12 @@ export const PROJECT_SETTINGS_FILENAME = "settings.json";
 export const defaultProjectSettings: ProjectSettings = {
   version: 1,
   slashCommand: {
-    charDelayMs: 10,
-    afterSlashDelayMs: 200,
-    enterDelayMs: 60,
-    activityTimeoutMs: 400,
-    quietTimeoutMs: 700,
-    dataPollIntervalMs: 10
+    charDelayMs: 20,
+    afterSlashDelayMs: 300,
+    enterDelayMs: 120,
+    activityTimeoutMs: 1200,
+    quietTimeoutMs: 2200,
+    dataPollIntervalMs: 15
   }
 };
 
@@ -98,4 +98,3 @@ export const saveProjectSettings = async (
     console.error("Failed to save project settings.", error);
   }
 };
-

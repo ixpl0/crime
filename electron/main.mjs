@@ -12,6 +12,7 @@ const terminalSessions = new Map();
 const settingsWatchers = new Map();
 
 const SETTINGS_WATCH_DEBOUNCE_MS = 300;
+const TERMINAL_COMMAND_CHUNK_SIZE = 2048;
 const GIT_STATUS_PRIORITY = {
   modified: 1,
   added: 2,
@@ -49,6 +50,20 @@ function runCommand(command, args, cwd) {
       });
     });
   });
+}
+
+function writeTerminalCommand(shellProcess, command) {
+  if (command.length <= TERMINAL_COMMAND_CHUNK_SIZE) {
+    shellProcess.write(command);
+    shellProcess.write("\r");
+    return;
+  }
+
+  for (let index = 0; index < command.length; index += TERMINAL_COMMAND_CHUNK_SIZE) {
+    shellProcess.write(command.slice(index, index + TERMINAL_COMMAND_CHUNK_SIZE));
+  }
+
+  shellProcess.write("\r");
 }
 
 function getGitStatusKind(x, y) {
@@ -600,9 +615,7 @@ function registerIpcHandlers() {
     }
 
     try {
-      session.process.write(command);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      session.process.write("\r");
+      writeTerminalCommand(session.process, command);
     } catch (error) {
       return {
         ok: false,

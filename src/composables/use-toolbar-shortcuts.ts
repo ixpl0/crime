@@ -13,6 +13,12 @@ export const useToolbarShortcuts = (
     if (!(target instanceof HTMLElement)) {
       return false;
     }
+
+    // xterm uses an internal textarea for keyboard capture; treat it as terminal context.
+    if (target.classList.contains("xterm-helper-textarea") || target.closest(".terminal-host")) {
+      return false;
+    }
+
     const tagName = target.tagName.toLowerCase();
     return tagName === "textarea" || tagName === "input" || target.isContentEditable;
   };
