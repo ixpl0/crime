@@ -34,8 +34,8 @@ src/
 
 - **IPC pattern**: Renderer → `ipcRenderer.invoke()` → Main process → `ipcMain.handle()`
 - **Channels**: `project:open-folder`, `settings:read/write`, `terminal:start/input/resize/run-command`
-- **Toolbar config**: per-project in `.dream/toolbar.json`
-- **Terminal history**: `localStorage` key `dream-ide:terminal-input-history`
+- **Toolbar config**: per-project in `.ide/toolbar.json`
+- **Terminal history**: per-project in `.ide/terminal-input-history.json`
 
 ## Scripts
 

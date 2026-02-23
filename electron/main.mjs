@@ -15,6 +15,8 @@ const SETTINGS_WATCH_DEBOUNCE_MS = 300;
 const TERMINAL_COMMAND_CHUNK_SIZE = 2048;
 const WINDOW_STATE_FILENAME = "window-state.json";
 const WINDOW_STATE_SAVE_DEBOUNCE_MS = 250;
+const SETTINGS_DIRNAME = ".ide";
+const LEGACY_SETTINGS_DIRNAME = ".dream";
 const DEFAULT_WINDOW_WIDTH = 1280;
 const DEFAULT_WINDOW_HEIGHT = 800;
 const GIT_STATUS_PRIORITY = {
@@ -567,6 +569,14 @@ function isPathInsideBase(base, target) {
   return normalizedTarget.startsWith(normalizedBase);
 }
 
+function getSettingsDirPath(projectPath) {
+  return join(projectPath, SETTINGS_DIRNAME);
+}
+
+function getLegacySettingsDirPath(projectPath) {
+  return join(projectPath, LEGACY_SETTINGS_DIRNAME);
+}
+
 function registerIpcHandlers() {
   ipcMain.removeHandler("project:open-folder");
   ipcMain.removeHandler("settings:read");
@@ -602,8 +612,9 @@ function registerIpcHandlers() {
       return { ok: false, error: "Project path and filename are required." };
     }
 
-    const filePath = join(projectPath, ".dream", filename);
-    if (!isPathInsideBase(join(projectPath, ".dream"), filePath)) {
+    const settingsDir = getSettingsDirPath(projectPath);
+    const filePath = join(settingsDir, filename);
+    if (!isPathInsideBase(settingsDir, filePath)) {
       return { ok: false, error: "Invalid filename." };
     }
 
@@ -612,7 +623,31 @@ function registerIpcHandlers() {
       return { ok: true, content };
     } catch (error) {
       if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
-        return { ok: true, content: null };
+        const legacySettingsDir = getLegacySettingsDirPath(projectPath);
+        const legacyFilePath = join(legacySettingsDir, filename);
+        if (!isPathInsideBase(legacySettingsDir, legacyFilePath)) {
+          return { ok: false, error: "Invalid filename." };
+        }
+
+        try {
+          const content = await readFile(legacyFilePath, "utf-8");
+          return { ok: true, content };
+        } catch (legacyError) {
+          if (
+            legacyError &&
+            typeof legacyError === "object" &&
+            "code" in legacyError &&
+            legacyError.code === "ENOENT"
+          ) {
+            return { ok: true, content: null };
+          }
+
+          return {
+            ok: false,
+            error:
+              legacyError instanceof Error ? legacyError.message : "Failed to read settings file."
+          };
+        }
       }
 
       return {
@@ -627,14 +662,14 @@ function registerIpcHandlers() {
       return { ok: false, error: "Project path, filename and content are required." };
     }
 
-    const dreamDir = join(projectPath, ".dream");
-    const filePath = join(dreamDir, filename);
-    if (!isPathInsideBase(dreamDir, filePath)) {
+    const settingsDir = getSettingsDirPath(projectPath);
+    const filePath = join(settingsDir, filename);
+    if (!isPathInsideBase(settingsDir, filePath)) {
       return { ok: false, error: "Invalid filename." };
     }
 
     try {
-      await mkdir(dreamDir, { recursive: true });
+      await mkdir(settingsDir, { recursive: true });
       await writeFile(filePath, content, "utf-8");
       return { ok: true };
     } catch (error) {
@@ -650,7 +685,7 @@ function registerIpcHandlers() {
       return { ok: false, error: "Project path and filename are required." };
     }
 
-    const dirPath = join(projectPath, ".dream");
+    const dirPath = getSettingsDirPath(projectPath);
     const watchAllFiles = filename === "*";
     if (!watchAllFiles) {
       const filePath = join(dirPath, filename);

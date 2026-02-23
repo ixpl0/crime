@@ -68,7 +68,7 @@
 
           <ToolbarConfigEditor
             :current-config="toolbarConfig"
-            :config-file-path="`${projectPath}/.dream/${TOOLBAR_CONFIG_FILENAME}`"
+            :config-file-path="`${projectPath}/.ide/${TOOLBAR_CONFIG_FILENAME}`"
             :open="isToolbarConfigEditorOpen"
             @save="handleToolbarConfigSave"
             @close="isToolbarConfigEditorOpen = false"
@@ -76,7 +76,7 @@
 
           <ProjectSettingsEditor
             :current-settings="projectSettings"
-            :config-file-path="`${projectPath}/.dream/${PROJECT_SETTINGS_FILENAME}`"
+            :config-file-path="`${projectPath}/.ide/${PROJECT_SETTINGS_FILENAME}`"
             :open="isProjectSettingsEditorOpen"
             @save="handleProjectSettingsSave"
             @close="isProjectSettingsEditorOpen = false"
@@ -169,6 +169,10 @@ import {
   PROJECT_SETTINGS_FILENAME,
   saveProjectSettings
 } from "./settings/project-settings-storage";
+import {
+  loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
+  saveTerminalInputHistory
+} from "./settings/terminal-input-history-storage";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
@@ -184,13 +188,12 @@ const errorMessage = ref("");
 const terminalInputText = ref("");
 const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
-const TERMINAL_INPUT_HISTORY_STORAGE_KEY = "dream-ide:terminal-input-history:v1";
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
-const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
+const terminalInputHistory = ref<string[]>([]);
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
@@ -209,46 +212,33 @@ let unsubscribeGlobalQuickKey: (() => void) | null = null;
 let unsubscribeSettingsFileChanged: (() => void) | null = null;
 let terminalDataVersion = 0;
 let terminalInputQueue: Promise<void> = Promise.resolve();
+let terminalInputHistoryLoadToken = 0;
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
-function loadTerminalInputHistory() {
-  if (typeof window === "undefined") {
-    return [];
-  }
+async function loadTerminalInputHistoryForProject(path: string) {
+  const loadToken = terminalInputHistoryLoadToken + 1;
+  terminalInputHistoryLoadToken = loadToken;
+  const history = await loadTerminalInputHistoryFromProject(path, TERMINAL_INPUT_HISTORY_LIMIT);
 
-  try {
-    const storedHistory = window.localStorage.getItem(TERMINAL_INPUT_HISTORY_STORAGE_KEY);
-    if (!storedHistory) {
-      return [];
-    }
-
-    const parsedHistory: unknown = JSON.parse(storedHistory);
-    if (!Array.isArray(parsedHistory)) {
-      return [];
-    }
-
-    return parsedHistory
-      .filter((entry): entry is string => typeof entry === "string")
-      .slice(-TERMINAL_INPUT_HISTORY_LIMIT);
-  } catch {
-    return [];
-  }
-}
-
-function persistTerminalInputHistory() {
-  if (typeof window === "undefined") {
+  if (projectPath.value !== path || terminalInputHistoryLoadToken !== loadToken) {
     return;
   }
 
-  try {
-    window.localStorage.setItem(
-      TERMINAL_INPUT_HISTORY_STORAGE_KEY,
-      JSON.stringify(terminalInputHistory.value)
-    );
-  } catch (error) {
-    console.error("Failed to persist terminal input history.", error);
+  terminalInputHistory.value = history;
+  resetTerminalInputHistoryNavigation();
+}
+
+async function persistTerminalInputHistory() {
+  if (!projectPath.value) {
+    return;
   }
+
+  await saveTerminalInputHistory(
+    projectPath.value,
+    terminalInputHistory.value,
+    TERMINAL_INPUT_HISTORY_LIMIT
+  );
 }
 
 function moveTextareaCursorToEnd() {
@@ -284,7 +274,7 @@ function appendTerminalInputHistory(text: string) {
   terminalInputHistory.value = [...terminalInputHistory.value, text].slice(
     -TERMINAL_INPUT_HISTORY_LIMIT
   );
-  persistTerminalInputHistory();
+  void persistTerminalInputHistory();
   resetTerminalInputHistoryNavigation();
 }
 
@@ -823,8 +813,11 @@ async function openProjectFolder() {
     if (selectedPath) {
       projectPath.value = selectedPath;
       selectedFilePath.value = null;
+      terminalInputHistory.value = [];
+      resetTerminalInputHistoryNavigation();
       toolbarConfig.value = await loadToolbarConfig(selectedPath);
       projectSettings.value = await loadProjectSettings(selectedPath);
+      await loadTerminalInputHistoryForProject(selectedPath);
       await startSettingsWatcher(selectedPath);
       await nextTick();
       await startTerminal(selectedPath);
