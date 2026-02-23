@@ -56,7 +56,7 @@ function addVirtualChild(
   }
 }
 
-export function sortEntries(entries: FileEntry[]) {
+function sortEntries(entries: FileEntry[]) {
   return [...entries].sort((a, b) => {
     if (a.isDirectory !== b.isDirectory) {
       return a.isDirectory ? -1 : 1;

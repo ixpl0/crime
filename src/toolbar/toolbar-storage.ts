@@ -119,14 +119,3 @@ export const saveToolbarConfig = async (projectPath: string, config: ToolbarConf
     console.error("Failed to save toolbar config.", error);
   }
 };
-
-export const resetToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
-  try {
-    const content = JSON.stringify(defaultToolbarConfig, null, 2);
-    await window.projectApi.settings.write(projectPath, TOOLBAR_CONFIG_FILENAME, content);
-  } catch (error) {
-    console.error("Failed to reset toolbar config.", error);
-  }
-
-  return defaultToolbarConfig;
-};

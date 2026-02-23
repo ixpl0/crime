@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
-    "prepare": "git config core.hooksPath .husky",
+    "prepare": "husky",
     "build": "vite build",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production electron ."
