@@ -434,9 +434,12 @@ function registerIpcHandlers() {
     }
 
     const dirPath = join(projectPath, ".dream");
-    const filePath = join(dirPath, filename);
-    if (!isPathInsideBase(dirPath, filePath)) {
-      return { ok: false, error: "Invalid filename." };
+    const watchAllFiles = filename === "*";
+    if (!watchAllFiles) {
+      const filePath = join(dirPath, filename);
+      if (!isPathInsideBase(dirPath, filePath)) {
+        return { ok: false, error: "Invalid filename." };
+      }
     }
 
     const webContentsId = event.sender.id;
@@ -449,21 +452,35 @@ function registerIpcHandlers() {
     }
 
     let debounceTimer = null;
+    let pendingFilename = null;
 
     try {
       const fsWatcher = watch(dirPath, (_eventType, changedFile) => {
-        if (changedFile !== filename) {
+        const changedFilename =
+          typeof changedFile === "string"
+            ? changedFile
+            : Buffer.isBuffer(changedFile)
+              ? changedFile.toString("utf-8")
+              : null;
+        if (!changedFilename) {
           return;
         }
+        if (!watchAllFiles && changedFilename !== filename) {
+          return;
+        }
+
+        pendingFilename = changedFilename;
 
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
 
         debounceTimer = setTimeout(() => {
+          const changedName = pendingFilename;
+          pendingFilename = null;
           debounceTimer = null;
-          if (!event.sender.isDestroyed()) {
-            event.sender.send("settings:file-changed", filename);
+          if (!event.sender.isDestroyed() && changedName) {
+            event.sender.send("settings:file-changed", changedName);
           }
         }, SETTINGS_WATCH_DEBOUNCE_MS);
       });

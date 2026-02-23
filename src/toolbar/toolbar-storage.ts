@@ -1,7 +1,7 @@
 import { type ToolbarConfig, type ToolbarElement, type ToolbarAction, type ToolbarButton } from "../types/toolbar";
 import { defaultToolbarConfig } from "./default-toolbar-config";
 
-const SETTINGS_FILENAME = "toolbar.json";
+export const TOOLBAR_CONFIG_FILENAME = "toolbar.json";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -94,7 +94,7 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
 
 export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
   try {
-    const response = await window.projectApi.settings.read(projectPath, SETTINGS_FILENAME);
+    const response = await window.projectApi.settings.read(projectPath, TOOLBAR_CONFIG_FILENAME);
     if (!response.ok || !response.content) {
       return defaultToolbarConfig;
     }
@@ -111,7 +111,7 @@ export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarCon
 export const saveToolbarConfig = async (projectPath: string, config: ToolbarConfig): Promise<void> => {
   try {
     const content = JSON.stringify(config, null, 2);
-    const response = await window.projectApi.settings.write(projectPath, SETTINGS_FILENAME, content);
+    const response = await window.projectApi.settings.write(projectPath, TOOLBAR_CONFIG_FILENAME, content);
     if (!response.ok) {
       console.error("Failed to save toolbar config:", response.error);
     }
@@ -123,7 +123,7 @@ export const saveToolbarConfig = async (projectPath: string, config: ToolbarConf
 export const resetToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
   try {
     const content = JSON.stringify(defaultToolbarConfig, null, 2);
-    await window.projectApi.settings.write(projectPath, SETTINGS_FILENAME, content);
+    await window.projectApi.settings.write(projectPath, TOOLBAR_CONFIG_FILENAME, content);
   } catch (error) {
     console.error("Failed to reset toolbar config.", error);
   }

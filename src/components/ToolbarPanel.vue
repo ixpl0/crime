@@ -33,7 +33,7 @@
     </template>
 
     <button
-      class="btn btn-sm btn-ghost ml-auto"
+      class="btn btn-sm btn-ghost"
       title="Edit toolbar"
       @click="$emit('open-config-editor')"
     >

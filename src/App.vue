@@ -51,9 +51,9 @@
             </div>
 
             <button
-              class="btn btn-sm btn-ghost ml-auto"
+              class="btn btn-sm btn-ghost"
               title="Project settings"
-              @click="isConfigEditorOpen = true"
+              @click="isProjectSettingsEditorOpen = true"
             >
               <Settings :size="16" />
             </button>
@@ -63,15 +63,23 @@
             :toolbar-config="toolbarConfig"
             :is-terminal-ready="isTerminalReady"
             @execute-action="executeToolbarAction"
-            @open-config-editor="isConfigEditorOpen = true"
+            @open-config-editor="isToolbarConfigEditorOpen = true"
           />
 
           <ToolbarConfigEditor
             :current-config="toolbarConfig"
-            :config-file-path="`${projectPath}/.dream/toolbar.json`"
-            :open="isConfigEditorOpen"
-            @save="handleConfigSave"
-            @close="isConfigEditorOpen = false"
+            :config-file-path="`${projectPath}/.dream/${TOOLBAR_CONFIG_FILENAME}`"
+            :open="isToolbarConfigEditorOpen"
+            @save="handleToolbarConfigSave"
+            @close="isToolbarConfigEditorOpen = false"
+          />
+
+          <ProjectSettingsEditor
+            :current-settings="projectSettings"
+            :config-file-path="`${projectPath}/.dream/${PROJECT_SETTINGS_FILENAME}`"
+            :open="isProjectSettingsEditorOpen"
+            @save="handleProjectSettingsSave"
+            @close="isProjectSettingsEditorOpen = false"
           />
 
           <div v-show="activeTab === 'agent'">
@@ -148,11 +156,23 @@ import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "xterm/css/xterm.css";
 import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
-import { loadToolbarConfig, saveToolbarConfig } from "./toolbar/toolbar-storage";
+import {
+  loadToolbarConfig,
+  saveToolbarConfig,
+  TOOLBAR_CONFIG_FILENAME
+} from "./toolbar/toolbar-storage";
 import { defaultToolbarConfig } from "./toolbar/default-toolbar-config";
+import { type ProjectSettings } from "./types/project-settings";
+import {
+  defaultProjectSettings,
+  loadProjectSettings,
+  PROJECT_SETTINGS_FILENAME,
+  saveProjectSettings
+} from "./settings/project-settings-storage";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
+import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import FileContentViewer from "./components/FileContentViewer.vue";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, Settings } from "lucide-vue-next";
@@ -166,15 +186,15 @@ const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
 const TERMINAL_INPUT_HISTORY_STORAGE_KEY = "dream-ide:terminal-input-history:v1";
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
-const SLASH_COMMAND_CHAR_DELAY_MS = 10;
-const SLASH_COMMAND_AFTER_SLASH_DELAY_MS = 200;
-const SLASH_COMMAND_ENTER_DELAY_MS = 60;
 const PASTE_ENTER_DELAY_MS = 100;
+const SETTINGS_WATCH_ALL = "*";
 const terminalInputHistory = ref<string[]>(loadTerminalInputHistory());
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
-const isConfigEditorOpen = ref(false);
+const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
+const isToolbarConfigEditorOpen = ref(false);
+const isProjectSettingsEditorOpen = ref(false);
 const activeTab = ref<"agent" | "files">("agent");
 const selectedFilePath = ref<string | null>(null);
 
@@ -185,6 +205,8 @@ let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
 let unsubscribeGlobalQuickKey: (() => void) | null = null;
 let unsubscribeSettingsFileChanged: (() => void) | null = null;
+let terminalDataVersion = 0;
+let terminalInputQueue: Promise<void> = Promise.resolve();
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
@@ -347,25 +369,111 @@ function handleTextareaInput() {
   terminalInputDraft.value = terminalInputText.value;
 }
 
-function isSlashCommandInput(text: string) {
-  const trimmedStart = text.trimStart();
-  return !trimmedStart.includes("\n") && trimmedStart.startsWith("/");
-}
-
 function delay(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 }
 
-async function sendTerminalInput(data: string, fallbackErrorMessage: string) {
-  const response = await window.projectApi.terminal.input(data);
-  if (!response.ok) {
-    errorMessage.value = response.error ?? fallbackErrorMessage;
-    return false;
+function getSlashCommandText(text: string) {
+  const withoutTrailingLineBreaks = text.replace(/[\r\n]+$/, "");
+  const trimmedStart = withoutTrailingLineBreaks.trimStart();
+  if (!trimmedStart.startsWith("/") || /[\r\n]/.test(trimmedStart)) {
+    return null;
   }
 
-  return true;
+  return trimmedStart;
+}
+
+function isSlashCommandInput(text: string) {
+  return getSlashCommandText(text) !== null;
+}
+
+function enqueueTerminalOperation<T>(operation: () => Promise<T>) {
+  const queuedOperation = terminalInputQueue.then(operation, operation);
+  terminalInputQueue = queuedOperation.then(
+    () => undefined,
+    () => undefined
+  );
+  return queuedOperation;
+}
+
+async function sendTerminalInput(data: string, fallbackErrorMessage: string) {
+  return enqueueTerminalOperation(async () => {
+    try {
+      const response = await window.projectApi.terminal.input(data);
+      if (!response.ok) {
+        errorMessage.value = response.error ?? fallbackErrorMessage;
+        return false;
+      }
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : fallbackErrorMessage;
+      return false;
+    }
+
+    return true;
+  });
+}
+
+async function waitForTerminalDataAfter(version: number, timeoutMs: number) {
+  const startedAt = Date.now();
+  const pollIntervalMs = Math.max(projectSettings.value.slashCommand.dataPollIntervalMs, 1);
+  while (Date.now() - startedAt < timeoutMs) {
+    if (terminalDataVersion > version) {
+      return true;
+    }
+
+    await delay(pollIntervalMs);
+  }
+
+  return terminalDataVersion > version;
+}
+
+async function waitForTerminalQuiet(idleMs: number, timeoutMs: number) {
+  const startedAt = Date.now();
+  let observedVersion = terminalDataVersion;
+  while (Date.now() - startedAt < timeoutMs) {
+    await delay(idleMs);
+    if (terminalDataVersion === observedVersion) {
+      return;
+    }
+    observedVersion = terminalDataVersion;
+  }
+}
+
+async function waitForSlashCommandReadiness(versionAfterSlashSend: number) {
+  const timings = projectSettings.value.slashCommand;
+  const sawActivity = await waitForTerminalDataAfter(
+    versionAfterSlashSend,
+    timings.activityTimeoutMs
+  );
+  if (!sawActivity) {
+    await delay(timings.afterSlashDelayMs);
+    return;
+  }
+
+  await waitForTerminalQuiet(timings.enterDelayMs, timings.quietTimeoutMs);
+}
+
+async function sendSlashCommand(slashCommandText: string) {
+  const timings = projectSettings.value.slashCommand;
+  for (let index = 0; index < slashCommandText.length; index += 1) {
+    const char = slashCommandText[index];
+    const ok = await sendTerminalInput(char, "Failed to send slash command character to terminal.");
+    if (!ok) {
+      return false;
+    }
+
+    if (char === "/") {
+      await waitForSlashCommandReadiness(terminalDataVersion);
+      continue;
+    }
+
+    await delay(timings.charDelayMs);
+  }
+
+  await waitForTerminalQuiet(timings.enterDelayMs, timings.quietTimeoutMs);
+  return sendTerminalInput("\r", "Failed to send Enter to terminal.");
 }
 
 function initializeTerminalView() {
@@ -396,7 +504,7 @@ function initializeTerminalView() {
       return;
     }
 
-    void window.projectApi.terminal.input(data);
+    void sendTerminalInput(data, "Failed to send input to terminal.");
   });
 }
 
@@ -441,6 +549,8 @@ async function startTerminal(cwd: string) {
 
   fitAddon.fit();
   terminal.clear();
+  terminalDataVersion = 0;
+  terminalInputQueue = Promise.resolve();
 
   const response = await window.projectApi.terminal.start(cwd, {
     cols: terminal.cols,
@@ -464,6 +574,7 @@ async function openProjectFolder() {
       projectPath.value = selectedPath;
       selectedFilePath.value = null;
       toolbarConfig.value = await loadToolbarConfig(selectedPath);
+      projectSettings.value = await loadProjectSettings(selectedPath);
       await startSettingsWatcher(selectedPath);
       await nextTick();
       await startTerminal(selectedPath);
@@ -479,28 +590,22 @@ async function openProjectFolder() {
 
 async function runTerminalCommand(command: string) {
   if (!isTerminalReady.value) {
-    errorMessage.value = "Терминал ещё не готов к запуску команд.";
+    errorMessage.value = "Terminal is not ready to run commands.";
     return;
   }
 
   errorMessage.value = "";
 
   if (isSlashCommandInput(command)) {
-    const slashCommandText = command.trimStart();
-    for (let index = 0; index < slashCommandText.length; index += 1) {
-      const char = slashCommandText[index];
-      const ok = await sendTerminalInput(char, "Не удалось отправить символ команды в терминал.");
-      if (!ok) {
-        return;
-      }
-
-      await delay(char === "/" ? SLASH_COMMAND_AFTER_SLASH_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
+    const slashCommandText = getSlashCommandText(command);
+    if (!slashCommandText) {
+      errorMessage.value = "Failed to normalize slash command.";
+      return;
     }
 
-    await delay(SLASH_COMMAND_ENTER_DELAY_MS);
-
-    const enterOk = await sendTerminalInput("\r", "Не удалось отправить Enter в терминал.");
-    if (!enterOk) {
+    const sent = await sendSlashCommand(slashCommandText);
+    if (!sent) {
+      errorMessage.value ||= "Failed to send slash command to terminal.";
       return;
     }
 
@@ -509,15 +614,17 @@ async function runTerminalCommand(command: string) {
   }
 
   try {
-    const response = await window.projectApi.terminal.runCommand(command);
+    const response = await enqueueTerminalOperation(() =>
+      window.projectApi.terminal.runCommand(command)
+    );
     if (!response.ok) {
-      errorMessage.value = response.error ?? "Не удалось выполнить команду в терминале.";
+      errorMessage.value = response.error ?? "Failed to run command in terminal.";
       return;
     }
 
     focusTerminal();
   } catch (error) {
-    errorMessage.value = "Не удалось отправить команду в терминал.";
+    errorMessage.value = "Failed to send command to terminal.";
     console.error(error);
   }
 }
@@ -532,11 +639,7 @@ function executeToolbarAction(action: ToolbarAction) {
     return;
   }
 
-  void window.projectApi.terminal.input(action.input).then((response) => {
-    if (!response.ok) {
-      errorMessage.value = response.error ?? "Не удалось отправить данные в терминал.";
-    }
-  });
+  void sendTerminalInput(action.input, "Failed to send input to terminal.");
 }
 
 function handleFileSelect(path: string) {
@@ -548,29 +651,39 @@ function sendQuickKey(data: string) {
     return;
   }
 
-  void window.projectApi.terminal.input(data).then((response) => {
-    if (!response.ok) {
-      errorMessage.value = response.error ?? "Не удалось отправить клавишу в терминал.";
-    }
-  });
+  void sendTerminalInput(data, "Failed to send quick key to terminal.");
 }
 
-const TOOLBAR_CONFIG_FILENAME = "toolbar.json";
-
-function handleConfigSave(config: ToolbarConfig) {
+function handleToolbarConfigSave(config: ToolbarConfig) {
   toolbarConfig.value = config;
   if (projectPath.value) {
     void saveToolbarConfig(projectPath.value, config);
   }
-  isConfigEditorOpen.value = false;
+  isToolbarConfigEditorOpen.value = false;
+}
+
+function handleProjectSettingsSave(settings: ProjectSettings) {
+  projectSettings.value = settings;
+  if (projectPath.value) {
+    void saveProjectSettings(projectPath.value, settings);
+  }
+  isProjectSettingsEditorOpen.value = false;
 }
 
 async function handleSettingsFileChanged(filename: string) {
-  if (filename !== TOOLBAR_CONFIG_FILENAME || !projectPath.value) {
+  if (!projectPath.value) {
     return;
   }
 
-  toolbarConfig.value = await loadToolbarConfig(projectPath.value);
+  const normalizedFilename = filename.split(/[\\/]/).pop() ?? filename;
+
+  if (normalizedFilename === TOOLBAR_CONFIG_FILENAME) {
+    toolbarConfig.value = await loadToolbarConfig(projectPath.value);
+  }
+
+  if (normalizedFilename === PROJECT_SETTINGS_FILENAME) {
+    projectSettings.value = await loadProjectSettings(projectPath.value);
+  }
 }
 
 async function startSettingsWatcher(path: string) {
@@ -581,19 +694,18 @@ async function startSettingsWatcher(path: string) {
     (filename) => void handleSettingsFileChanged(filename)
   );
 
-  await window.projectApi.settings.watch(path, TOOLBAR_CONFIG_FILENAME);
+  await window.projectApi.settings.watch(path, SETTINGS_WATCH_ALL);
 }
 
 async function sendAltVToTerminal(shouldFocusTerminal = true) {
   if (!isTerminalReady.value) {
-    errorMessage.value = "Терминал ещё не готов.";
+    errorMessage.value = "Terminal is not ready.";
     return;
   }
 
   errorMessage.value = "";
-  const response = await window.projectApi.terminal.input("\u001bv");
-  if (!response.ok) {
-    errorMessage.value = response.error ?? "Не удалось отправить Alt+V в терминал.";
+  const ok = await sendTerminalInput("\u001bv", "Failed to send Alt+V to terminal.");
+  if (!ok) {
     return;
   }
 
@@ -615,20 +727,12 @@ async function sendTextareaToTerminal() {
 
   errorMessage.value = "";
 
-  if (isSlashCommandInput(text)) {
-    const normalizedText = text.replace(/\r?\n/g, "\r");
-    const slashCommandText = normalizedText.trimStart();
-    for (let index = 0; index < slashCommandText.length; index += 1) {
-      const char = slashCommandText[index];
-      const ok = await sendTerminalInput(char, "Failed to send slash command character to terminal.");
-      if (!ok) {
-        return;
-      }
-
-      await delay(char === "/" ? SLASH_COMMAND_AFTER_SLASH_DELAY_MS : SLASH_COMMAND_CHAR_DELAY_MS);
+  const slashCommandText = getSlashCommandText(text);
+  if (slashCommandText) {
+    const ok = await sendSlashCommand(slashCommandText);
+    if (!ok) {
+      return;
     }
-
-    await delay(SLASH_COMMAND_ENTER_DELAY_MS);
   } else {
     const cleanedText = text.replace(/[\r\n]+$/, "");
     const ok = await sendTerminalInput(cleanedText, "Failed to send input to terminal.");
@@ -637,11 +741,10 @@ async function sendTextareaToTerminal() {
     }
 
     await delay(PASTE_ENTER_DELAY_MS);
-  }
-
-  const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
-  if (!enterOk) {
-    return;
+    const enterOk = await sendTerminalInput("\r", "Failed to send Enter to terminal.");
+    if (!enterOk) {
+      return;
+    }
   }
 
   appendTerminalInputHistory(text);
@@ -679,6 +782,7 @@ async function handleTextareaPaste(event: ClipboardEvent) {
 
 onMounted(() => {
   unsubscribeTerminalData = window.projectApi.terminal.onData((data) => {
+    terminalDataVersion += 1;
     terminal?.write(data);
   });
 
