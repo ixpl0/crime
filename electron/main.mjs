@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 const terminalSessions = new Map();
 const settingsWatchers = new Map();
 const { IPC_CHANNELS } = ipcChannelsModule;
-const { SETTINGS_DIRNAME, LEGACY_SETTINGS_DIRNAME } = settingsConstantsModule;
+const { SETTINGS_DIRNAME } = settingsConstantsModule;
 const { quickKeyBindings } = quickKeyBindingsModule;
 
 const SETTINGS_WATCH_DEBOUNCE_MS = 300;
@@ -562,10 +562,6 @@ function getSettingsDirPath(projectPath) {
   return join(projectPath, SETTINGS_DIRNAME);
 }
 
-function getLegacySettingsDirPath(projectPath) {
-  return join(projectPath, LEGACY_SETTINGS_DIRNAME);
-}
-
 function registerIpcHandlers() {
   ipcMain.removeHandler(IPC_CHANNELS.projectOpenFolder);
   ipcMain.removeHandler(IPC_CHANNELS.settingsRead);
@@ -611,31 +607,7 @@ function registerIpcHandlers() {
       return { ok: true, content };
     } catch (error) {
       if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
-        const legacySettingsDir = getLegacySettingsDirPath(projectPath);
-        const legacyFilePath = join(legacySettingsDir, filename);
-        if (!isPathInsideBase(legacySettingsDir, legacyFilePath)) {
-          return { ok: false, error: "Invalid filename." };
-        }
-
-        try {
-          const content = await readFile(legacyFilePath, "utf-8");
-          return { ok: true, content };
-        } catch (legacyError) {
-          if (
-            legacyError &&
-            typeof legacyError === "object" &&
-            "code" in legacyError &&
-            legacyError.code === "ENOENT"
-          ) {
-            return { ok: true, content: null };
-          }
-
-          return {
-            ok: false,
-            error:
-              legacyError instanceof Error ? legacyError.message : "Failed to read settings file."
-          };
-        }
+        return { ok: true, content: null };
       }
 
       return {
@@ -875,7 +847,6 @@ function registerIpcHandlers() {
     try {
       const dirents = await readdir(dirPath, { withFileTypes: true });
       const entries = dirents
-        .filter((dirent) => !dirent.name.startsWith("."))
         .map((dirent) => ({
           name: dirent.name,
           isDirectory: dirent.isDirectory(),
