@@ -1638,8 +1638,7 @@ async function startTerminal(cwd: string) {
   focusTerminal();
 }
 
-async function openProject(path: string) {
-  projectPath.value = path;
+function resetProjectRuntimeState() {
   selectedFilePath.value = null;
   terminalInputText.value = "";
   terminalInputHistory.value = [];
@@ -1654,6 +1653,11 @@ async function openProject(path: string) {
   todoPersistQueue = Promise.resolve();
   projectSettingsPersistQueue = Promise.resolve();
   resetTerminalInputHistoryNavigation();
+}
+
+async function openProject(path: string) {
+  projectPath.value = path;
+  resetProjectRuntimeState();
   toolbarConfig.value = await loadToolbarConfig(path);
   projectSettings.value = await loadProjectSettings(path);
   applyProjectZoomSettings(projectSettings.value);
@@ -1699,20 +1703,7 @@ async function openLastProjectOnStartup() {
   } catch (error) {
     clearLastProjectPathInStorage();
     projectPath.value = null;
-    selectedFilePath.value = null;
-    terminalInputText.value = "";
-    terminalInputHistory.value = [];
-    terminalInputHistoryEditVersion = 0;
-    terminalInputHistoryPersistedVersion = 0;
-    terminalInputHistoryPersistQueue = Promise.resolve();
-    terminalInputHistoryReloadPending = false;
-    todoDrafts.value = [""];
-    resetTodoDragState();
-    todoDraftEditVersion = 0;
-    todoPersistedVersion = 0;
-    todoPersistQueue = Promise.resolve();
-    projectSettingsPersistQueue = Promise.resolve();
-    resetTerminalInputHistoryNavigation();
+    resetProjectRuntimeState();
     toolbarConfig.value = defaultToolbarConfig;
     projectSettings.value = defaultProjectSettings;
     applyProjectZoomSettings(defaultProjectSettings);

@@ -21,17 +21,6 @@ const IPC_CHANNELS = Object.freeze({
 });
 
 const SETTINGS_DIRNAME = ".ide";
-const MIN_ZOOM_FACTOR = 0.25;
-const MAX_ZOOM_FACTOR = 5;
-
-function normalizeZoomFactor(value) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return null;
-  }
-
-  return Math.min(Math.max(value, MIN_ZOOM_FACTOR), MAX_ZOOM_FACTOR);
-}
-
 const quickKeyBindings = Object.freeze([
   {
     id: "quick-1",
@@ -114,11 +103,16 @@ const quickKeyBindings = Object.freeze([
     gridIndex: 12
   }
 ]);
+const MIN_ZOOM_FACTOR = 0.25;
+const MAX_ZOOM_FACTOR = 5;
 
-contextBridge.exposeInMainWorld("appMeta", {
-  framework: "Electron + Vue + Tailwind + daisyUI",
-  runtime: "Bun"
-});
+function normalizeZoomFactor(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return Math.min(Math.max(value, MIN_ZOOM_FACTOR), MAX_ZOOM_FACTOR);
+}
 
 const exposedQuickKeys = quickKeyBindings.map((binding) => ({
   id: binding.id,
@@ -183,9 +177,6 @@ contextBridge.exposeInMainWorld("projectApi", {
 
       webFrame.setZoomFactor(normalizedFactor);
       return true;
-    },
-    reset: () => {
-      webFrame.setZoomFactor(1);
     }
   },
   onGlobalQuickKey: (listener) => {

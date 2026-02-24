@@ -11,7 +11,7 @@
             <button
               :disabled="!isTerminalReady"
               class="flex justify-between"
-              @click="$emit('execute-action', toToolbarAction(item))"
+              @click="$emit('execute-action', item)"
             >
               <span>{{ item.label }}</span>
               <kbd v-if="item.shortcut" class="kbd kbd-xs">{{ formatShortcut(item.shortcut) }}</kbd>
@@ -25,7 +25,7 @@
         class="btn btn-sm"
         :disabled="!isTerminalReady"
         :title="element.shortcut ? formatShortcut(element.shortcut) : undefined"
-        @click="$emit('execute-action', toToolbarAction(element))"
+        @click="$emit('execute-action', element)"
       >
         {{ element.label }}
         <kbd v-if="element.shortcut" class="kbd kbd-xs ml-1">{{ formatShortcut(element.shortcut) }}</kbd>
@@ -45,9 +45,7 @@
 <script setup lang="ts">
 import {
   type ToolbarConfig,
-  type ToolbarAction,
-  type ToolbarButton,
-  type ToolbarStandaloneButton
+  type ToolbarAction
 } from "../types/toolbar";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
 import { ChevronDown, Pencil } from "lucide-vue-next";
@@ -61,10 +59,5 @@ defineEmits<{
   "execute-action": [action: ToolbarAction];
   "open-config-editor": [];
 }>();
-
-const toToolbarAction = (target: ToolbarButton | ToolbarStandaloneButton): ToolbarAction =>
-  typeof target.command === "string"
-    ? { command: target.command }
-    : { rawInput: target.rawInput };
 </script>
 

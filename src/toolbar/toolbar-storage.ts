@@ -5,55 +5,24 @@ import {
   saveJsonProjectSetting
 } from "../settings/settings-storage-helpers";
 
-const LEGACY_TOOLBAR_CONFIG_FILENAME = "toolbar.json";
 export const TOOLBAR_CONFIG_FILENAME = "agent-toolbar.json";
 
 const parseToolbarActionRecord = (value: Record<string, unknown>): ToolbarAction | null => {
   const command = typeof value.command === "string" ? value.command : null;
   const rawInput = typeof value.rawInput === "string" ? value.rawInput : null;
-  const legacyInput = typeof value.input === "string" ? value.input : null;
-
-  const hasCommand = command !== null;
-  const hasRawInput = rawInput !== null;
-  const hasLegacyInput = legacyInput !== null;
-
-  if (hasCommand && !hasRawInput && !hasLegacyInput) {
-    return { command };
-  }
-
-  if (!hasCommand && hasRawInput && !hasLegacyInput) {
-    return { rawInput };
-  }
-
-  // Backward compatibility for previously persisted field name.
-  if (!hasCommand && !hasRawInput && hasLegacyInput) {
-    return { rawInput: legacyInput };
-  }
-
-  // Backward compatibility for previously persisted action format.
-  if (value.type === "run-command" && hasCommand && !hasRawInput && !hasLegacyInput) {
-    return { command };
-  }
-
-  if (value.type === "send-input" && !hasCommand) {
-    if (hasRawInput && !hasLegacyInput) {
-      return { rawInput };
-    }
-
-    if (!hasRawInput && hasLegacyInput) {
-      return { rawInput: legacyInput };
-    }
-  }
-
-  return null;
-};
-
-const parseToolbarAction = (value: unknown): ToolbarAction | null => {
-  if (!isRecord(value)) {
+  if ((command === null) === (rawInput === null)) {
     return null;
   }
 
-  return parseToolbarActionRecord(value);
+  if (command !== null) {
+    return { command };
+  }
+
+  if (rawInput === null) {
+    return null;
+  }
+
+  return { rawInput };
 };
 
 const parseToolbarButton = (value: unknown): ToolbarButton | null => {
@@ -65,7 +34,7 @@ const parseToolbarButton = (value: unknown): ToolbarButton | null => {
     return null;
   }
 
-  const action = parseToolbarActionRecord(value) ?? parseToolbarAction(value.action);
+  const action = parseToolbarActionRecord(value);
   if (!action) {
     return null;
   }
@@ -97,7 +66,7 @@ const parseToolbarElement = (value: unknown): ToolbarElement | null => {
   }
 
   if (value.type === "button") {
-    const action = parseToolbarActionRecord(value) ?? parseToolbarAction(value.action);
+    const action = parseToolbarActionRecord(value);
     if (!action) {
       return null;
     }
@@ -141,27 +110,18 @@ const parseToolbarConfigContent = (content: string): ToolbarConfig | null => {
 
 export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
   try {
-    const currentResponse = await window.projectApi.settings.read(projectPath, TOOLBAR_CONFIG_FILENAME);
-    if (!currentResponse.ok) {
+    const response = await window.projectApi.settings.read(projectPath, TOOLBAR_CONFIG_FILENAME);
+    if (!response.ok) {
       return defaultToolbarConfig;
     }
 
-    if (currentResponse.content != null) {
-      const currentConfig = parseToolbarConfigContent(currentResponse.content);
-      if (currentConfig) {
-        return currentConfig;
+    if (response.content != null) {
+      const config = parseToolbarConfigContent(response.content);
+      if (config) {
+        return config;
       }
 
       return defaultToolbarConfig;
-    }
-
-    const legacyResponse = await window.projectApi.settings.read(projectPath, LEGACY_TOOLBAR_CONFIG_FILENAME);
-    if (legacyResponse.ok && legacyResponse.content != null) {
-      const legacyConfig = parseToolbarConfigContent(legacyResponse.content);
-      if (legacyConfig) {
-        await saveToolbarConfig(projectPath, legacyConfig);
-        return legacyConfig;
-      }
     }
 
     await saveToolbarConfig(projectPath, defaultToolbarConfig);

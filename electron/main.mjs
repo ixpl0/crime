@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, globalShortcut, ipcMain, nativeTheme, screen } from "electron";
 import { fileURLToPath } from "node:url";
-import { dirname, join, resolve, normalize, relative } from "node:path";
+import { dirname, join, resolve, normalize, relative, isAbsolute } from "node:path";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { watch, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -655,7 +655,8 @@ function createWindow() {
 function isPathInsideBase(base, target) {
   const normalizedBase = normalize(resolve(base));
   const normalizedTarget = normalize(resolve(target));
-  return normalizedTarget.startsWith(normalizedBase);
+  const relativePath = relative(normalizedBase, normalizedTarget);
+  return relativePath === "" || (!relativePath.startsWith("..") && !isAbsolute(relativePath));
 }
 
 function getSettingsDirPath(projectPath) {

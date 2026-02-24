@@ -4,3 +4,4 @@ out
 *.log
 .claude/
 .ide/
+.idea/

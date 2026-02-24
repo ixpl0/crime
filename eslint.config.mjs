@@ -80,5 +80,19 @@ export default [
       ]
     }
   },
+  {
+    files: ["electron/preload.cjs"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.name='require'] > Literal.arguments:first-child[value=/^\\.\\.?\\//]",
+          message:
+            "Do not use local require('./...') in sandboxed preload. Keep electron/preload.cjs self-contained."
+        }
+      ]
+    }
+  },
   disableTypeCheckedForJsFiles
 ];

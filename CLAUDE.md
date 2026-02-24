@@ -37,6 +37,12 @@ src/
 - **Toolbar config**: per-project in `.ide/toolbar.json`
 - **Terminal history**: per-project in `.ide/terminal-input-history.json`
 
+## Preload Caveat
+
+- `electron/preload.cjs` runs in a sandboxed preload context.
+- Keep preload self-contained and avoid local `require("./...")` imports there.
+- If local imports are used, Electron may fail with `module not found`, and `window.projectApi` can be undefined in renderer.
+
 ## Scripts
 
 - `bun run dev` — Vite dev server + Electron (concurrent)
@@ -48,4 +54,4 @@ src/
 ## Git
 
 - Do not ask for approval before `git commit`, `git push`, or other git write commands. Just do it.
-- In this environment, always run `git commit`, `git push`, and `git hook run pre-commit` with escalation (outside sandbox), because Git for Windows/MSYS can fail with `couldn't create signal pipe, Win32 error 5` inside sandbox.
+- In this environment, always run `git commit` and `git push` with escalation (outside sandbox), because Git for Windows/MSYS can fail with `couldn't create signal pipe, Win32 error 5` inside sandbox.

@@ -224,11 +224,6 @@ export interface ShortcutMapping {
   readonly action: ToolbarAction;
 }
 
-const toToolbarAction = (target: ToolbarAction): ToolbarAction =>
-  typeof target.command === "string"
-    ? { command: target.command }
-    : { rawInput: target.rawInput };
-
 export const buildShortcutMap = (config: ToolbarConfig): readonly ShortcutMapping[] =>
   config.elements.flatMap((element): readonly ShortcutMapping[] => {
     if (element.type === "button" && element.shortcut) {
@@ -236,7 +231,7 @@ export const buildShortcutMap = (config: ToolbarConfig): readonly ShortcutMappin
       if (!parsed) {
         return [];
       }
-      return [{ parsed, action: toToolbarAction(element) }];
+      return [{ parsed, action: element }];
     }
 
     if (element.type === "dropdown") {
@@ -248,7 +243,7 @@ export const buildShortcutMap = (config: ToolbarConfig): readonly ShortcutMappin
         if (!parsed) {
           return [];
         }
-        return [{ parsed, action: toToolbarAction(item) }];
+        return [{ parsed, action: item }];
       });
     }
 

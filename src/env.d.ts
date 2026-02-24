@@ -1,10 +1,5 @@
 /// <reference types="vite/client" />
 
-interface AppMeta {
-  framework: string;
-  runtime: string;
-}
-
 interface TerminalResponse {
   ok: boolean;
   error?: string;
@@ -124,7 +119,6 @@ interface GitApi {
 interface ZoomApi {
   getFactor: () => number;
   setFactor: (factor: number) => boolean;
-  reset: () => void;
 }
 
 interface ProjectApi {
@@ -139,7 +133,6 @@ interface ProjectApi {
 }
 
 interface Window {
-  appMeta: AppMeta;
   projectApi: ProjectApi;
 }
 
