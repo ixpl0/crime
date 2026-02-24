@@ -2046,7 +2046,6 @@ async function handleTextareaPaste(event: ClipboardEvent) {
   }
 
   event.preventDefault();
-  terminalInputText.value = "";
   try {
     await sendAltVToTerminal(false);
   } finally {
