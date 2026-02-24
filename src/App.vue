@@ -345,6 +345,8 @@ const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
+const DEC_PRIVATE_MODE_SET_SEQUENCE_PATTERN = /\u001b\[\?([0-9;]+)h/g;
+const FORCE_HIDE_TERMINAL_CURSOR_SEQUENCE = "\u001b[?12l\u001b[?25l";
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
@@ -1008,6 +1010,34 @@ function moveTextareaCursorToEnd() {
   });
 }
 
+function sanitizeTerminalOutput(data: string) {
+  if (!data.includes("\u001b[?")) {
+    return data;
+  }
+
+  return data.replace(DEC_PRIVATE_MODE_SET_SEQUENCE_PATTERN, (sequence, rawParams: string) => {
+    const parsedParams = rawParams
+      .split(";")
+      .map((value: string) => Number.parseInt(value, 10))
+      .filter((value: number) => Number.isInteger(value) && value > 0);
+
+    if (parsedParams.length === 0) {
+      return sequence;
+    }
+
+    const nextParams = parsedParams.filter((value: number) => value !== 12 && value !== 25);
+    if (nextParams.length === parsedParams.length) {
+      return sequence;
+    }
+
+    if (nextParams.length === 0) {
+      return "";
+    }
+
+    return `\u001b[?${nextParams.join(";")}h`;
+  });
+}
+
 function setTerminalInputText(text: string) {
   terminalInputText.value = text;
   moveTextareaCursorToEnd();
@@ -1540,6 +1570,7 @@ function initializeTerminalView() {
   terminal.loadAddon(fitAddon);
   terminal.open(terminalContainer.value);
   fitAddon.fit();
+  terminal.write(FORCE_HIDE_TERMINAL_CURSOR_SEQUENCE);
   terminal.writeln("Терминал готов. Выберите папку проекта.");
 
   terminal.onData((data) => {
@@ -1922,7 +1953,11 @@ async function handleTextareaPaste(event: ClipboardEvent) {
 onMounted(() => {
   unsubscribeTerminalData = window.projectApi.terminal.onData((data) => {
     terminalDataVersion += 1;
-    terminal?.write(data);
+    const sanitizedData = sanitizeTerminalOutput(data);
+    if (sanitizedData) {
+      terminal?.write(sanitizedData);
+    }
+    terminal?.write(FORCE_HIDE_TERMINAL_CURSOR_SEQUENCE);
   });
 
   unsubscribeTerminalExit = window.projectApi.terminal.onExit((code) => {
