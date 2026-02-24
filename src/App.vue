@@ -48,7 +48,16 @@
               <div
                 v-for="(todoDraft, index) in todoDrafts"
                 :key="`todo-draft-${index}`"
-                class="space-y-1"
+                class="space-y-1 rounded-lg border border-transparent p-1 transition-colors"
+                :class="{
+                  'border-primary/40 bg-primary/10':
+                    todoDragOverIndex === index &&
+                    todoDragSourceIndex !== null &&
+                    todoDragSourceIndex !== index
+                }"
+                @dragenter.prevent="handleTodoDragEnter(index, $event)"
+                @dragover.prevent="handleTodoDragOver(index, $event)"
+                @drop.prevent="handleTodoDrop(index, $event)"
               >
                 <textarea
                   :value="todoDraft"
@@ -60,9 +69,21 @@
                   @input="handleTodoTextareaInput(index, $event)"
                   @blur="handleTodoTextareaBlur"
                 />
-                <div class="flex justify-end">
+                <div class="flex items-center gap-2">
                   <button
-                    class="btn btn-ghost btn-xs normal-case text-base-content/70"
+                    v-if="shouldShowTodoDragHandle(index)"
+                    class="btn btn-ghost btn-xs btn-square cursor-grab text-base-content/60 active:cursor-grabbing"
+                    type="button"
+                    :draggable="canDragTodoDraft(index)"
+                    :disabled="!canDragTodoDraft(index)"
+                    title="Drag to reorder"
+                    @dragstart="handleTodoDragStart(index, $event)"
+                    @dragend="handleTodoDragEnd"
+                  >
+                    <GripVertical :size="14" />
+                  </button>
+                  <button
+                    class="btn btn-ghost btn-xs ml-auto normal-case text-base-content/70"
                     type="button"
                     :disabled="!isTerminalReady || !todoDraft.trim()"
                     @click="sendTodoEntryToTerminal(index)"
@@ -287,7 +308,8 @@ import {
   Settings,
   ChevronDown,
   Eye,
-  EyeOff
+  EyeOff,
+  GripVertical
 } from "lucide-vue-next";
 
 const settingsDirectoryName = window.projectApi.settings.directoryName;
@@ -320,6 +342,8 @@ const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
 const terminalInputHistory = ref<string[]>([]);
 const todoDrafts = ref<string[]>([""]);
+const todoDragSourceIndex = ref<number | null>(null);
+const todoDragOverIndex = ref<number | null>(null);
 const isTodoPanelCollapsed = ref(
   window.localStorage.getItem(TODO_PANEL_COLLAPSED_STORAGE_KEY) === "1"
 );
@@ -419,24 +443,138 @@ async function loadTerminalInputHistoryForProject(path: string) {
 
 function getNormalizedTodoDrafts(entries: string[]) {
   const nextEntries = entries.length > 0 ? entries : [""];
-  let visibleCount = 1;
-  while (
-    visibleCount < nextEntries.length &&
-    nextEntries[visibleCount - 1].trim().length > 0
-  ) {
-    visibleCount += 1;
+  let lastNonEmptyIndex = -1;
+
+  for (let index = 0; index < nextEntries.length; index += 1) {
+    if (nextEntries[index].trim().length > 0) {
+      lastNonEmptyIndex = index;
+    }
   }
 
-  const visibleEntries = nextEntries.slice(0, visibleCount);
-  if (visibleEntries[visibleEntries.length - 1].trim().length > 0) {
-    visibleEntries.push("");
+  if (lastNonEmptyIndex < 0) {
+    return [""];
   }
 
-  return visibleEntries;
+  return [...nextEntries.slice(0, lastNonEmptyIndex + 1), ""];
 }
 
 function getPersistedTodoEntries(entries: string[]) {
   return entries.filter((entry) => entry.trim().length > 0);
+}
+
+function isTodoDraftIndexValid(index: number) {
+  return index >= 0 && index < todoDrafts.value.length;
+}
+
+function canDragTodoDraft(index: number) {
+  if (!isTodoDraftIndexValid(index)) {
+    return false;
+  }
+
+  return todoDrafts.value[index].trim().length > 0;
+}
+
+function shouldShowTodoDragHandle(index: number) {
+  if (!isTodoDraftIndexValid(index)) {
+    return false;
+  }
+
+  return index < todoDrafts.value.length - 1;
+}
+
+function resetTodoDragState() {
+  todoDragSourceIndex.value = null;
+  todoDragOverIndex.value = null;
+}
+
+function getTodoDragSourceIndex(event: DragEvent) {
+  if (todoDragSourceIndex.value !== null) {
+    return todoDragSourceIndex.value;
+  }
+
+  const rawSourceIndex = event.dataTransfer?.getData("text/plain") ?? "";
+  const parsedSourceIndex = Number.parseInt(rawSourceIndex, 10);
+  return Number.isInteger(parsedSourceIndex) ? parsedSourceIndex : null;
+}
+
+function handleTodoDragStart(index: number, event: DragEvent) {
+  if (!canDragTodoDraft(index)) {
+    event.preventDefault();
+    return;
+  }
+
+  todoDragSourceIndex.value = index;
+  todoDragOverIndex.value = index;
+
+  if (!event.dataTransfer) {
+    return;
+  }
+
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", String(index));
+}
+
+function handleTodoDragEnter(index: number, event: DragEvent) {
+  if (todoDragSourceIndex.value === null || !isTodoDraftIndexValid(index)) {
+    return;
+  }
+
+  event.preventDefault();
+  todoDragOverIndex.value = index;
+}
+
+function handleTodoDragOver(index: number, event: DragEvent) {
+  if (todoDragSourceIndex.value === null || !isTodoDraftIndexValid(index)) {
+    return;
+  }
+
+  event.preventDefault();
+  todoDragOverIndex.value = index;
+
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+}
+
+function handleTodoDragEnd() {
+  resetTodoDragState();
+}
+
+function handleTodoDrop(index: number, event: DragEvent) {
+  if (!isTodoDraftIndexValid(index)) {
+    resetTodoDragState();
+    return;
+  }
+
+  const sourceIndex = getTodoDragSourceIndex(event);
+  if (sourceIndex === null || !canDragTodoDraft(sourceIndex) || sourceIndex === index) {
+    resetTodoDragState();
+    return;
+  }
+
+  const focusedTodoSnapshot = getFocusedTodoSnapshot();
+  const reorderedDrafts = [...todoDrafts.value];
+  const [movedDraft] = reorderedDrafts.splice(sourceIndex, 1);
+  if (typeof movedDraft !== "string" || movedDraft.trim().length === 0) {
+    resetTodoDragState();
+    return;
+  }
+
+  reorderedDrafts.splice(index, 0, movedDraft);
+
+  todoDraftEditVersion += 1;
+  todoDrafts.value = getNormalizedTodoDrafts(
+    reorderedDrafts.filter((entry) => entry.trim().length > 0)
+  );
+  resetTodoDragState();
+
+  const nextVersion = todoDraftEditVersion;
+  persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), nextVersion);
+
+  void nextTick(() => {
+    resizeTodoTextareas();
+    restoreTodoFocus(focusedTodoSnapshot);
+  });
 }
 
 function areStringArraysEqual(first: string[], second: string[]) {
@@ -600,7 +738,7 @@ function handleTodoTextareaInput(index: number, event: Event) {
     return;
   }
 
-  if (index < 0 || index >= todoDrafts.value.length) {
+  if (!isTodoDraftIndexValid(index)) {
     return;
   }
 
@@ -1250,6 +1388,7 @@ async function openProject(path: string) {
   terminalInputText.value = "";
   terminalInputHistory.value = [];
   todoDrafts.value = [""];
+  resetTodoDragState();
   todoDraftEditVersion = 0;
   todoPersistedVersion = 0;
   todoPersistQueue = Promise.resolve();
@@ -1302,6 +1441,7 @@ async function openLastProjectOnStartup() {
     terminalInputText.value = "";
     terminalInputHistory.value = [];
     todoDrafts.value = [""];
+    resetTodoDragState();
     todoDraftEditVersion = 0;
     todoPersistedVersion = 0;
     todoPersistQueue = Promise.resolve();
