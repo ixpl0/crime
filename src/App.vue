@@ -63,7 +63,7 @@
                   :value="todoDraftView.value"
                   data-todo-textarea="true"
                   :data-todo-index="todoDraftView.index"
-                  class="textarea textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden text-sm leading-relaxed"
+                  class="textarea textarea-autosize-native textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden text-sm leading-relaxed"
                   rows="1"
                   placeholder="&#1055;&#1088;&#1086;&#1084;&#1087;&#1090;"
                   @input="handleTodoTextareaInput(todoDraftView.index, $event)"
@@ -205,7 +205,7 @@
                 <textarea
                   ref="terminalInputTextarea"
                   v-model="terminalInputText"
-                  class="textarea textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden"
+                  class="textarea textarea-autosize-native textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden"
                   rows="1"
                   :disabled="!isTerminalReady"
                   placeholder="&#1042;&#1074;&#1077;&#1076;&#1080;&#1090;&#1077; &#1090;&#1077;&#1082;&#1089;&#1090; &#1076;&#1083;&#1103; &#1086;&#1090;&#1087;&#1088;&#1072;&#1074;&#1082;&#1080; &#1074; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;"
@@ -847,46 +847,21 @@ function areStringArraysEqual(first: string[], second: string[]) {
   return true;
 }
 
-function getTextareaMinHeight(textarea: HTMLTextAreaElement, boxFrameHeight: number) {
-  const computedStyles = window.getComputedStyle(textarea);
-  const lineHeight = Number.parseFloat(computedStyles.lineHeight) || 20;
-  const paddingTop = Number.parseFloat(computedStyles.paddingTop) || 0;
-  const paddingBottom = Number.parseFloat(computedStyles.paddingBottom) || 0;
-
-  return Math.max(Math.ceil(lineHeight + paddingTop + paddingBottom + boxFrameHeight), 1);
-}
-
-function resizeAutoHeightTextareaElement(textarea: HTMLTextAreaElement) {
-  textarea.style.height = "auto";
-  const boxFrameHeight = textarea.offsetHeight - textarea.clientHeight;
-  const minHeight = getTextareaMinHeight(textarea, boxFrameHeight);
-  const nextHeight = Math.max(
-    Math.ceil(textarea.scrollHeight + boxFrameHeight),
-    minHeight
-  );
-  textarea.style.height = `${String(nextHeight)}px`;
-}
-
-function resizeTodoTextareaElement(textarea: HTMLTextAreaElement) {
-  resizeAutoHeightTextareaElement(textarea);
-}
-
 function resizeTerminalInputTextareaElement() {
   const textarea = terminalInputTextarea.value;
   if (!textarea) {
     return;
   }
 
-  resizeAutoHeightTextareaElement(textarea);
+  textarea.style.removeProperty("height");
 }
 
 function resizeTodoTextareas() {
   const textareas = document.querySelectorAll<HTMLTextAreaElement>(
     'textarea[data-todo-textarea="true"]'
   );
-
   for (const textarea of textareas) {
-    resizeTodoTextareaElement(textarea);
+    textarea.style.removeProperty("height");
   }
 }
 
@@ -1057,18 +1032,11 @@ function handleTodoTextareaInput(index: number, event: Event) {
   const isCompletedPlaceholder =
     previousValue.trim().length === 0 && textarea.value.trim().length > 0;
   const shouldIncludePlaceholder = hadPlaceholder && !isCompletedPlaceholder;
-  const previousLength = todoDrafts.value.length;
   const normalizedDrafts = getNormalizedTodoDrafts(nextDrafts, {
     includePlaceholder: shouldIncludePlaceholder
   });
   todoDraftEditVersion += 1;
   todoDrafts.value = normalizedDrafts;
-  resizeTodoTextareaElement(textarea);
-  if (normalizedDrafts.length !== previousLength) {
-    void nextTick(() => {
-      resizeTodoTextareas();
-    });
-  }
 }
 
 function handleTodoTextareaKeydown(event: KeyboardEvent) {
@@ -1440,7 +1408,7 @@ function handleTextareaInput(event: Event) {
   const textarea =
     event.currentTarget instanceof HTMLTextAreaElement ? event.currentTarget : null;
   if (textarea) {
-    resizeAutoHeightTextareaElement(textarea);
+    textarea.style.removeProperty("height");
   }
 
   if (terminalInputHistoryIndex.value === null) {
@@ -2228,6 +2196,10 @@ onBeforeUnmount(() => {
 
 .todo-list-scroll {
   overflow-anchor: none;
+}
+
+.textarea-autosize-native {
+  field-sizing: content;
 }
 
 .terminal-host :deep(.xterm) {
