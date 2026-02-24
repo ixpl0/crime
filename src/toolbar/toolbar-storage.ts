@@ -2,11 +2,11 @@ import { type ToolbarConfig, type ToolbarElement, type ToolbarAction, type Toolb
 import { defaultToolbarConfig } from "./default-toolbar-config";
 import {
   isRecord,
-  loadJsonProjectSetting,
   saveJsonProjectSetting
 } from "../settings/settings-storage-helpers";
 
-export const TOOLBAR_CONFIG_FILENAME = "toolbar.json";
+export const LEGACY_TOOLBAR_CONFIG_FILENAME = "toolbar.json";
+export const TOOLBAR_CONFIG_FILENAME = "agent-toolbar.json";
 
 const parseToolbarAction = (value: unknown): ToolbarAction | null => {
   if (!isRecord(value)) {
@@ -94,15 +94,41 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
   return { version: 1, elements };
 };
 
+const readToolbarConfigFromFile = async (
+  projectPath: string,
+  filename: string
+): Promise<ToolbarConfig | null> => {
+  const response = await window.projectApi.settings.read(projectPath, filename);
+  if (!response.ok || response.content == null) {
+    return null;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(response.content);
+    return parseToolbarConfig(parsed) ?? defaultToolbarConfig;
+  } catch {
+    return defaultToolbarConfig;
+  }
+};
+
 export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
-  return loadJsonProjectSetting(
-    projectPath,
-    TOOLBAR_CONFIG_FILENAME,
-    parseToolbarConfig,
-    defaultToolbarConfig
-  );
+  try {
+    const currentConfig = await readToolbarConfigFromFile(projectPath, TOOLBAR_CONFIG_FILENAME);
+    if (currentConfig) {
+      return currentConfig;
+    }
+
+    const legacyConfig = await readToolbarConfigFromFile(projectPath, LEGACY_TOOLBAR_CONFIG_FILENAME);
+    if (legacyConfig) {
+      return legacyConfig;
+    }
+  } catch {
+    return defaultToolbarConfig;
+  }
+
+  return defaultToolbarConfig;
 };
 
 export const saveToolbarConfig = async (projectPath: string, config: ToolbarConfig): Promise<void> => {
-  await saveJsonProjectSetting(projectPath, TOOLBAR_CONFIG_FILENAME, config, "toolbar config");
+  await saveJsonProjectSetting(projectPath, TOOLBAR_CONFIG_FILENAME, config, "agent toolbar config");
 };

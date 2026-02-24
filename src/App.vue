@@ -48,6 +48,22 @@
             >
               Файлы
             </button>
+              <div class="dropdown dropdown-bottom">
+                <div tabindex="0" role="tab" class="tab">
+                  &#1055;&#1088;&#1086;&#1077;&#1082;&#1090;
+                  <ChevronDown :size="14" class="ml-1" />
+                </div>
+                <ul
+                  tabindex="0"
+                  class="dropdown-content menu bg-base-100 rounded-box z-10 w-40 p-0 shadow"
+                >
+                  <li>
+                    <button :disabled="isOpening" @click="openProjectFolder">
+                      &#1054;&#1090;&#1082;&#1088;&#1099;&#1090;&#1100;
+                    </button>
+                  </li>
+                </ul>
+              </div>
             </div>
 
             <button
@@ -58,13 +74,6 @@
               <Settings :size="16" />
             </button>
           </div>
-
-          <ToolbarPanel
-            :toolbar-config="toolbarConfig"
-            :is-terminal-ready="isTerminalReady"
-            @execute-action="executeToolbarAction"
-            @open-config-editor="isToolbarConfigEditorOpen = true"
-          />
 
           <ToolbarConfigEditor
             :current-config="toolbarConfig"
@@ -84,6 +93,13 @@
 
           <div v-show="activeTab === 'agent'">
             <div class="space-y-4">
+              <ToolbarPanel
+                :toolbar-config="toolbarConfig"
+                :is-terminal-ready="isTerminalReady"
+                @execute-action="executeToolbarAction"
+                @open-config-editor="isToolbarConfigEditorOpen = true"
+              />
+
               <div
                 ref="terminalContainer"
                 class="terminal-host h-96 w-full rounded-box border border-base-300 bg-[#05070d]"
@@ -166,6 +182,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import "xterm/css/xterm.css";
 import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
 import {
+  LEGACY_TOOLBAR_CONFIG_FILENAME,
   loadToolbarConfig,
   saveToolbarConfig,
   TOOLBAR_CONFIG_FILENAME
@@ -188,7 +205,7 @@ import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
 import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import FileContentViewer from "./components/FileContentViewer.vue";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, Settings } from "lucide-vue-next";
+import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, Settings, ChevronDown } from "lucide-vue-next";
 
 const settingsDirectoryName = window.projectApi.settings.directoryName;
 const QUICK_KEY_GRID_SIZE = 12;
@@ -216,6 +233,7 @@ const TERMINAL_INPUT_CHUNK_SIZE = 2048;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
+const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const terminalInputHistory = ref<string[]>([]);
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
@@ -238,6 +256,24 @@ let terminalInputQueue: Promise<void> = Promise.resolve();
 let terminalInputHistoryLoadToken = 0;
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
+
+function getLastProjectPathFromStorage() {
+  const storedPath = window.localStorage.getItem(LAST_PROJECT_PATH_STORAGE_KEY);
+  if (!storedPath) {
+    return null;
+  }
+
+  const normalizedPath = storedPath.trim();
+  return normalizedPath.length > 0 ? normalizedPath : null;
+}
+
+function setLastProjectPathInStorage(path: string) {
+  window.localStorage.setItem(LAST_PROJECT_PATH_STORAGE_KEY, path);
+}
+
+function clearLastProjectPathInStorage() {
+  window.localStorage.removeItem(LAST_PROJECT_PATH_STORAGE_KEY);
+}
 
 async function loadTerminalInputHistoryForProject(path: string) {
   const loadToken = terminalInputHistoryLoadToken + 1;
@@ -868,27 +904,64 @@ async function startTerminal(cwd: string) {
   focusTerminal();
 }
 
+async function openProject(path: string) {
+  projectPath.value = path;
+  selectedFilePath.value = null;
+  terminalInputText.value = "";
+  terminalInputHistory.value = [];
+  resetTerminalInputHistoryNavigation();
+  toolbarConfig.value = await loadToolbarConfig(path);
+  projectSettings.value = await loadProjectSettings(path);
+  await loadTerminalInputHistoryForProject(path);
+  await startSettingsWatcher(path);
+  await nextTick();
+  await startTerminal(path);
+  setLastProjectPathInStorage(path);
+}
+
 async function openProjectFolder() {
   isOpening.value = true;
   errorMessage.value = "";
 
   try {
     const selectedPath = await window.projectApi.openFolder();
-    if (selectedPath) {
-      projectPath.value = selectedPath;
-      selectedFilePath.value = null;
-      terminalInputHistory.value = [];
-      resetTerminalInputHistoryNavigation();
-      toolbarConfig.value = await loadToolbarConfig(selectedPath);
-      projectSettings.value = await loadProjectSettings(selectedPath);
-      await loadTerminalInputHistoryForProject(selectedPath);
-      await startSettingsWatcher(selectedPath);
-      await nextTick();
-      await startTerminal(selectedPath);
+    if (!selectedPath) {
+      return;
     }
+
+    await openProject(selectedPath);
   } catch (error) {
     isTerminalReady.value = false;
     errorMessage.value = "Не удалось открыть проект или запустить терминал.";
+    console.error(error);
+  } finally {
+    isOpening.value = false;
+  }
+}
+
+async function openLastProjectOnStartup() {
+  const lastProjectPath = getLastProjectPathFromStorage();
+  if (!lastProjectPath) {
+    return;
+  }
+
+  isOpening.value = true;
+  errorMessage.value = "";
+
+  try {
+    await openProject(lastProjectPath);
+  } catch (error) {
+    clearLastProjectPathInStorage();
+    projectPath.value = null;
+    selectedFilePath.value = null;
+    terminalInputText.value = "";
+    terminalInputHistory.value = [];
+    resetTerminalInputHistoryNavigation();
+    toolbarConfig.value = defaultToolbarConfig;
+    projectSettings.value = defaultProjectSettings;
+    isTerminalReady.value = false;
+    await window.projectApi.settings.unwatch();
+    errorMessage.value = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u043f\u0440\u043e\u0435\u043a\u0442. \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0430\u043f\u043a\u0443 \u0432\u0440\u0443\u0447\u043d\u0443\u044e.";
     console.error(error);
   } finally {
     isOpening.value = false;
@@ -962,7 +1035,10 @@ async function handleSettingsFileChanged(filename: string) {
 
   const normalizedFilename = filename.split(/[\\/]/).pop() ?? filename;
 
-  if (normalizedFilename === TOOLBAR_CONFIG_FILENAME) {
+  if (
+    normalizedFilename === TOOLBAR_CONFIG_FILENAME ||
+    normalizedFilename === LEGACY_TOOLBAR_CONFIG_FILENAME
+  ) {
     toolbarConfig.value = await loadToolbarConfig(projectPath.value);
   }
 
@@ -1076,6 +1152,8 @@ onMounted(() => {
   unsubscribeGlobalQuickKey = window.projectApi.onGlobalQuickKey((input) => {
     sendQuickKey(input);
   });
+
+  void openLastProjectOnStartup();
 });
 
 onBeforeUnmount(() => {

@@ -5,7 +5,7 @@
         <div tabindex="0" role="button" class="btn btn-sm">{{ element.label }} <ChevronDown :size="14" /></div>
         <ul
           tabindex="0"
-          class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 shadow"
+          class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-0 shadow"
         >
           <li v-for="item in element.items" :key="item.id">
             <button
