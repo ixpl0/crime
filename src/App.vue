@@ -186,7 +186,7 @@
             @close="isProjectSettingsEditorOpen = false"
           />
 
-          <div v-show="activeTab === 'agent'" class="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          <div v-show="activeTab === 'agent'" class="min-h-0 flex-1 space-y-4 overflow-y-auto px-1">
             <ToolbarPanel
               :toolbar-config="toolbarConfig"
               :is-terminal-ready="isTerminalReady"
@@ -200,8 +200,8 @@
               @click="focusTerminal"
             />
 
-            <form class="flex gap-3" @submit.prevent="sendTextareaToTerminal">
-              <div class="flex flex-1 flex-col gap-2">
+            <form class="flex min-w-0 gap-3" @submit.prevent="sendTextareaToTerminal">
+              <div class="flex min-w-0 flex-1 flex-col gap-2">
                 <textarea
                   ref="terminalInputTextarea"
                   v-model="terminalInputText"
@@ -246,7 +246,7 @@
               </div>
             </form>
           </div>
-          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-y-auto pr-1">
+          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-y-auto px-1">
             <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
               <FileManagerPanel
                 v-if="projectPath"
