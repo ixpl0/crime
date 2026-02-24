@@ -7,6 +7,12 @@ export interface SlashCommandSettings {
   dataPollIntervalMs: number;
 }
 
+export interface ZoomSettings {
+  ideZoomFactor: number;
+  terminalFontSize: number;
+}
+
 export interface ProjectSettings {
   slashCommand: SlashCommandSettings;
+  zoom: ZoomSettings;
 }

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webFrame } = require("electron");
 
 const IPC_CHANNELS = Object.freeze({
   projectOpenFolder: "project:open-folder",
@@ -21,6 +21,16 @@ const IPC_CHANNELS = Object.freeze({
 });
 
 const SETTINGS_DIRNAME = ".ide";
+const MIN_ZOOM_FACTOR = 0.25;
+const MAX_ZOOM_FACTOR = 5;
+
+function normalizeZoomFactor(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return Math.min(Math.max(value, MIN_ZOOM_FACTOR), MAX_ZOOM_FACTOR);
+}
 
 const quickKeyBindings = Object.freeze([
   {
@@ -162,6 +172,21 @@ contextBridge.exposeInMainWorld("projectApi", {
     getStatus: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, projectPath),
     getFileDiff: (projectPath, filePath) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitFileDiff, projectPath, filePath)
+  },
+  zoom: {
+    getFactor: () => webFrame.getZoomFactor(),
+    setFactor: (factor) => {
+      const normalizedFactor = normalizeZoomFactor(factor);
+      if (normalizedFactor === null) {
+        return false;
+      }
+
+      webFrame.setZoomFactor(normalizedFactor);
+      return true;
+    },
+    reset: () => {
+      webFrame.setZoomFactor(1);
+    }
   },
   onGlobalQuickKey: (listener) => {
     const handler = (_event, input) => listener(input);

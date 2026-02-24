@@ -1,4 +1,8 @@
-import { type ProjectSettings, type SlashCommandSettings } from "../types/project-settings";
+import {
+  type ProjectSettings,
+  type SlashCommandSettings,
+  type ZoomSettings
+} from "../types/project-settings";
 import {
   isRecord,
   loadJsonProjectSetting,
@@ -6,6 +10,14 @@ import {
 } from "./settings-storage-helpers";
 
 export const PROJECT_SETTINGS_FILENAME = "settings.json";
+export const IDE_ZOOM_FACTOR_MIN = 0.25;
+export const IDE_ZOOM_FACTOR_MAX = 5;
+export const DEFAULT_IDE_ZOOM_FACTOR = 1;
+export const IDE_ZOOM_FACTOR_STEP = 0.1;
+export const TERMINAL_FONT_SIZE_MIN = 8;
+export const TERMINAL_FONT_SIZE_MAX = 32;
+export const DEFAULT_TERMINAL_FONT_SIZE = 14;
+export const TERMINAL_FONT_SIZE_STEP = 1;
 
 export const defaultProjectSettings: ProjectSettings = {
   slashCommand: {
@@ -15,6 +27,10 @@ export const defaultProjectSettings: ProjectSettings = {
     activityTimeoutMs: 1200,
     quietTimeoutMs: 2200,
     dataPollIntervalMs: 15
+  },
+  zoom: {
+    ideZoomFactor: DEFAULT_IDE_ZOOM_FACTOR,
+    terminalFontSize: DEFAULT_TERMINAL_FONT_SIZE
   }
 };
 
@@ -23,6 +39,12 @@ const isNonNegativeFiniteNumber = (value: unknown): value is number =>
 
 const isPositiveFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value > 0;
+
+const isNumberInRange = (value: unknown, min: number, max: number): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
+
+const isIntegerInRange = (value: unknown, min: number, max: number): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 
 const parseSlashCommandSettings = (value: unknown): SlashCommandSettings | null => {
   if (!isRecord(value)) {
@@ -50,6 +72,24 @@ const parseSlashCommandSettings = (value: unknown): SlashCommandSettings | null 
   };
 };
 
+const parseZoomSettings = (value: unknown): ZoomSettings | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    !isNumberInRange(value.ideZoomFactor, IDE_ZOOM_FACTOR_MIN, IDE_ZOOM_FACTOR_MAX) ||
+    !isIntegerInRange(value.terminalFontSize, TERMINAL_FONT_SIZE_MIN, TERMINAL_FONT_SIZE_MAX)
+  ) {
+    return null;
+  }
+
+  return {
+    ideZoomFactor: value.ideZoomFactor,
+    terminalFontSize: value.terminalFontSize
+  };
+};
+
 export const parseProjectSettings = (value: unknown): ProjectSettings | null => {
   if (!isRecord(value)) {
     return null;
@@ -64,8 +104,18 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
     return null;
   }
 
+  const parsedZoom =
+    "zoom" in value ? parseZoomSettings(value.zoom) : defaultProjectSettings.zoom;
+  if (!parsedZoom) {
+    return null;
+  }
+
   return {
-    slashCommand
+    slashCommand,
+    zoom: {
+      ideZoomFactor: parsedZoom.ideZoomFactor,
+      terminalFontSize: parsedZoom.terminalFontSize
+    }
   };
 };
 

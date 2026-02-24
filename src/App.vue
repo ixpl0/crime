@@ -195,7 +195,7 @@
 
             <div
               ref="terminalContainer"
-              class="terminal-host h-96 w-full rounded-box border border-base-300 bg-[#05070d]"
+              class="terminal-host h-96 w-full overflow-hidden rounded-box border border-base-300 bg-[#05070d]"
               @click="focusTerminal"
             />
 
@@ -282,10 +282,18 @@ import {
 import { defaultToolbarConfig } from "./toolbar/default-toolbar-config";
 import { type ProjectSettings } from "./types/project-settings";
 import {
+  DEFAULT_IDE_ZOOM_FACTOR,
+  DEFAULT_TERMINAL_FONT_SIZE,
   defaultProjectSettings,
+  IDE_ZOOM_FACTOR_MAX,
+  IDE_ZOOM_FACTOR_MIN,
+  IDE_ZOOM_FACTOR_STEP,
   loadProjectSettings,
   PROJECT_SETTINGS_FILENAME,
-  saveProjectSettings
+  saveProjectSettings,
+  TERMINAL_FONT_SIZE_MAX,
+  TERMINAL_FONT_SIZE_MIN,
+  TERMINAL_FONT_SIZE_STEP
 } from "./settings/project-settings-storage";
 import {
   loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
@@ -380,8 +388,11 @@ let fitAddon: FitAddon | null = null;
 let unsubscribeTerminalData: (() => void) | null = null;
 let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
+let removeWindowWheelListener: (() => void) | null = null;
+let removeWindowKeydownListener: (() => void) | null = null;
 let unsubscribeGlobalQuickKey: (() => void) | null = null;
 let unsubscribeSettingsFileChanged: (() => void) | null = null;
+let pendingZoomResizeAnimationFrame: number | null = null;
 let terminalDataVersion = 0;
 let terminalInputQueue: Promise<void> = Promise.resolve();
 let terminalInputHistoryLoadToken = 0;
@@ -393,6 +404,7 @@ let todoEntriesLoadToken = 0;
 let todoDraftEditVersion = 0;
 let todoPersistedVersion = 0;
 let todoPersistQueue: Promise<void> = Promise.resolve();
+let projectSettingsPersistQueue: Promise<void> = Promise.resolve();
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
@@ -412,6 +424,162 @@ function setLastProjectPathInStorage(path: string) {
 
 function clearLastProjectPathInStorage() {
   window.localStorage.removeItem(LAST_PROJECT_PATH_STORAGE_KEY);
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function normalizeIdeZoomFactor(value: number) {
+  const clampedValue = clampNumber(value, IDE_ZOOM_FACTOR_MIN, IDE_ZOOM_FACTOR_MAX);
+  return Math.round(clampedValue * 100) / 100;
+}
+
+function normalizeTerminalFontSize(value: number) {
+  return Math.round(clampNumber(value, TERMINAL_FONT_SIZE_MIN, TERMINAL_FONT_SIZE_MAX));
+}
+
+function scheduleTerminalResizeAfterZoom() {
+  if (pendingZoomResizeAnimationFrame !== null) {
+    window.cancelAnimationFrame(pendingZoomResizeAnimationFrame);
+  }
+
+  pendingZoomResizeAnimationFrame = window.requestAnimationFrame(() => {
+    pendingZoomResizeAnimationFrame = null;
+    void resizeTerminalBackend();
+
+    window.requestAnimationFrame(() => {
+      void resizeTerminalBackend();
+    });
+  });
+}
+
+function isWheelEventInsideTerminal(event: WheelEvent) {
+  const container = terminalContainer.value;
+  const target = event.target;
+  if (!container || !(target instanceof Node)) {
+    return false;
+  }
+
+  return container.contains(target);
+}
+
+function isTerminalHoveredOrFocused() {
+  const container = terminalContainer.value;
+  if (!container) {
+    return false;
+  }
+
+  if (container.matches(":hover")) {
+    return true;
+  }
+
+  const activeElement = document.activeElement;
+  return activeElement instanceof Node && container.contains(activeElement);
+}
+
+function applyProjectZoomSettings(settings: ProjectSettings) {
+  const ideZoomFactor = normalizeIdeZoomFactor(settings.zoom.ideZoomFactor);
+  const terminalFontSize = normalizeTerminalFontSize(settings.zoom.terminalFontSize);
+  const didSetIdeZoom = window.projectApi.zoom.setFactor(ideZoomFactor);
+  let shouldResizeTerminal = false;
+
+  if (terminal && terminal.options.fontSize !== terminalFontSize) {
+    terminal.options.fontSize = terminalFontSize;
+    shouldResizeTerminal = true;
+  }
+
+  if (didSetIdeZoom || shouldResizeTerminal) {
+    scheduleTerminalResizeAfterZoom();
+  }
+}
+
+function persistProjectSettings(settings: ProjectSettings) {
+  if (!projectPath.value) {
+    return;
+  }
+
+  const path = projectPath.value;
+  const operation = async () => {
+    await saveProjectSettings(path, settings);
+  };
+
+  projectSettingsPersistQueue = projectSettingsPersistQueue.then(operation, operation);
+}
+
+function updateProjectZoomSettings(nextZoom: Partial<ProjectSettings["zoom"]>) {
+  const currentSettings = projectSettings.value;
+  const currentZoom = currentSettings.zoom;
+  const ideZoomFactor = normalizeIdeZoomFactor(nextZoom.ideZoomFactor ?? currentZoom.ideZoomFactor);
+  const terminalFontSize = normalizeTerminalFontSize(
+    nextZoom.terminalFontSize ?? currentZoom.terminalFontSize
+  );
+
+  if (
+    ideZoomFactor === currentZoom.ideZoomFactor &&
+    terminalFontSize === currentZoom.terminalFontSize
+  ) {
+    return;
+  }
+
+  const updatedSettings: ProjectSettings = {
+    ...currentSettings,
+    zoom: {
+      ideZoomFactor,
+      terminalFontSize
+    }
+  };
+  projectSettings.value = updatedSettings;
+  applyProjectZoomSettings(updatedSettings);
+  persistProjectSettings(updatedSettings);
+}
+
+function isTerminalZoomResetShortcut(event: KeyboardEvent) {
+  if (event.metaKey || event.altKey || event.shiftKey || !event.ctrlKey) {
+    return false;
+  }
+
+  return event.code === "Digit0" || event.code === "Numpad0";
+}
+
+function handleBrowserZoomKeyboardShortcut(event: KeyboardEvent) {
+  if (!isTerminalZoomResetShortcut(event)) {
+    return;
+  }
+
+  event.preventDefault();
+  if (isTerminalHoveredOrFocused()) {
+    updateProjectZoomSettings({
+      terminalFontSize: DEFAULT_TERMINAL_FONT_SIZE
+    });
+    return;
+  }
+
+  updateProjectZoomSettings({
+    ideZoomFactor: DEFAULT_IDE_ZOOM_FACTOR
+  });
+}
+
+function handleBrowserZoomCtrlWheel(event: WheelEvent) {
+  if (!event.ctrlKey || event.metaKey || event.deltaY === 0) {
+    return;
+  }
+
+  event.preventDefault();
+  if (isWheelEventInsideTerminal(event)) {
+    const terminalZoomDelta =
+      event.deltaY < 0 ? TERMINAL_FONT_SIZE_STEP : -TERMINAL_FONT_SIZE_STEP;
+    updateProjectZoomSettings({
+      terminalFontSize: projectSettings.value.zoom.terminalFontSize + terminalZoomDelta
+    });
+    return;
+  }
+
+  const ideZoomDelta = event.deltaY < 0 ? IDE_ZOOM_FACTOR_STEP : -IDE_ZOOM_FACTOR_STEP;
+  const currentIdeZoomFactor = normalizeIdeZoomFactor(window.projectApi.zoom.getFactor());
+  updateProjectZoomSettings({
+    ideZoomFactor: currentIdeZoomFactor + ideZoomDelta
+  });
 }
 
 function persistTodoPanelCollapsedState(isCollapsed: boolean) {
@@ -1360,7 +1528,7 @@ function initializeTerminalView() {
     convertEol: true,
     cursorBlink: true,
     fontFamily: "Cascadia Mono, Consolas, monospace",
-    fontSize: 14,
+    fontSize: normalizeTerminalFontSize(projectSettings.value.zoom.terminalFontSize),
     theme: {
       background: "#05070d",
       foreground: "#e5e7eb",
@@ -1453,9 +1621,11 @@ async function openProject(path: string) {
   todoDraftEditVersion = 0;
   todoPersistedVersion = 0;
   todoPersistQueue = Promise.resolve();
+  projectSettingsPersistQueue = Promise.resolve();
   resetTerminalInputHistoryNavigation();
   toolbarConfig.value = await loadToolbarConfig(path);
   projectSettings.value = await loadProjectSettings(path);
+  applyProjectZoomSettings(projectSettings.value);
   await loadTerminalInputHistoryForProject(path, "project-open");
   await loadTodoEntriesForProject(path, "project-open");
   await startSettingsWatcher(path);
@@ -1510,9 +1680,11 @@ async function openLastProjectOnStartup() {
     todoDraftEditVersion = 0;
     todoPersistedVersion = 0;
     todoPersistQueue = Promise.resolve();
+    projectSettingsPersistQueue = Promise.resolve();
     resetTerminalInputHistoryNavigation();
     toolbarConfig.value = defaultToolbarConfig;
     projectSettings.value = defaultProjectSettings;
+    applyProjectZoomSettings(defaultProjectSettings);
     isTerminalReady.value = false;
     await window.projectApi.settings.unwatch();
     errorMessage.value = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u043f\u0440\u043e\u0435\u043a\u0442. \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0430\u043f\u043a\u0443 \u0432\u0440\u0443\u0447\u043d\u0443\u044e.";
@@ -1575,10 +1747,16 @@ function handleToolbarConfigSave(config: ToolbarConfig) {
 }
 
 function handleProjectSettingsSave(settings: ProjectSettings) {
-  projectSettings.value = settings;
-  if (projectPath.value) {
-    void saveProjectSettings(projectPath.value, settings);
-  }
+  const normalizedSettings: ProjectSettings = {
+    ...settings,
+    zoom: {
+      ideZoomFactor: normalizeIdeZoomFactor(settings.zoom.ideZoomFactor),
+      terminalFontSize: normalizeTerminalFontSize(settings.zoom.terminalFontSize)
+    }
+  };
+  projectSettings.value = normalizedSettings;
+  applyProjectZoomSettings(normalizedSettings);
+  persistProjectSettings(normalizedSettings);
   isProjectSettingsEditorOpen.value = false;
 }
 
@@ -1606,6 +1784,7 @@ async function handleSettingsFileChanged(filename: string) {
 
   if (isProjectSettingsChange) {
     projectSettings.value = await loadProjectSettings(projectPath.value);
+    applyProjectZoomSettings(projectSettings.value);
   }
 
   if (isTodoChange) {
@@ -1762,6 +1941,16 @@ onMounted(() => {
     window.removeEventListener("resize", handleWindowResize);
   };
 
+  window.addEventListener("wheel", handleBrowserZoomCtrlWheel, { passive: false, capture: true });
+  removeWindowWheelListener = () => {
+    window.removeEventListener("wheel", handleBrowserZoomCtrlWheel, true);
+  };
+
+  window.addEventListener("keydown", handleBrowserZoomKeyboardShortcut, true);
+  removeWindowKeydownListener = () => {
+    window.removeEventListener("keydown", handleBrowserZoomKeyboardShortcut, true);
+  };
+
   unsubscribeGlobalQuickKey = window.projectApi.onGlobalQuickKey((input) => {
     sendQuickKey(input);
   });
@@ -1803,6 +1992,12 @@ onBeforeUnmount(() => {
   unsubscribeGlobalQuickKey?.();
   unsubscribeSettingsFileChanged?.();
   removeWindowResizeListener?.();
+  removeWindowWheelListener?.();
+  removeWindowKeydownListener?.();
+  if (pendingZoomResizeAnimationFrame !== null) {
+    window.cancelAnimationFrame(pendingZoomResizeAnimationFrame);
+    pendingZoomResizeAnimationFrame = null;
+  }
   void window.projectApi.settings.unwatch();
   void window.projectApi.terminal.stop();
   terminal?.dispose();
@@ -1813,12 +2008,18 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.terminal-host {
+  overflow: hidden;
+}
+
 .terminal-host :deep(.xterm) {
   height: 100%;
   padding: 0.4rem;
+  border-radius: inherit;
 }
 
 .terminal-host :deep(.xterm-viewport) {
   overflow-y: auto;
+  border-radius: inherit;
 }
 </style>

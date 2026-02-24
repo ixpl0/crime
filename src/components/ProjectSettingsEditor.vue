@@ -2,7 +2,7 @@
   <JsonConfigEditorDialog
     :open="open"
     title="Project Settings"
-    description="Configure slash-command timing for this project."
+    description="Configure slash-command timing and zoom for this project."
     :file-path="configFilePath"
     :current-value="currentSettings"
     :default-value="defaultProjectSettings"

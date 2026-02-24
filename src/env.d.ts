@@ -121,6 +121,12 @@ interface GitApi {
   getFileDiff: (projectPath: string, filePath: string) => Promise<GitFileDiffResponse>;
 }
 
+interface ZoomApi {
+  getFactor: () => number;
+  setFactor: (factor: number) => boolean;
+  reset: () => void;
+}
+
 interface ProjectApi {
   quickKeys: readonly QuickKeyBinding[];
   openFolder: () => Promise<string | null>;
@@ -128,6 +134,7 @@ interface ProjectApi {
   terminal: TerminalApi;
   filesystem: FilesystemApi;
   git: GitApi;
+  zoom: ZoomApi;
   onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }
 
