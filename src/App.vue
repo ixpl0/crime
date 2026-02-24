@@ -1,6 +1,6 @@
 <template>
-  <main class="min-h-screen bg-base-200 p-6 text-base-content">
-    <section class="mx-auto max-w-5xl space-y-6">
+  <main class="h-screen overflow-hidden bg-base-200 p-6 text-base-content">
+    <section class="mx-auto flex h-full max-w-5xl min-h-0 flex-col gap-6">
       <template v-if="!projectPath">
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
@@ -26,11 +26,11 @@
 
       <div
         v-if="projectPath"
-        class="grid gap-4"
+        class="grid min-h-0 flex-1 gap-4"
         :class="{ 'lg:grid-cols-[17.5rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
       >
-        <aside v-if="!isTodoPanelCollapsed" class="card h-fit bg-base-100 shadow-xl">
-          <div class="card-body p-3">
+        <aside v-if="!isTodoPanelCollapsed" class="card min-h-0 bg-base-100 shadow-xl">
+          <div class="card-body min-h-0 p-3">
             <div class="flex items-center justify-between gap-2">
               <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
                 &#1047;&#1072;&#1076;&#1072;&#1095;&#1080;
@@ -44,40 +44,41 @@
                 <EyeOff :size="14" />
               </button>
             </div>
-            <div class="mt-2 flex flex-col gap-2">
+            <div class="todo-list-scroll mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
               <div
-                v-for="(todoDraft, index) in todoDrafts"
-                :key="`todo-draft-${index}`"
+                v-for="todoDraftView in todoDraftViewItems"
+                :key="`todo-draft-${todoDraftView.index}`"
                 class="space-y-1 rounded-lg border border-transparent p-1 transition-colors"
                 :class="{
                   'border-primary/40 bg-primary/10':
-                    todoDragOverIndex === index &&
+                    todoDragOverIndex === todoDraftView.index &&
                     todoDragSourceIndex !== null &&
-                    todoDragSourceIndex !== index
+                    todoDragSourceIndex !== todoDraftView.index
                 }"
-                @dragenter.prevent="handleTodoDragEnter(index, $event)"
-                @dragover.prevent="handleTodoDragOver(index, $event)"
-                @drop.prevent="handleTodoDrop(index, $event)"
+                @dragenter.prevent="handleTodoDragEnter(todoDraftView.index, $event)"
+                @dragover.prevent="handleTodoDragOver(todoDraftView.index, $event)"
+                @drop.prevent="handleTodoDrop(todoDraftView.index, $event)"
               >
                 <textarea
-                  :value="todoDraft"
+                  :value="todoDraftView.value"
                   data-todo-textarea="true"
-                  :data-todo-index="index"
+                  :data-todo-index="todoDraftView.index"
                   class="textarea textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden text-sm leading-relaxed"
                   rows="1"
                   placeholder="&#1055;&#1088;&#1086;&#1084;&#1087;&#1090;"
-                  @input="handleTodoTextareaInput(index, $event)"
+                  @input="handleTodoTextareaInput(todoDraftView.index, $event)"
+                  @keydown="handleTodoTextareaKeydown"
                   @blur="handleTodoTextareaBlur"
                 />
                 <div class="flex items-center gap-2">
                   <button
-                    v-if="shouldShowTodoDragHandle(index)"
+                    v-if="shouldShowTodoDragHandle(todoDraftView.index)"
                     class="btn btn-ghost btn-xs btn-square cursor-grab text-base-content/60 active:cursor-grabbing"
                     type="button"
-                    :draggable="canDragTodoDraft(index)"
-                    :disabled="!canDragTodoDraft(index)"
+                    :draggable="canDragTodoDraft(todoDraftView.index)"
+                    :disabled="!canDragTodoDraft(todoDraftView.index)"
                     title="Drag to reorder"
-                    @dragstart="handleTodoDragStart(index, $event)"
+                    @dragstart="handleTodoDragStart(todoDraftView.index, $event)"
                     @dragend="handleTodoDragEnd"
                   >
                     <GripVertical :size="14" />
@@ -85,8 +86,8 @@
                   <button
                     class="btn btn-ghost btn-xs ml-auto normal-case text-base-content/70"
                     type="button"
-                    :disabled="!isTerminalReady || !todoDraft.trim()"
-                    @click="sendTodoEntryToTerminal(index)"
+                    :disabled="!isTerminalReady || !todoDraftView.value.trim()"
+                    @click="sendTodoEntryToTerminal(todoDraftView.index)"
                   >
                     &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
                   </button>
@@ -96,8 +97,8 @@
           </div>
         </aside>
 
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body gap-4">
+        <div class="card min-h-0 bg-base-100 shadow-xl">
+          <div class="card-body flex min-h-0 flex-col gap-4">
           <div v-if="errorMessage" class="alert alert-error">
             <span>{{ errorMessage }}</span>
           </div>
@@ -185,7 +186,7 @@
             @close="isProjectSettingsEditorOpen = false"
           />
 
-          <div v-show="activeTab === 'agent'" class="space-y-4">
+          <div v-show="activeTab === 'agent'" class="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
             <ToolbarPanel
               :toolbar-config="toolbarConfig"
               :is-terminal-ready="isTerminalReady"
@@ -245,7 +246,7 @@
               </div>
             </form>
           </div>
-          <div v-show="activeTab === 'files'">
+          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-y-auto pr-1">
             <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
               <FileManagerPanel
                 v-if="projectPath"
@@ -371,6 +372,11 @@ interface HiddenPanelOption {
   title: string;
 }
 
+interface TodoDraftViewItem {
+  index: number;
+  value: string;
+}
+
 const hiddenPanelOptions = computed<HiddenPanelOption[]>(() => {
   const options: HiddenPanelOption[] = [];
 
@@ -383,6 +389,10 @@ const hiddenPanelOptions = computed<HiddenPanelOption[]>(() => {
 
   return options;
 });
+
+const todoDraftViewItems = computed<TodoDraftViewItem[]>(() =>
+  todoDrafts.value.map((value, index) => ({ index, value })).reverse()
+);
 
 let terminal: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -677,21 +687,29 @@ async function flushPendingTerminalInputHistoryReload() {
   await loadTerminalInputHistoryForProject(projectPath.value, "settings-watch");
 }
 
-function getNormalizedTodoDrafts(entries: string[]) {
-  const nextEntries = entries.length > 0 ? entries : [""];
-  let lastNonEmptyIndex = -1;
+interface NormalizeTodoDraftsOptions {
+  includePlaceholder?: boolean;
+}
 
-  for (let index = 0; index < nextEntries.length; index += 1) {
-    if (nextEntries[index].trim().length > 0) {
-      lastNonEmptyIndex = index;
-    }
-  }
-
-  if (lastNonEmptyIndex < 0) {
+function getNormalizedTodoDrafts(
+  entries: string[],
+  options: NormalizeTodoDraftsOptions = {}
+) {
+  const includePlaceholder = options.includePlaceholder ?? true;
+  const nonEmptyEntries = entries.filter((entry) => entry.trim().length > 0);
+  if (nonEmptyEntries.length === 0) {
     return [""];
   }
 
-  return [...nextEntries.slice(0, lastNonEmptyIndex + 1), ""];
+  if (!includePlaceholder) {
+    return nonEmptyEntries;
+  }
+
+  return [...nonEmptyEntries, ""];
+}
+
+function hasTodoDraftPlaceholder(entries: string[]) {
+  return entries.some((entry) => entry.trim().length === 0);
 }
 
 function getPersistedTodoEntries(entries: string[]) {
@@ -715,7 +733,7 @@ function shouldShowTodoDragHandle(index: number) {
     return false;
   }
 
-  return index < todoDrafts.value.length - 1;
+  return todoDrafts.value[index].trim().length > 0;
 }
 
 function resetTodoDragState() {
@@ -789,6 +807,7 @@ function handleTodoDrop(index: number, event: DragEvent) {
   }
 
   const focusedTodoSnapshot = getFocusedTodoSnapshot();
+  const shouldIncludePlaceholder = hasTodoDraftPlaceholder(todoDrafts.value);
   const reorderedDrafts = [...todoDrafts.value];
   const [movedDraft] = reorderedDrafts.splice(sourceIndex, 1);
   if (typeof movedDraft !== "string" || movedDraft.trim().length === 0) {
@@ -800,7 +819,8 @@ function handleTodoDrop(index: number, event: DragEvent) {
 
   todoDraftEditVersion += 1;
   todoDrafts.value = getNormalizedTodoDrafts(
-    reorderedDrafts.filter((entry) => entry.trim().length > 0)
+    reorderedDrafts.filter((entry) => entry.trim().length > 0),
+    { includePlaceholder: shouldIncludePlaceholder }
   );
   resetTodoDragState();
 
@@ -920,6 +940,53 @@ function restoreTodoFocus(snapshot: TodoFocusSnapshot | null) {
   textarea.scrollTop = snapshot.scrollTop;
 }
 
+function focusTodoTextareaByIndex(index: number) {
+  const selector = `textarea[data-todo-textarea="true"][data-todo-index="${String(index)}"]`;
+  const textarea = document.querySelector<HTMLTextAreaElement>(selector);
+  if (!textarea) {
+    return;
+  }
+
+  textarea.focus();
+  const cursorPosition = textarea.value.length;
+  textarea.setSelectionRange(cursorPosition, cursorPosition);
+}
+
+function focusTodoComposerTextarea() {
+  const composerIndex = todoDrafts.value.length - 1;
+  if (composerIndex < 0) {
+    return;
+  }
+
+  focusTodoTextareaByIndex(composerIndex);
+}
+
+function finalizeTodoDraftEditing(options: { focusComposer?: boolean } = {}) {
+  const nextDrafts = getNormalizedTodoDrafts(todoDrafts.value, { includePlaceholder: true });
+  const didUpdateDrafts = !areStringArraysEqual(todoDrafts.value, nextDrafts);
+  if (didUpdateDrafts) {
+    todoDraftEditVersion += 1;
+    todoDrafts.value = nextDrafts;
+  }
+
+  if (todoDraftEditVersion > todoPersistedVersion) {
+    persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), todoDraftEditVersion);
+  }
+
+  if (!didUpdateDrafts && !options.focusComposer) {
+    return;
+  }
+
+  void nextTick(() => {
+    if (didUpdateDrafts) {
+      resizeTodoTextareas();
+    }
+    if (options.focusComposer) {
+      focusTodoComposerTextarea();
+    }
+  });
+}
+
 function persistTodoEntries(entries: string[], version: number) {
   if (!projectPath.value) {
     return;
@@ -984,21 +1051,37 @@ function handleTodoTextareaInput(index: number, event: Event) {
   }
 
   const nextDrafts = [...todoDrafts.value];
+  const previousValue = nextDrafts[index] ?? "";
+  const hadPlaceholder = hasTodoDraftPlaceholder(todoDrafts.value);
   nextDrafts[index] = textarea.value;
-  todoDraftEditVersion += 1;
-  todoDrafts.value = getNormalizedTodoDrafts(nextDrafts);
-  resizeTodoTextareaElement(textarea);
-  void nextTick(() => {
-    resizeTodoTextareas();
+  const isCompletedPlaceholder =
+    previousValue.trim().length === 0 && textarea.value.trim().length > 0;
+  const shouldIncludePlaceholder = hadPlaceholder && !isCompletedPlaceholder;
+  const previousLength = todoDrafts.value.length;
+  const normalizedDrafts = getNormalizedTodoDrafts(nextDrafts, {
+    includePlaceholder: shouldIncludePlaceholder
   });
+  todoDraftEditVersion += 1;
+  todoDrafts.value = normalizedDrafts;
+  resizeTodoTextareaElement(textarea);
+  if (normalizedDrafts.length !== previousLength) {
+    void nextTick(() => {
+      resizeTodoTextareas();
+    });
+  }
 }
 
-function handleTodoTextareaBlur() {
-  if (todoDraftEditVersion <= todoPersistedVersion) {
+function handleTodoTextareaKeydown(event: KeyboardEvent) {
+  if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) {
     return;
   }
 
-  persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), todoDraftEditVersion);
+  event.preventDefault();
+  finalizeTodoDraftEditing({ focusComposer: true });
+}
+
+function handleTodoTextareaBlur() {
+  finalizeTodoDraftEditing();
 }
 
 function persistTerminalInputHistory(entries: string[], version: number) {
@@ -2141,6 +2224,10 @@ onBeforeUnmount(() => {
 <style scoped>
 .terminal-host {
   overflow: hidden;
+}
+
+.todo-list-scroll {
+  overflow-anchor: none;
 }
 
 .terminal-host :deep(.xterm) {
