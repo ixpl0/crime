@@ -1693,6 +1693,23 @@ async function sendTodoEntryToTerminal(index: number) {
   }
 
   appendTerminalInputHistory(text);
+
+  if (!isTodoDraftIndexValid(index)) {
+    return;
+  }
+
+  const nextDrafts = [...todoDrafts.value];
+  nextDrafts.splice(index, 1);
+  todoDraftEditVersion += 1;
+  todoDrafts.value = getNormalizedTodoDrafts(nextDrafts);
+  resetTodoDragState();
+
+  const nextVersion = todoDraftEditVersion;
+  persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), nextVersion);
+
+  void nextTick(() => {
+    resizeTodoTextareas();
+  });
 }
 
 async function handleTextareaPaste(event: ClipboardEvent) {
