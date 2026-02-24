@@ -26,7 +26,7 @@ export const loadJsonProjectSetting = async <T>(
     }
 
     if (!response.content) {
-      return persistFallbackAndReturn();
+      return await persistFallbackAndReturn();
     }
 
     try {

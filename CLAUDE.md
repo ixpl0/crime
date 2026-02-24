@@ -48,3 +48,4 @@ src/
 ## Git
 
 - Do not ask for approval before `git commit`, `git push`, or other git write commands. Just do it.
+- In this environment, always run `git commit`, `git push`, and `git hook run pre-commit` with escalation (outside sandbox), because Git for Windows/MSYS can fail with `couldn't create signal pipe, Win32 error 5` inside sandbox.
