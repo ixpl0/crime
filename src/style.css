@@ -10,7 +10,6 @@ body,
 html,
 body {
   overflow: hidden;
-  scrollbar-gutter: stable;
 }
 
 body {

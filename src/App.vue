@@ -1,6 +1,9 @@
 <template>
   <main class="h-screen overflow-hidden bg-base-200 p-6 text-base-content">
-    <section class="mx-auto flex h-full max-w-5xl min-h-0 flex-col gap-6">
+    <section
+      class="flex h-full min-h-0 flex-col gap-6"
+      :class="projectPath ? 'w-full' : 'mx-auto w-full max-w-5xl'"
+    >
       <template v-if="!projectPath">
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
@@ -27,7 +30,7 @@
       <div
         v-if="projectPath"
         class="grid min-h-0 flex-1 gap-4"
-        :class="{ 'lg:grid-cols-[17.5rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
+        :class="{ 'lg:grid-cols-[14rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
       >
         <aside v-if="!isTodoPanelCollapsed" class="card min-h-0 bg-base-100 shadow-xl">
           <div class="card-body min-h-0 p-3">
