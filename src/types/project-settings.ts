@@ -8,6 +8,5 @@ export interface SlashCommandSettings {
 }
 
 export interface ProjectSettings {
-  version: 1;
   slashCommand: SlashCommandSettings;
 }

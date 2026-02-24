@@ -8,7 +8,6 @@ import {
 export const PROJECT_SETTINGS_FILENAME = "settings.json";
 
 export const defaultProjectSettings: ProjectSettings = {
-  version: 1,
   slashCommand: {
     charDelayMs: 20,
     afterSlashDelayMs: 300,
@@ -52,7 +51,11 @@ const parseSlashCommandSettings = (value: unknown): SlashCommandSettings | null 
 };
 
 export const parseProjectSettings = (value: unknown): ProjectSettings | null => {
-  if (!isRecord(value) || value.version !== 1) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if ("version" in value && value.version !== 1) {
     return null;
   }
 
@@ -62,7 +65,6 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
   }
 
   return {
-    version: 1,
     slashCommand
   };
 };
@@ -72,7 +74,10 @@ export const loadProjectSettings = async (projectPath: string): Promise<ProjectS
     projectPath,
     PROJECT_SETTINGS_FILENAME,
     parseProjectSettings,
-    defaultProjectSettings
+    defaultProjectSettings,
+    {
+      settingLabel: "project settings"
+    }
   );
 };
 

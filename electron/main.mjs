@@ -764,7 +764,7 @@ function registerIpcHandlers() {
     }
 
     let debounceTimer = null;
-    let pendingFilename = null;
+    const pendingFilenames = new Set();
 
     try {
       const fsWatcher = watch(dirPath, (_eventType, changedFile) => {
@@ -774,24 +774,30 @@ function registerIpcHandlers() {
             : Buffer.isBuffer(changedFile)
               ? changedFile.toString("utf-8")
               : null;
-        if (!changedFilename) {
-          return;
+        if (!watchAllFiles) {
+          if (changedFilename && changedFilename !== filename) {
+            return;
+          }
+          pendingFilenames.add(changedFilename ?? filename);
+        } else {
+          // fs.watch may omit filename on some platforms; emit wildcard refresh in that case.
+          pendingFilenames.add(changedFilename ?? "*");
         }
-        if (!watchAllFiles && changedFilename !== filename) {
-          return;
-        }
-
-        pendingFilename = changedFilename;
 
         if (debounceTimer) {
           clearTimeout(debounceTimer);
         }
 
         debounceTimer = setTimeout(() => {
-          const changedName = pendingFilename;
-          pendingFilename = null;
+          const changedNames = pendingFilenames.has("*")
+            ? ["*"]
+            : Array.from(pendingFilenames);
+          pendingFilenames.clear();
           debounceTimer = null;
-          if (!event.sender.isDestroyed() && changedName) {
+          if (event.sender.isDestroyed()) {
+            return;
+          }
+          for (const changedName of changedNames) {
             event.sender.send(IPC_CHANNELS.settingsFileChanged, changedName);
           }
         }, SETTINGS_WATCH_DEBOUNCE_MS);

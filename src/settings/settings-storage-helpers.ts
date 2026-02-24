@@ -5,17 +5,37 @@ export const loadJsonProjectSetting = async <T>(
   projectPath: string,
   filename: string,
   parser: (value: unknown) => T | null,
-  fallbackValue: T
+  fallbackValue: T,
+  options?: {
+    readonly settingLabel?: string;
+    readonly persistFallbackValue?: unknown;
+  }
 ): Promise<T> => {
+  const settingLabel = options?.settingLabel ?? filename;
+  const fallbackPersistValue = options?.persistFallbackValue ?? fallbackValue;
+
+  const persistFallbackAndReturn = async (): Promise<T> => {
+    await saveJsonProjectSetting(projectPath, filename, fallbackPersistValue, settingLabel);
+    return fallbackValue;
+  };
+
   try {
     const response = await window.projectApi.settings.read(projectPath, filename);
-    if (!response.ok || !response.content) {
+    if (!response.ok) {
       return fallbackValue;
     }
 
-    const parsed: unknown = JSON.parse(response.content);
-    const parsedValue = parser(parsed);
-    return parsedValue ?? fallbackValue;
+    if (!response.content) {
+      return persistFallbackAndReturn();
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(response.content);
+      const parsedValue = parser(parsed);
+      return parsedValue ?? fallbackValue;
+    } catch {
+      return fallbackValue;
+    }
   } catch {
     return fallbackValue;
   }

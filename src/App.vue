@@ -275,7 +275,6 @@ import { FitAddon } from "@xterm/addon-fit";
 import "xterm/css/xterm.css";
 import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
 import {
-  LEGACY_TOOLBAR_CONFIG_FILENAME,
   loadToolbarConfig,
   saveToolbarConfig,
   TOOLBAR_CONFIG_FILENAME
@@ -290,7 +289,8 @@ import {
 } from "./settings/project-settings-storage";
 import {
   loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
-  saveTerminalInputHistory
+  saveTerminalInputHistory,
+  TERMINAL_INPUT_HISTORY_FILENAME
 } from "./settings/terminal-input-history-storage";
 import { loadTodoEntries, saveTodoEntries, TODO_FILENAME } from "./settings/todo-storage";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
@@ -385,6 +385,10 @@ let unsubscribeSettingsFileChanged: (() => void) | null = null;
 let terminalDataVersion = 0;
 let terminalInputQueue: Promise<void> = Promise.resolve();
 let terminalInputHistoryLoadToken = 0;
+let terminalInputHistoryEditVersion = 0;
+let terminalInputHistoryPersistedVersion = 0;
+let terminalInputHistoryPersistQueue: Promise<void> = Promise.resolve();
+let terminalInputHistoryReloadPending = false;
 let todoEntriesLoadToken = 0;
 let todoDraftEditVersion = 0;
 let todoPersistedVersion = 0;
@@ -428,7 +432,10 @@ function showHiddenPanel(panelId: HiddenPanelId) {
   showHiddenPanelHandlers[panelId]();
 }
 
-async function loadTerminalInputHistoryForProject(path: string) {
+async function loadTerminalInputHistoryForProject(
+  path: string,
+  source: "project-open" | "settings-watch"
+) {
   const loadToken = terminalInputHistoryLoadToken + 1;
   terminalInputHistoryLoadToken = loadToken;
   const history = await loadTerminalInputHistoryFromProject(path, TERMINAL_INPUT_HISTORY_LIMIT);
@@ -437,8 +444,47 @@ async function loadTerminalInputHistoryForProject(path: string) {
     return;
   }
 
+  if (source === "settings-watch") {
+    // Do not replace history while local updates are pending persistence.
+    if (terminalInputHistoryEditVersion > terminalInputHistoryPersistedVersion) {
+      terminalInputHistoryReloadPending = true;
+      return;
+    }
+
+    // Do not disrupt active Up/Down history navigation state.
+    if (terminalInputHistoryIndex.value !== null) {
+      terminalInputHistoryReloadPending = true;
+      return;
+    }
+  }
+
+  terminalInputHistoryReloadPending = false;
+
+  if (areStringArraysEqual(terminalInputHistory.value, history)) {
+    if (source === "project-open") {
+      resetTerminalInputHistoryNavigation();
+    }
+    return;
+  }
+
   terminalInputHistory.value = history;
-  resetTerminalInputHistoryNavigation();
+  if (source === "project-open") {
+    resetTerminalInputHistoryNavigation();
+  }
+}
+
+async function flushPendingTerminalInputHistoryReload() {
+  if (
+    !terminalInputHistoryReloadPending ||
+    !projectPath.value ||
+    terminalInputHistoryIndex.value !== null ||
+    terminalInputHistoryEditVersion > terminalInputHistoryPersistedVersion
+  ) {
+    return;
+  }
+
+  terminalInputHistoryReloadPending = false;
+  await loadTerminalInputHistoryForProject(projectPath.value, "settings-watch");
 }
 
 function getNormalizedTodoDrafts(entries: string[]) {
@@ -760,16 +806,25 @@ function handleTodoTextareaBlur() {
   persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), todoDraftEditVersion);
 }
 
-async function persistTerminalInputHistory() {
+function persistTerminalInputHistory(entries: string[], version: number) {
   if (!projectPath.value) {
     return;
   }
 
-  await saveTerminalInputHistory(
-    projectPath.value,
-    terminalInputHistory.value,
-    TERMINAL_INPUT_HISTORY_LIMIT
-  );
+  const path = projectPath.value;
+  const operation = async () => {
+    await saveTerminalInputHistory(path, entries, TERMINAL_INPUT_HISTORY_LIMIT);
+
+    if (projectPath.value === path && version > terminalInputHistoryPersistedVersion) {
+      terminalInputHistoryPersistedVersion = version;
+    }
+
+    if (projectPath.value === path) {
+      await flushPendingTerminalInputHistoryReload();
+    }
+  };
+
+  terminalInputHistoryPersistQueue = terminalInputHistoryPersistQueue.then(operation, operation);
 }
 
 function moveTextareaCursorToEnd() {
@@ -802,10 +857,12 @@ function appendTerminalInputHistory(text: string) {
     return;
   }
 
-  terminalInputHistory.value = [...terminalInputHistory.value, text].slice(
+  const nextHistory = [...terminalInputHistory.value, text].slice(
     -TERMINAL_INPUT_HISTORY_LIMIT
   );
-  void persistTerminalInputHistory();
+  terminalInputHistoryEditVersion += 1;
+  terminalInputHistory.value = nextHistory;
+  persistTerminalInputHistory(nextHistory, terminalInputHistoryEditVersion);
   resetTerminalInputHistoryNavigation();
 }
 
@@ -1387,6 +1444,10 @@ async function openProject(path: string) {
   selectedFilePath.value = null;
   terminalInputText.value = "";
   terminalInputHistory.value = [];
+  terminalInputHistoryEditVersion = 0;
+  terminalInputHistoryPersistedVersion = 0;
+  terminalInputHistoryPersistQueue = Promise.resolve();
+  terminalInputHistoryReloadPending = false;
   todoDrafts.value = [""];
   resetTodoDragState();
   todoDraftEditVersion = 0;
@@ -1395,7 +1456,7 @@ async function openProject(path: string) {
   resetTerminalInputHistoryNavigation();
   toolbarConfig.value = await loadToolbarConfig(path);
   projectSettings.value = await loadProjectSettings(path);
-  await loadTerminalInputHistoryForProject(path);
+  await loadTerminalInputHistoryForProject(path, "project-open");
   await loadTodoEntriesForProject(path, "project-open");
   await startSettingsWatcher(path);
   await nextTick();
@@ -1440,6 +1501,10 @@ async function openLastProjectOnStartup() {
     selectedFilePath.value = null;
     terminalInputText.value = "";
     terminalInputHistory.value = [];
+    terminalInputHistoryEditVersion = 0;
+    terminalInputHistoryPersistedVersion = 0;
+    terminalInputHistoryPersistQueue = Promise.resolve();
+    terminalInputHistoryReloadPending = false;
     todoDrafts.value = [""];
     resetTodoDragState();
     todoDraftEditVersion = 0;
@@ -1481,12 +1546,12 @@ function executeToolbarAction(action: ToolbarAction) {
     return;
   }
 
-  if (action.type === "run-command") {
+  if (typeof action.command === "string") {
     void runTerminalCommand(action.command);
     return;
   }
 
-  void sendTerminalInput(action.input, "Failed to send input to terminal.");
+  void sendTerminalInput(action.rawInput, "Failed to send input to terminal.");
 }
 
 function handleFileSelect(path: string) {
@@ -1523,20 +1588,32 @@ async function handleSettingsFileChanged(filename: string) {
   }
 
   const normalizedFilename = filename.split(/[\\/]/).pop() ?? filename;
+  const normalizedFilenameLower = normalizedFilename.toLowerCase();
+  const isWildcardChange = normalizedFilename === SETTINGS_WATCH_ALL;
+  const isToolbarConfigChange =
+    isWildcardChange || normalizedFilenameLower === TOOLBAR_CONFIG_FILENAME.toLowerCase();
+  const isProjectSettingsChange =
+    isWildcardChange || normalizedFilenameLower === PROJECT_SETTINGS_FILENAME.toLowerCase();
+  const isTodoChange =
+    isWildcardChange || normalizedFilenameLower === TODO_FILENAME.toLowerCase();
+  const isTerminalHistoryChange =
+    isWildcardChange ||
+    normalizedFilenameLower === TERMINAL_INPUT_HISTORY_FILENAME.toLowerCase();
 
-  if (
-    normalizedFilename === TOOLBAR_CONFIG_FILENAME ||
-    normalizedFilename === LEGACY_TOOLBAR_CONFIG_FILENAME
-  ) {
+  if (isToolbarConfigChange) {
     toolbarConfig.value = await loadToolbarConfig(projectPath.value);
   }
 
-  if (normalizedFilename === PROJECT_SETTINGS_FILENAME) {
+  if (isProjectSettingsChange) {
     projectSettings.value = await loadProjectSettings(projectPath.value);
   }
 
-  if (normalizedFilename === TODO_FILENAME) {
+  if (isTodoChange) {
     await loadTodoEntriesForProject(projectPath.value, "settings-watch");
+  }
+
+  if (isTerminalHistoryChange) {
+    await loadTerminalInputHistoryForProject(projectPath.value, "settings-watch");
   }
 }
 
@@ -1683,6 +1760,14 @@ watch(terminalInputText, () => {
   void nextTick(() => {
     resizeTerminalInputTextareaElement();
   });
+});
+
+watch(terminalInputHistoryIndex, (index) => {
+  if (index !== null) {
+    return;
+  }
+
+  void flushPendingTerminalInputHistoryReload();
 });
 
 watch(isTodoPanelCollapsed, (isCollapsed) => {

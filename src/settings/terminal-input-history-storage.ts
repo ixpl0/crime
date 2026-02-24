@@ -11,7 +11,7 @@ interface TerminalInputHistoryPayload {
   entries: string[];
 }
 
-const toHistoryEntries = (value: unknown, limit: number): string[] => {
+const parseHistoryEntries = (value: unknown, limit: number): string[] | null => {
   if (Array.isArray(value)) {
     return value
       .filter((entry): entry is string => typeof entry === "string")
@@ -19,7 +19,7 @@ const toHistoryEntries = (value: unknown, limit: number): string[] => {
   }
 
   if (!isRecord(value) || value.version !== 1 || !Array.isArray(value.entries)) {
-    return [];
+    return null;
   }
 
   return value.entries
@@ -34,8 +34,15 @@ export const loadTerminalInputHistory = async (
   return loadJsonProjectSetting(
     projectPath,
     TERMINAL_INPUT_HISTORY_FILENAME,
-    (value) => toHistoryEntries(value, limit),
-    []
+    (value) => parseHistoryEntries(value, limit),
+    [],
+    {
+      settingLabel: "terminal input history",
+      persistFallbackValue: {
+        version: 1,
+        entries: []
+      } satisfies TerminalInputHistoryPayload
+    }
   );
 };
 
