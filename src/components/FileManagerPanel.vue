@@ -46,6 +46,7 @@ import {
   toGitStatusMap,
   type DeletedChildrenByParent
 } from "./file-tree-status-utils";
+import { toErrorMessage } from "../utils/fail-fast";
 
 const props = defineProps<{
   projectPath: string;
@@ -159,10 +160,27 @@ const loadRootDirectory = async (isBackgroundRefresh = false) => {
     loadError.value = "";
   }
 
-  const [directoryResponse, gitResponse] = await Promise.all([
-    window.projectApi.filesystem.readDirectory(props.projectPath),
-    window.projectApi.git.getStatus(props.projectPath)
-  ]);
+  let directoryResponse: FilesystemReadResponse;
+  let gitResponse: GitStatusResponse;
+  try {
+    [directoryResponse, gitResponse] = await Promise.all([
+      window.projectApi.filesystem.readDirectory(props.projectPath),
+      window.projectApi.git.getStatus(props.projectPath)
+    ]);
+  } catch (error) {
+    if (requestId !== loadRequestId) {
+      return;
+    }
+
+    const message = toErrorMessage(error, "Failed to load project directory.");
+    if (!isBackgroundRefresh) {
+      isLoading.value = false;
+      loadError.value = message;
+    } else {
+      gitInfoMessage.value = `Auto-refresh failed: ${message}`;
+    }
+    return;
+  }
 
   if (requestId !== loadRequestId) {
     return;

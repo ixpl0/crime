@@ -1,3 +1,5 @@
+import { isFailFastMode, toContextualErrorMessage, toErrorMessage } from "../utils/fail-fast";
+
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -69,16 +71,36 @@ export const loadJsonProjectSetting = async <T>(
 ): Promise<T> => {
   const settingLabel = options?.settingLabel ?? filename;
   const fallbackPersistValue = options?.persistFallbackValue ?? fallbackValue;
+  const failOrFallback = (error: unknown, fallbackReason: string): T => {
+    const message = toContextualErrorMessage(
+      `Failed to load ${settingLabel}`,
+      error,
+      fallbackReason
+    );
+    if (isFailFastMode) {
+      throw new Error(message);
+    }
+
+    console.error(message, error);
+    return fallbackValue;
+  };
 
   const persistFallbackAndReturn = async (): Promise<T> => {
-    await saveJsonProjectSetting(projectPath, filename, fallbackPersistValue, settingLabel);
-    return fallbackValue;
+    try {
+      await saveJsonProjectSetting(projectPath, filename, fallbackPersistValue, settingLabel);
+      return fallbackValue;
+    } catch (error) {
+      return failOrFallback(
+        error,
+        `Unable to persist fallback value for ${settingLabel}.`
+      );
+    }
   };
 
   try {
     const response = await window.projectApi.settings.read(projectPath, filename);
     if (!response.ok) {
-      return fallbackValue;
+      return failOrFallback(response.error, `Unable to read ${settingLabel}.`);
     }
 
     if (!response.content) {
@@ -88,12 +110,22 @@ export const loadJsonProjectSetting = async <T>(
     try {
       const parsed: unknown = JSON.parse(response.content);
       const parsedValue = parser(parsed);
-      return parsedValue ?? fallbackValue;
-    } catch {
-      return fallbackValue;
+      if (parsedValue === null) {
+        return failOrFallback(
+          null,
+          `${settingLabel} has invalid structure.`
+        );
+      }
+
+      return parsedValue;
+    } catch (error) {
+      return failOrFallback(
+        error,
+        `${settingLabel} has invalid JSON.`
+      );
     }
-  } catch {
-    return fallbackValue;
+  } catch (error) {
+    return failOrFallback(error, `Unexpected error while loading ${settingLabel}.`);
   }
 };
 
@@ -103,13 +135,29 @@ export const saveJsonProjectSetting = async (
   value: unknown,
   settingLabel: string
 ): Promise<void> => {
+  const saveErrorPrefix = `Failed to save ${settingLabel}`;
+
   try {
     const content = JSON.stringify(value, null, 2);
     const response = await window.projectApi.settings.write(projectPath, filename, content);
     if (!response.ok) {
-      console.error(`Failed to save ${settingLabel}:`, response.error);
+      const message = `${saveErrorPrefix}: ${toErrorMessage(response.error, "write request failed")}`;
+      if (isFailFastMode) {
+        throw new Error(message);
+      }
+
+      console.error(message, response.error);
     }
   } catch (error) {
-    console.error(`Failed to save ${settingLabel}.`, error);
+    const message = toContextualErrorMessage(
+      saveErrorPrefix,
+      error,
+      `${saveErrorPrefix}.`
+    );
+    if (isFailFastMode) {
+      throw new Error(message);
+    }
+
+    console.error(message, error);
   }
 };

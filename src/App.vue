@@ -302,6 +302,7 @@ import {
 } from "./settings/terminal-input-history-storage";
 import { loadTodoEntries, saveTodoEntries, TODO_FILENAME } from "./settings/todo-storage";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
+import { toContextualErrorMessage, toErrorMessage } from "./utils/fail-fast";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
 import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
@@ -345,8 +346,6 @@ const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
-const DEC_PRIVATE_MODE_SET_SEQUENCE_PATTERN = /\u001b\[\?([0-9;]+)h/g;
-const FORCE_HIDE_TERMINAL_CURSOR_SEQUENCE = "\u001b[?12l\u001b[?25l";
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
@@ -392,6 +391,8 @@ let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
 let removeWindowWheelListener: (() => void) | null = null;
 let removeWindowKeydownListener: (() => void) | null = null;
+let removeWindowErrorListener: (() => void) | null = null;
+let removeWindowUnhandledRejectionListener: (() => void) | null = null;
 let unsubscribeGlobalQuickKey: (() => void) | null = null;
 let unsubscribeSettingsFileChanged: (() => void) | null = null;
 let pendingZoomResizeAnimationFrame: number | null = null;
@@ -409,6 +410,13 @@ let todoPersistQueue: Promise<void> = Promise.resolve();
 let projectSettingsPersistQueue: Promise<void> = Promise.resolve();
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
+
+function reportUiError(context: string, error: unknown, fallbackMessage: string) {
+  const message = toContextualErrorMessage(context, error, fallbackMessage);
+  errorMessage.value = message;
+  console.error(message, error);
+  return message;
+}
 
 function getLastProjectPathFromStorage() {
   const storedPath = window.localStorage.getItem(LAST_PROJECT_PATH_STORAGE_KEY);
@@ -486,6 +494,10 @@ function applyProjectZoomSettings(settings: ProjectSettings) {
   const didSetIdeZoom = window.projectApi.zoom.setFactor(ideZoomFactor);
   let shouldResizeTerminal = false;
 
+  if (!didSetIdeZoom) {
+    reportUiError("Zoom", null, "Failed to apply IDE zoom factor.");
+  }
+
   if (terminal && terminal.options.fontSize !== terminalFontSize) {
     terminal.options.fontSize = terminalFontSize;
     shouldResizeTerminal = true;
@@ -503,7 +515,15 @@ function persistProjectSettings(settings: ProjectSettings) {
 
   const path = projectPath.value;
   const operation = async () => {
-    await saveProjectSettings(path, settings);
+    try {
+      await saveProjectSettings(path, settings);
+    } catch (error) {
+      reportUiError(
+        "Project settings",
+        error,
+        "Failed to persist project settings."
+      );
+    }
   };
 
   projectSettingsPersistQueue = projectSettingsPersistQueue.then(operation, operation);
@@ -907,7 +927,12 @@ function persistTodoEntries(entries: string[], version: number) {
 
   const path = projectPath.value;
   const operation = async () => {
-    await saveTodoEntries(path, entries);
+    try {
+      await saveTodoEntries(path, entries);
+    } catch (error) {
+      reportUiError("Todo entries", error, "Failed to persist todo entries.");
+      return;
+    }
 
     if (projectPath.value === path && version > todoPersistedVersion) {
       todoPersistedVersion = version;
@@ -983,7 +1008,16 @@ function persistTerminalInputHistory(entries: string[], version: number) {
 
   const path = projectPath.value;
   const operation = async () => {
-    await saveTerminalInputHistory(path, entries, TERMINAL_INPUT_HISTORY_LIMIT);
+    try {
+      await saveTerminalInputHistory(path, entries, TERMINAL_INPUT_HISTORY_LIMIT);
+    } catch (error) {
+      reportUiError(
+        "Terminal history",
+        error,
+        "Failed to persist terminal input history."
+      );
+      return;
+    }
 
     if (projectPath.value === path && version > terminalInputHistoryPersistedVersion) {
       terminalInputHistoryPersistedVersion = version;
@@ -1007,34 +1041,6 @@ function moveTextareaCursorToEnd() {
     const cursorPosition = textarea.value.length;
     textarea.focus();
     textarea.setSelectionRange(cursorPosition, cursorPosition);
-  });
-}
-
-function sanitizeTerminalOutput(data: string) {
-  if (!data.includes("\u001b[?")) {
-    return data;
-  }
-
-  return data.replace(DEC_PRIVATE_MODE_SET_SEQUENCE_PATTERN, (sequence, rawParams: string) => {
-    const parsedParams = rawParams
-      .split(";")
-      .map((value: string) => Number.parseInt(value, 10))
-      .filter((value: number) => Number.isInteger(value) && value > 0);
-
-    if (parsedParams.length === 0) {
-      return sequence;
-    }
-
-    const nextParams = parsedParams.filter((value: number) => value !== 12 && value !== 25);
-    if (nextParams.length === parsedParams.length) {
-      return sequence;
-    }
-
-    if (nextParams.length === 0) {
-      return "";
-    }
-
-    return `\u001b[?${nextParams.join(";")}h`;
   });
 }
 
@@ -1592,7 +1598,6 @@ function initializeTerminalView() {
   terminal.loadAddon(fitAddon);
   terminal.open(terminalContainer.value);
   fitAddon.fit();
-  terminal.write(FORCE_HIDE_TERMINAL_CURSOR_SEQUENCE);
   terminal.writeln("Терминал готов. Выберите папку проекта.");
 
   terminal.onData((data) => {
@@ -1625,13 +1630,18 @@ async function resizeTerminalBackend() {
     return;
   }
 
-  const response = await window.projectApi.terminal.resize({
-    cols: terminal.cols,
-    rows: terminal.rows
-  });
+  try {
+    const response = await window.projectApi.terminal.resize({
+      cols: terminal.cols,
+      rows: terminal.rows
+    });
 
-  if (!response.ok) {
+    if (!response.ok) {
+      reportUiError("Terminal resize", response.error, "Failed to resize terminal backend.");
     console.error(response.error ?? "Не удалось изменить размер терминала.");
+  }
+  } catch (error) {
+    reportUiError("Terminal resize", error, "Failed to resize terminal backend.");
   }
 }
 
@@ -1705,7 +1715,7 @@ async function openProjectFolder() {
   } catch (error) {
     isTerminalReady.value = false;
     errorMessage.value = "Не удалось открыть проект или запустить терминал.";
-    console.error(error);
+    reportUiError("Project open", error, "Failed to open project or start terminal.");
   } finally {
     isOpening.value = false;
   }
@@ -1730,9 +1740,23 @@ async function openLastProjectOnStartup() {
     projectSettings.value = defaultProjectSettings;
     applyProjectZoomSettings(defaultProjectSettings);
     isTerminalReady.value = false;
-    await window.projectApi.settings.unwatch();
-    errorMessage.value = "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0442\u043a\u0440\u044b\u0442\u044c \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0439 \u043f\u0440\u043e\u0435\u043a\u0442. \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0430\u043f\u043a\u0443 \u0432\u0440\u0443\u0447\u043d\u0443\u044e.";
-    console.error(error);
+    try {
+      const unwatchResponse = await window.projectApi.settings.unwatch();
+      if (!unwatchResponse.ok) {
+        reportUiError(
+          "Settings watcher",
+          unwatchResponse.error,
+          "Failed to stop settings watcher."
+        );
+      }
+    } catch (unwatchError) {
+      reportUiError("Settings watcher", unwatchError, "Failed to stop settings watcher.");
+    }
+    reportUiError(
+      "Startup project restore",
+      error,
+      "Failed to open the last project. Pick a folder manually."
+    );
   } finally {
     isOpening.value = false;
   }
@@ -1779,10 +1803,19 @@ function sendQuickKey(data: string) {
   void sendTerminalInput(data, "Failed to send quick key to terminal.");
 }
 
-function handleToolbarConfigSave(config: ToolbarConfig) {
+async function handleToolbarConfigSave(config: ToolbarConfig) {
   toolbarConfig.value = config;
   if (projectPath.value) {
-    void saveToolbarConfig(projectPath.value, config);
+    try {
+      await saveToolbarConfig(projectPath.value, config);
+    } catch (error) {
+      reportUiError(
+        "Toolbar config",
+        error,
+        "Failed to save toolbar configuration."
+      );
+      return;
+    }
   }
   isToolbarConfigEditorOpen.value = false;
 }
@@ -1839,13 +1872,33 @@ async function handleSettingsFileChanged(filename: string) {
 
 async function startSettingsWatcher(path: string) {
   unsubscribeSettingsFileChanged?.();
-  await window.projectApi.settings.unwatch();
+  const unwatchResponse = await window.projectApi.settings.unwatch();
+  if (!unwatchResponse.ok) {
+    throw new Error(
+      toErrorMessage(unwatchResponse.error, "Failed to stop previous settings watcher.")
+    );
+  }
 
   unsubscribeSettingsFileChanged = window.projectApi.settings.onFileChanged(
-    (filename) => void handleSettingsFileChanged(filename)
+    (filename) => {
+      void handleSettingsFileChanged(filename).catch((error: unknown) => {
+        reportUiError(
+          "Settings watcher event",
+          error,
+          "Failed to reload settings after file change."
+        );
+      });
+    }
   );
 
-  await window.projectApi.settings.watch(path, SETTINGS_WATCH_ALL);
+  const watchResponse = await window.projectApi.settings.watch(path, SETTINGS_WATCH_ALL);
+  if (!watchResponse.ok) {
+    unsubscribeSettingsFileChanged();
+    unsubscribeSettingsFileChanged = null;
+    throw new Error(
+      toErrorMessage(watchResponse.error, "Failed to start settings watcher.")
+    );
+  }
 }
 
 async function sendAltVToTerminal(shouldFocusTerminal = true) {
@@ -1953,11 +2006,8 @@ async function handleTextareaPaste(event: ClipboardEvent) {
 onMounted(() => {
   unsubscribeTerminalData = window.projectApi.terminal.onData((data) => {
     terminalDataVersion += 1;
-    const sanitizedData = sanitizeTerminalOutput(data);
-    if (sanitizedData) {
-      terminal?.write(sanitizedData);
-    }
-    terminal?.write(FORCE_HIDE_TERMINAL_CURSOR_SEQUENCE);
+    // Keep terminal stream untouched: PTY output must reach xterm as-is.
+    terminal?.write(data);
   });
 
   unsubscribeTerminalExit = window.projectApi.terminal.onExit((code) => {
@@ -1984,6 +2034,30 @@ onMounted(() => {
   window.addEventListener("keydown", handleBrowserZoomKeyboardShortcut, true);
   removeWindowKeydownListener = () => {
     window.removeEventListener("keydown", handleBrowserZoomKeyboardShortcut, true);
+  };
+
+  const handleWindowError = (event: ErrorEvent) => {
+    reportUiError(
+      "Unhandled runtime error",
+      event.error ?? event.message,
+      event.message || "Unhandled runtime error."
+    );
+  };
+  window.addEventListener("error", handleWindowError);
+  removeWindowErrorListener = () => {
+    window.removeEventListener("error", handleWindowError);
+  };
+
+  const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+    reportUiError(
+      "Unhandled promise rejection",
+      event.reason,
+      "Unhandled promise rejection."
+    );
+  };
+  window.addEventListener("unhandledrejection", handleUnhandledRejection);
+  removeWindowUnhandledRejectionListener = () => {
+    window.removeEventListener("unhandledrejection", handleUnhandledRejection);
   };
 
   unsubscribeGlobalQuickKey = window.projectApi.onGlobalQuickKey((input) => {
@@ -2029,12 +2103,34 @@ onBeforeUnmount(() => {
   removeWindowResizeListener?.();
   removeWindowWheelListener?.();
   removeWindowKeydownListener?.();
+  removeWindowErrorListener?.();
+  removeWindowUnhandledRejectionListener?.();
   if (pendingZoomResizeAnimationFrame !== null) {
     window.cancelAnimationFrame(pendingZoomResizeAnimationFrame);
     pendingZoomResizeAnimationFrame = null;
   }
-  void window.projectApi.settings.unwatch();
-  void window.projectApi.terminal.stop();
+  void window.projectApi.settings.unwatch()
+    .then((response) => {
+      if (!response.ok) {
+        reportUiError(
+          "Settings watcher teardown",
+          response.error,
+          "Failed to stop settings watcher."
+        );
+      }
+    })
+    .catch((error: unknown) => {
+      reportUiError("Settings watcher teardown", error, "Failed to stop settings watcher.");
+    });
+  void window.projectApi.terminal.stop()
+    .then((response) => {
+      if (!response.ok) {
+        reportUiError("Terminal teardown", response.error, "Failed to stop terminal.");
+      }
+    })
+    .catch((error: unknown) => {
+      reportUiError("Terminal teardown", error, "Failed to stop terminal.");
+    });
   terminal?.dispose();
   terminal = null;
   fitAddon = null;

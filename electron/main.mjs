@@ -27,6 +27,28 @@ const GIT_STATUS_PRIORITY = {
   added: 2,
   deleted: 3
 };
+const IS_FAIL_FAST = process.env.NODE_ENV !== "production";
+
+function toErrorMessage(error, fallbackMessage) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.length > 0) {
+    return error;
+  }
+
+  return fallbackMessage;
+}
+
+function toIpcFailure(error, fallbackMessage) {
+  const message = toErrorMessage(error, fallbackMessage);
+  if (IS_FAIL_FAST) {
+    throw new Error(message);
+  }
+
+  return { ok: false, error: message };
+}
 
 function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -760,8 +782,8 @@ function registerIpcHandlers() {
 
     try {
       await mkdir(dirPath, { recursive: true });
-    } catch {
-      return { ok: true };
+    } catch (error) {
+      return toIpcFailure(error, "Failed to create settings directory for watcher.");
     }
 
     let debounceTimer = null;
@@ -804,14 +826,19 @@ function registerIpcHandlers() {
         }, SETTINGS_WATCH_DEBOUNCE_MS);
       });
 
-      fsWatcher.on("error", () => {
+      fsWatcher.on("error", (error) => {
         stopSettingsWatcher(webContentsId);
+        const message = toErrorMessage(error, "Settings watcher failed.");
+        console.error(message, error);
+        if (IS_FAIL_FAST) {
+          throw new Error(message);
+        }
       });
 
       settingsWatchers.set(webContentsId, fsWatcher);
       return { ok: true };
-    } catch {
-      return { ok: true };
+    } catch (error) {
+      return toIpcFailure(error, "Failed to start settings watcher.");
     }
   });
 
@@ -1133,7 +1160,7 @@ function registerIpcHandlers() {
 
 function registerGlobalQuickKeys() {
   for (const binding of quickKeyBindings) {
-    globalShortcut.register(binding.accelerator, () => {
+    const isRegistered = globalShortcut.register(binding.accelerator, () => {
       const windows = BrowserWindow.getAllWindows();
       for (const win of windows) {
         if (!win.isDestroyed()) {
@@ -1141,6 +1168,14 @@ function registerGlobalQuickKeys() {
         }
       }
     });
+    if (!isRegistered) {
+      const message = `Failed to register global shortcut: ${binding.accelerator}`;
+      if (IS_FAIL_FAST) {
+        throw new Error(message);
+      }
+
+      console.error(message);
+    }
   }
 }
 

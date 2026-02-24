@@ -59,9 +59,15 @@ const parseToolbarElement = (value: unknown): ToolbarElement | null => {
       return null;
     }
 
-    const items = value.items
-      .map((item: unknown) => parseToolbarButton(item))
-      .filter((item: ToolbarButton | null): item is ToolbarButton => item !== null);
+    const items: ToolbarButton[] = [];
+    for (const item of value.items) {
+      const parsedItem = parseToolbarButton(item);
+      if (!parsedItem) {
+        return null;
+      }
+
+      items.push(parsedItem);
+    }
 
     return { type: "dropdown", label: value.label, items };
   }
@@ -93,9 +99,15 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
     return null;
   }
 
-  const elements = value.elements
-    .map((element: unknown) => parseToolbarElement(element))
-    .filter((element: ToolbarElement | null): element is ToolbarElement => element !== null);
+  const elements: ToolbarElement[] = [];
+  for (const element of value.elements) {
+    const parsedElement = parseToolbarElement(element);
+    if (!parsedElement) {
+      return null;
+    }
+
+    elements.push(parsedElement);
+  }
 
   return { elements };
 };

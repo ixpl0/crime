@@ -58,6 +58,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { toErrorMessage } from "../utils/fail-fast";
 
 const props = defineProps<{
   projectPath: string;
@@ -134,10 +135,24 @@ async function loadFilePreview() {
   loadError.value = "";
   diffInfoMessage.value = "";
 
-  const [fileResponse, diffResponse] = await Promise.all([
-    window.projectApi.filesystem.readFile(props.projectPath, props.filePath),
-    window.projectApi.git.getFileDiff(props.projectPath, props.filePath)
-  ]);
+  let fileResponse: FilesystemReadFileResponse;
+  let diffResponse: GitFileDiffResponse;
+  try {
+    [fileResponse, diffResponse] = await Promise.all([
+      window.projectApi.filesystem.readFile(props.projectPath, props.filePath),
+      window.projectApi.git.getFileDiff(props.projectPath, props.filePath)
+    ]);
+  } catch (error) {
+    if (requestId !== loadRequestId) {
+      return;
+    }
+
+    isLoading.value = false;
+    loadError.value = toErrorMessage(error, "Failed to load file preview.");
+    diffInfoMessage.value = "";
+    displayLines.value = [];
+    return;
+  }
 
   if (requestId !== loadRequestId) {
     return;

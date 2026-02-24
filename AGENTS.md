@@ -37,6 +37,11 @@ src/
 - **Toolbar config**: per-project in `.ide/toolbar.json`
 - **Terminal history**: per-project in `.ide/terminal-input-history.json`
 
+## Engineering Principles
+
+- **Terminal freedom first**: do not sanitize, rewrite, or filter PTY byte streams. Terminal behavior must remain fully controlled by shell and user actions.
+- **Fail-fast in development**: surface errors immediately in UI/logs instead of silently swallowing them.
+
 ## Preload Caveat
 
 - `electron/preload.cjs` runs in a sandboxed preload context.

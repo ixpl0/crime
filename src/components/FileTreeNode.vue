@@ -53,6 +53,7 @@ import {
   mergeDirectoryEntries,
   type DeletedChildrenByParent
 } from "./file-tree-status-utils";
+import { toErrorMessage } from "../utils/fail-fast";
 
 const props = defineProps<{
   entry: FileEntry;
@@ -160,7 +161,17 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
     loadError.value = "";
   }
 
-  const response = await window.projectApi.filesystem.readDirectory(props.entry.path);
+  let response: FilesystemReadResponse;
+  try {
+    response = await window.projectApi.filesystem.readDirectory(props.entry.path);
+  } catch (error) {
+    const message = toErrorMessage(error, "Failed to read directory.");
+    if (!silent) {
+      isLoading.value = false;
+    }
+    loadError.value = message;
+    return;
+  }
 
   if (!silent) {
     isLoading.value = false;
