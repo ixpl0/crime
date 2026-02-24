@@ -40,7 +40,8 @@
                   :value="todoDraft"
                   data-todo-textarea="true"
                   :data-todo-index="index"
-                  class="textarea textarea-bordered h-16 min-h-16 w-full resize-y text-sm leading-relaxed"
+                  class="textarea textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden text-sm leading-relaxed"
+                  rows="1"
                   placeholder="&#1055;&#1088;&#1086;&#1084;&#1087;&#1090;"
                   @input="handleTodoTextareaInput(index, $event)"
                   @blur="handleTodoTextareaBlur"
@@ -146,7 +147,8 @@
                 <textarea
                   ref="terminalInputTextarea"
                   v-model="terminalInputText"
-                  class="textarea textarea-bordered h-24 w-full resize-y"
+                  class="textarea textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden"
+                  rows="1"
                   :disabled="!isTerminalReady"
                   placeholder="&#1042;&#1074;&#1077;&#1076;&#1080;&#1090;&#1077; &#1090;&#1077;&#1082;&#1089;&#1090; &#1076;&#1083;&#1103; &#1086;&#1090;&#1087;&#1088;&#1072;&#1074;&#1082;&#1080; &#1074; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;"
                   @keydown="handleTextareaKeydown"
@@ -210,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "xterm/css/xterm.css";
@@ -265,7 +267,6 @@ const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
-const TODO_TEXTAREA_MIN_HEIGHT_PX = 64;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
@@ -365,10 +366,37 @@ function areStringArraysEqual(first: string[], second: string[]) {
   return true;
 }
 
-function resizeTodoTextareaElement(textarea: HTMLTextAreaElement) {
+function getTextareaMinHeight(textarea: HTMLTextAreaElement, boxFrameHeight: number) {
+  const computedStyles = window.getComputedStyle(textarea);
+  const lineHeight = Number.parseFloat(computedStyles.lineHeight) || 20;
+  const paddingTop = Number.parseFloat(computedStyles.paddingTop) || 0;
+  const paddingBottom = Number.parseFloat(computedStyles.paddingBottom) || 0;
+
+  return Math.max(Math.ceil(lineHeight + paddingTop + paddingBottom + boxFrameHeight), 1);
+}
+
+function resizeAutoHeightTextareaElement(textarea: HTMLTextAreaElement) {
   textarea.style.height = "auto";
-  const nextHeight = Math.max(textarea.scrollHeight, TODO_TEXTAREA_MIN_HEIGHT_PX);
+  const boxFrameHeight = textarea.offsetHeight - textarea.clientHeight;
+  const minHeight = getTextareaMinHeight(textarea, boxFrameHeight);
+  const nextHeight = Math.max(
+    Math.ceil(textarea.scrollHeight + boxFrameHeight),
+    minHeight
+  );
   textarea.style.height = `${String(nextHeight)}px`;
+}
+
+function resizeTodoTextareaElement(textarea: HTMLTextAreaElement) {
+  resizeAutoHeightTextareaElement(textarea);
+}
+
+function resizeTerminalInputTextareaElement() {
+  const textarea = terminalInputTextarea.value;
+  if (!textarea) {
+    return;
+  }
+
+  resizeAutoHeightTextareaElement(textarea);
 }
 
 function resizeTodoTextareas() {
@@ -839,7 +867,13 @@ function handleTextareaKeydown(event: KeyboardEvent) {
   }
 }
 
-function handleTextareaInput() {
+function handleTextareaInput(event: Event) {
+  const textarea =
+    event.currentTarget instanceof HTMLTextAreaElement ? event.currentTarget : null;
+  if (textarea) {
+    resizeAutoHeightTextareaElement(textarea);
+  }
+
   if (terminalInputHistoryIndex.value === null) {
     return;
   }
@@ -1397,6 +1431,8 @@ onMounted(() => {
   });
 
   const handleWindowResize = () => {
+    resizeTodoTextareas();
+    resizeTerminalInputTextareaElement();
     void resizeTerminalBackend();
   };
 
@@ -1409,7 +1445,17 @@ onMounted(() => {
     sendQuickKey(input);
   });
 
+  void nextTick(() => {
+    resizeTerminalInputTextareaElement();
+  });
+
   void openLastProjectOnStartup();
+});
+
+watch(terminalInputText, () => {
+  void nextTick(() => {
+    resizeTerminalInputTextareaElement();
+  });
 });
 
 onBeforeUnmount(() => {
