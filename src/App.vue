@@ -24,12 +24,26 @@
         </div>
       </template>
 
-      <div v-if="projectPath" class="grid gap-4 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
-        <aside class="card h-fit bg-base-100 shadow-xl">
+      <div
+        v-if="projectPath"
+        class="grid gap-4"
+        :class="{ 'lg:grid-cols-[17.5rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
+      >
+        <aside v-if="!isTodoPanelCollapsed" class="card h-fit bg-base-100 shadow-xl">
           <div class="card-body p-3">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
-              &#1047;&#1072;&#1076;&#1072;&#1095;&#1080;
-            </h2>
+            <div class="flex items-center justify-between gap-2">
+              <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+                &#1047;&#1072;&#1076;&#1072;&#1095;&#1080;
+              </h2>
+              <button
+                class="btn btn-ghost btn-xs"
+                type="button"
+                title="Скрыть блок задач"
+                @click="toggleTodoPanelCollapse"
+              >
+                <EyeOff :size="14" />
+              </button>
+            </div>
             <div class="mt-2 flex flex-col gap-2">
               <div
                 v-for="(todoDraft, index) in todoDrafts"
@@ -101,6 +115,28 @@
                   </li>
                 </ul>
               </div>
+            </div>
+
+            <div v-if="hiddenPanelOptions.length > 0" class="dropdown dropdown-end">
+              <button
+                tabindex="0"
+                type="button"
+                class="btn btn-sm btn-ghost"
+                title="Показать скрытые панели"
+              >
+                <Eye :size="16" />
+                <ChevronDown :size="14" />
+              </button>
+              <ul
+                tabindex="0"
+                class="dropdown-content menu bg-base-100 rounded-box z-10 mt-1 w-56 p-1 shadow"
+              >
+                <li v-for="panelOption in hiddenPanelOptions" :key="panelOption.id">
+                  <button type="button" @click="showHiddenPanel(panelOption.id)">
+                    {{ panelOption.title }}
+                  </button>
+                </li>
+              </ul>
             </div>
 
             <button
@@ -212,7 +248,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Terminal } from "xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "xterm/css/xterm.css";
@@ -242,7 +278,17 @@ import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
 import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import FileContentViewer from "./components/FileContentViewer.vue";
-import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, CornerDownLeft, Settings, ChevronDown } from "lucide-vue-next";
+import {
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  CornerDownLeft,
+  Settings,
+  ChevronDown,
+  Eye,
+  EyeOff
+} from "lucide-vue-next";
 
 const settingsDirectoryName = window.projectApi.settings.directoryName;
 const QUICK_KEY_GRID_SIZE = 12;
@@ -271,8 +317,12 @@ const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
+const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
 const terminalInputHistory = ref<string[]>([]);
 const todoDrafts = ref<string[]>([""]);
+const isTodoPanelCollapsed = ref(
+  window.localStorage.getItem(TODO_PANEL_COLLAPSED_STORAGE_KEY) === "1"
+);
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
@@ -281,6 +331,25 @@ const isToolbarConfigEditorOpen = ref(false);
 const isProjectSettingsEditorOpen = ref(false);
 const activeTab = ref<"agent" | "files">("agent");
 const selectedFilePath = ref<string | null>(null);
+type HiddenPanelId = "todo";
+
+interface HiddenPanelOption {
+  id: HiddenPanelId;
+  title: string;
+}
+
+const hiddenPanelOptions = computed<HiddenPanelOption[]>(() => {
+  const options: HiddenPanelOption[] = [];
+
+  if (isTodoPanelCollapsed.value) {
+    options.push({
+      id: "todo",
+      title: "\u0417\u0430\u0434\u0430\u0447\u0438"
+    });
+  }
+
+  return options;
+});
 
 let terminal: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
@@ -315,6 +384,24 @@ function setLastProjectPathInStorage(path: string) {
 
 function clearLastProjectPathInStorage() {
   window.localStorage.removeItem(LAST_PROJECT_PATH_STORAGE_KEY);
+}
+
+function persistTodoPanelCollapsedState(isCollapsed: boolean) {
+  window.localStorage.setItem(TODO_PANEL_COLLAPSED_STORAGE_KEY, isCollapsed ? "1" : "0");
+}
+
+function toggleTodoPanelCollapse() {
+  isTodoPanelCollapsed.value = !isTodoPanelCollapsed.value;
+}
+
+const showHiddenPanelHandlers: Record<HiddenPanelId, () => void> = {
+  todo: () => {
+    isTodoPanelCollapsed.value = false;
+  }
+};
+
+function showHiddenPanel(panelId: HiddenPanelId) {
+  showHiddenPanelHandlers[panelId]();
 }
 
 async function loadTerminalInputHistoryForProject(path: string) {
@@ -1456,6 +1543,16 @@ watch(terminalInputText, () => {
   void nextTick(() => {
     resizeTerminalInputTextareaElement();
   });
+});
+
+watch(isTodoPanelCollapsed, (isCollapsed) => {
+  persistTodoPanelCollapsedState(isCollapsed);
+
+  if (!isCollapsed) {
+    void nextTick(() => {
+      resizeTodoTextareas();
+    });
+  }
 });
 
 onBeforeUnmount(() => {
