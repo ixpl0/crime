@@ -41,7 +41,7 @@
                 title="Скрыть блок задач"
                 @click="toggleTodoPanelCollapse"
               >
-                <EyeOff :size="14" />
+                <EyeOff :size="14" class="opacity-60" />
               </button>
             </div>
             <div class="todo-list-scroll mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
@@ -1125,6 +1125,75 @@ function isCursorOnFirstLine(textarea: HTMLTextAreaElement) {
   return !textarea.value.slice(0, textarea.selectionStart).includes("\n");
 }
 
+function parseCssPixelValue(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getComputedLineHeightPixels(style: CSSStyleDeclaration) {
+  const parsedLineHeight = Number.parseFloat(style.lineHeight);
+  if (Number.isFinite(parsedLineHeight)) {
+    return parsedLineHeight;
+  }
+
+  const parsedFontSize = Number.parseFloat(style.fontSize);
+  if (Number.isFinite(parsedFontSize)) {
+    return parsedFontSize * 1.2;
+  }
+
+  return 16 * 1.2;
+}
+
+function isCursorOnFirstVisualLine(textarea: HTMLTextAreaElement) {
+  if (textarea.selectionStart === 0) {
+    return true;
+  }
+
+  if (!document.body) {
+    return isCursorOnFirstLine(textarea);
+  }
+
+  const style = window.getComputedStyle(textarea);
+  const mirror = document.createElement("div");
+  mirror.setAttribute("aria-hidden", "true");
+  mirror.style.position = "absolute";
+  mirror.style.visibility = "hidden";
+  mirror.style.pointerEvents = "none";
+  mirror.style.top = "0";
+  mirror.style.left = "-9999px";
+  mirror.style.boxSizing = "border-box";
+  mirror.style.width = `${String(textarea.clientWidth)}px`;
+  mirror.style.padding = style.padding;
+  mirror.style.font = style.font;
+  mirror.style.lineHeight = style.lineHeight;
+  mirror.style.letterSpacing = style.letterSpacing;
+  mirror.style.wordSpacing = style.wordSpacing;
+  mirror.style.textTransform = style.textTransform;
+  mirror.style.textIndent = style.textIndent;
+  mirror.style.textAlign = style.textAlign;
+  mirror.style.tabSize = style.tabSize;
+  mirror.style.whiteSpace = "pre-wrap";
+  mirror.style.overflowWrap = "break-word";
+  mirror.style.wordBreak = "break-word";
+
+  mirror.textContent = textarea.value.slice(0, textarea.selectionStart);
+  const caretMarker = document.createElement("span");
+  caretMarker.textContent = "\u200b";
+  mirror.appendChild(caretMarker);
+
+  document.body.appendChild(mirror);
+  try {
+    const mirrorRect = mirror.getBoundingClientRect();
+    const caretRect = caretMarker.getBoundingClientRect();
+    const caretTop = caretRect.top - mirrorRect.top;
+    const paddingTop = parseCssPixelValue(style.paddingTop);
+    const lineHeightPixels = getComputedLineHeightPixels(style);
+    return caretTop <= paddingTop + lineHeightPixels * 0.5;
+  } finally {
+    mirror.remove();
+  }
+}
+
 function isCursorOnLastLine(textarea: HTMLTextAreaElement) {
   return !textarea.value.slice(textarea.selectionEnd).includes("\n");
 }
@@ -1392,7 +1461,12 @@ function handleTextareaKeydown(event: KeyboardEvent) {
     return;
   }
 
-  if (event.key === "ArrowUp" && isCursorOnFirstLine(textarea)) {
+  if (
+    event.key === "ArrowUp" &&
+    (terminalInputHistoryIndex.value === null
+      ? isCursorOnFirstVisualLine(textarea)
+      : isCursorOnFirstLine(textarea))
+  ) {
     event.preventDefault();
     navigateTerminalInputHistory(-1);
     return;
