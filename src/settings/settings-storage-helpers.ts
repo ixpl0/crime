@@ -1,6 +1,62 @@
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+export interface VersionedStringEntriesPayload {
+  readonly version: 1;
+  readonly entries: readonly string[];
+}
+
+const normalizeStringEntries = (value: readonly unknown[]): string[] =>
+  value.filter((entry): entry is string => typeof entry === "string");
+
+const getSafeSliceLimit = (limit: number | undefined): number | null => {
+  if (typeof limit !== "number" || !Number.isInteger(limit) || limit < 0) {
+    return null;
+  }
+
+  return limit;
+};
+
+const applyOptionalTailLimit = (entries: string[], limit: number | undefined): string[] => {
+  const safeLimit = getSafeSliceLimit(limit);
+  if (safeLimit === null) {
+    return entries;
+  }
+
+  return entries.slice(-safeLimit);
+};
+
+export const parseVersionedStringEntries = (
+  value: unknown,
+  options?: {
+    readonly limit?: number;
+  }
+): string[] | null => {
+  if (Array.isArray(value)) {
+    return applyOptionalTailLimit(normalizeStringEntries(value), options?.limit);
+  }
+
+  if (!isRecord(value) || value.version !== 1 || !Array.isArray(value.entries)) {
+    return null;
+  }
+
+  return applyOptionalTailLimit(normalizeStringEntries(value.entries), options?.limit);
+};
+
+export const toVersionedStringEntriesPayload = (
+  entries: readonly string[],
+  options?: {
+    readonly limit?: number;
+  }
+): VersionedStringEntriesPayload => {
+  const normalizedEntries = applyOptionalTailLimit(normalizeStringEntries(entries), options?.limit);
+
+  return {
+    version: 1,
+    entries: normalizedEntries
+  };
+};
+
 export const loadJsonProjectSetting = async <T>(
   projectPath: string,
   filename: string,

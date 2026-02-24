@@ -5,6 +5,8 @@
   "type": "module",
   "main": "electron/main.mjs",
   "scripts": {
+    "sync:preload-shared": "node scripts/sync-preload-shared.mjs",
+    "predev": "bun run sync:preload-shared",
     "dev": "concurrently -k \"bun run dev:renderer\" \"bun run dev:electron\"",
     "dev:renderer": "vite",
     "dev:electron": "wait-on tcp:5173 && nodemon --watch electron --ext mjs,cjs --exec \"bun run dev:electron:run\"",
@@ -13,7 +15,9 @@
     "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json",
     "prepare": "husky",
+    "prebuild": "bun run sync:preload-shared",
     "build": "vite build",
+    "prestart": "bun run sync:preload-shared",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production electron ."
   },

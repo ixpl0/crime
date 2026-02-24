@@ -2,6 +2,7 @@ import { type ToolbarConfig, type ToolbarElement, type ToolbarAction, type Toolb
 import { defaultToolbarConfig } from "./default-toolbar-config";
 import {
   isRecord,
+  loadJsonProjectSetting,
   saveJsonProjectSetting
 } from "../settings/settings-storage-helpers";
 
@@ -99,36 +100,16 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
   return { elements };
 };
 
-const parseToolbarConfigContent = (content: string): ToolbarConfig | null => {
-  try {
-    const parsed: unknown = JSON.parse(content);
-    return parseToolbarConfig(parsed);
-  } catch {
-    return null;
-  }
-};
-
 export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
-  try {
-    const response = await window.projectApi.settings.read(projectPath, TOOLBAR_CONFIG_FILENAME);
-    if (!response.ok) {
-      return defaultToolbarConfig;
+  return loadJsonProjectSetting(
+    projectPath,
+    TOOLBAR_CONFIG_FILENAME,
+    parseToolbarConfig,
+    defaultToolbarConfig,
+    {
+      settingLabel: "agent toolbar config"
     }
-
-    if (response.content != null) {
-      const config = parseToolbarConfigContent(response.content);
-      if (config) {
-        return config;
-      }
-
-      return defaultToolbarConfig;
-    }
-
-    await saveToolbarConfig(projectPath, defaultToolbarConfig);
-    return defaultToolbarConfig;
-  } catch {
-    return defaultToolbarConfig;
-  }
+  );
 };
 
 export const saveToolbarConfig = async (projectPath: string, config: ToolbarConfig): Promise<void> => {

@@ -1512,6 +1512,11 @@ interface SubmitTerminalTextMessages {
   submit: string;
 }
 
+interface SubmitTerminalTextAttemptOptions {
+  notReady: string;
+  messages: SubmitTerminalTextMessages;
+}
+
 async function submitTerminalText(
   rawText: string,
   messages: SubmitTerminalTextMessages
@@ -1547,6 +1552,23 @@ async function submitTerminalText(
   }
 
   return "submitted";
+}
+
+async function attemptSubmitTerminalText(
+  rawText: string,
+  options: SubmitTerminalTextAttemptOptions
+): Promise<SubmitTerminalTextResult> {
+  if (!isTerminalReady.value) {
+    errorMessage.value = options.notReady;
+    return "failed";
+  }
+
+  if (!rawText.trim()) {
+    return "empty";
+  }
+
+  errorMessage.value = "";
+  return submitTerminalText(rawText, options.messages);
 }
 
 function initializeTerminalView() {
@@ -1717,16 +1739,13 @@ async function openLastProjectOnStartup() {
 }
 
 async function runTerminalCommand(command: string) {
-  if (!isTerminalReady.value) {
-    errorMessage.value = "Terminal is not ready to run commands.";
-    return;
-  }
-
-  errorMessage.value = "";
-  const result = await submitTerminalText(command, {
-    sendSlash: "Failed to send slash command to terminal.",
-    sendText: "Failed to send command text to terminal.",
-    submit: "Failed to submit command in terminal."
+  const result = await attemptSubmitTerminalText(command, {
+    notReady: "Terminal is not ready to run commands.",
+    messages: {
+      sendSlash: "Failed to send slash command to terminal.",
+      sendText: "Failed to send command text to terminal.",
+      submit: "Failed to submit command in terminal."
+    }
   });
   if (result !== "submitted") {
     return;
@@ -1847,21 +1866,14 @@ async function sendAltVToTerminal(shouldFocusTerminal = true) {
 }
 
 async function sendTextareaToTerminal() {
-  if (!isTerminalReady.value) {
-    errorMessage.value = "Terminal is not ready to send input.";
-    return;
-  }
-
   const text = terminalInputText.value;
-  if (!text.trim()) {
-    return;
-  }
-
-  errorMessage.value = "";
-  const result = await submitTerminalText(text, {
-    sendSlash: "Failed to send slash command to terminal.",
-    sendText: "Failed to send input to terminal.",
-    submit: "Failed to send Enter to terminal."
+  const result = await attemptSubmitTerminalText(text, {
+    notReady: "Terminal is not ready to send input.",
+    messages: {
+      sendSlash: "Failed to send slash command to terminal.",
+      sendText: "Failed to send input to terminal.",
+      submit: "Failed to send Enter to terminal."
+    }
   });
   if (result !== "submitted") {
     return;
@@ -1873,21 +1885,18 @@ async function sendTextareaToTerminal() {
 }
 
 async function sendTodoEntryToTerminal(index: number) {
-  if (!isTerminalReady.value) {
-    errorMessage.value = "Terminal is not ready to send input.";
-    return;
-  }
-
   const text = todoDrafts.value[index];
-  if (typeof text !== "string" || !text.trim()) {
+  if (typeof text !== "string") {
     return;
   }
 
-  errorMessage.value = "";
-  const result = await submitTerminalText(text, {
-    sendSlash: "Failed to send slash command from todo to terminal.",
-    sendText: "Failed to send todo prompt to terminal.",
-    submit: "Failed to send Enter to terminal."
+  const result = await attemptSubmitTerminalText(text, {
+    notReady: "Terminal is not ready to send input.",
+    messages: {
+      sendSlash: "Failed to send slash command from todo to terminal.",
+      sendText: "Failed to send todo prompt to terminal.",
+      submit: "Failed to send Enter to terminal."
+    }
   });
   if (result !== "submitted") {
     return;
