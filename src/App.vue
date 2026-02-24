@@ -1149,10 +1149,6 @@ function isCursorOnFirstVisualLine(textarea: HTMLTextAreaElement) {
     return true;
   }
 
-  if (!document.body) {
-    return isCursorOnFirstLine(textarea);
-  }
-
   const style = window.getComputedStyle(textarea);
   const mirror = document.createElement("div");
   mirror.setAttribute("aria-hidden", "true");
