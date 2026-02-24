@@ -24,8 +24,44 @@
         </div>
       </template>
 
-      <div v-if="projectPath" class="card bg-base-100 shadow-xl">
-        <div class="card-body gap-4">
+      <div v-if="projectPath" class="grid gap-4 lg:grid-cols-[17.5rem_minmax(0,1fr)]">
+        <aside class="card h-fit bg-base-100 shadow-xl">
+          <div class="card-body p-3">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
+              &#1047;&#1072;&#1076;&#1072;&#1095;&#1080;
+            </h2>
+            <div class="mt-2 flex flex-col gap-2">
+              <div
+                v-for="(todoDraft, index) in todoDrafts"
+                :key="`todo-draft-${index}`"
+                class="space-y-1"
+              >
+                <textarea
+                  :value="todoDraft"
+                  data-todo-textarea="true"
+                  :data-todo-index="index"
+                  class="textarea textarea-bordered h-16 min-h-16 w-full resize-y text-sm leading-relaxed"
+                  placeholder="&#1055;&#1088;&#1086;&#1084;&#1087;&#1090;"
+                  @input="handleTodoTextareaInput(index, $event)"
+                  @blur="handleTodoTextareaBlur"
+                />
+                <div class="flex justify-end">
+                  <button
+                    class="btn btn-ghost btn-xs normal-case text-base-content/70"
+                    type="button"
+                    :disabled="!isTerminalReady || !todoDraft.trim()"
+                    @click="sendTodoEntryToTerminal(index)"
+                  >
+                    &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body gap-4">
           <div v-if="errorMessage" class="alert alert-error">
             <span>{{ errorMessage }}</span>
           </div>
@@ -91,68 +127,65 @@
             @close="isProjectSettingsEditorOpen = false"
           />
 
-          <div v-show="activeTab === 'agent'">
-            <div class="space-y-4">
-              <ToolbarPanel
-                :toolbar-config="toolbarConfig"
-                :is-terminal-ready="isTerminalReady"
-                @execute-action="executeToolbarAction"
-                @open-config-editor="isToolbarConfigEditorOpen = true"
-              />
+          <div v-show="activeTab === 'agent'" class="space-y-4">
+            <ToolbarPanel
+              :toolbar-config="toolbarConfig"
+              :is-terminal-ready="isTerminalReady"
+              @execute-action="executeToolbarAction"
+              @open-config-editor="isToolbarConfigEditorOpen = true"
+            />
 
-              <div
-                ref="terminalContainer"
-                class="terminal-host h-96 w-full rounded-box border border-base-300 bg-[#05070d]"
-                @click="focusTerminal"
-              />
+            <div
+              ref="terminalContainer"
+              class="terminal-host h-96 w-full rounded-box border border-base-300 bg-[#05070d]"
+              @click="focusTerminal"
+            />
 
-              <form class="flex gap-3" @submit.prevent="sendTextareaToTerminal">
-                <div class="flex flex-1 flex-col gap-2">
-                  <textarea
-                    ref="terminalInputTextarea"
-                    v-model="terminalInputText"
-                    class="textarea textarea-bordered h-24 w-full resize-y"
+            <form class="flex gap-3" @submit.prevent="sendTextareaToTerminal">
+              <div class="flex flex-1 flex-col gap-2">
+                <textarea
+                  ref="terminalInputTextarea"
+                  v-model="terminalInputText"
+                  class="textarea textarea-bordered h-24 w-full resize-y"
+                  :disabled="!isTerminalReady"
+                  placeholder="&#1042;&#1074;&#1077;&#1076;&#1080;&#1090;&#1077; &#1090;&#1077;&#1082;&#1089;&#1090; &#1076;&#1083;&#1103; &#1086;&#1090;&#1087;&#1088;&#1072;&#1074;&#1082;&#1080; &#1074; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;"
+                  @keydown="handleTextareaKeydown"
+                  @input="handleTextareaInput"
+                  @paste="handleTextareaPaste"
+                />
+                <div class="flex justify-end">
+                  <button
+                    class="btn btn-sm"
+                    type="submit"
+                    :disabled="!isTerminalReady || !terminalInputText.trim()"
+                  >
+                    &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
+                <template v-for="(quickKey, index) in quickKeyGridSlots" :key="`quick-key-${index}`">
+                  <button
+                    v-if="quickKey"
+                    type="button"
+                    class="btn btn-sm min-w-0 px-2"
                     :disabled="!isTerminalReady"
-                    placeholder="Введите текст для отправки в терминал"
-                    @keydown="handleTextareaKeydown"
-                    @input="handleTextareaInput"
-                    @paste="handleTextareaPaste"
-                  />
-                  <div class="flex justify-end">
-                    <button
-                      class="btn btn-sm"
-                      type="submit"
-                      :disabled="!isTerminalReady || !terminalInputText.trim()"
-                    >
-                      Отправить
-                    </button>
-                  </div>
-                </div>
-
-                <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
-                  <template v-for="(quickKey, index) in quickKeyGridSlots" :key="`quick-key-${index}`">
-                    <button
-                      v-if="quickKey"
-                      type="button"
-                      class="btn btn-sm min-w-0 px-2"
-                      :disabled="!isTerminalReady"
-                      :title="quickKey.accelerator"
-                      @click="sendQuickKey(quickKey.input)"
-                    >
-                      <ArrowUp v-if="quickKey.icon === 'arrow-up'" :size="14" />
-                      <ArrowDown v-else-if="quickKey.icon === 'arrow-down'" :size="14" />
-                      <ArrowLeft v-else-if="quickKey.icon === 'arrow-left'" :size="14" />
-                      <ArrowRight v-else-if="quickKey.icon === 'arrow-right'" :size="14" />
-                      <CornerDownLeft v-else-if="quickKey.icon === 'enter'" :size="14" />
-                      <template v-else>{{ quickKey.label }}</template>
-                    </button>
-                    <span v-else />
-                  </template>
-                </div>
-              </form>
-            </div>
+                    :title="quickKey.accelerator"
+                    @click="sendQuickKey(quickKey.input)"
+                  >
+                    <ArrowUp v-if="quickKey.icon === 'arrow-up'" :size="14" />
+                    <ArrowDown v-else-if="quickKey.icon === 'arrow-down'" :size="14" />
+                    <ArrowLeft v-else-if="quickKey.icon === 'arrow-left'" :size="14" />
+                    <ArrowRight v-else-if="quickKey.icon === 'arrow-right'" :size="14" />
+                    <CornerDownLeft v-else-if="quickKey.icon === 'enter'" :size="14" />
+                    <template v-else>{{ quickKey.label }}</template>
+                  </button>
+                  <span v-else />
+                </template>
+              </div>
+            </form>
           </div>
-
           <div v-show="activeTab === 'files'">
             <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
               <FileManagerPanel
@@ -168,6 +201,7 @@
                 :is-active="activeTab === 'files'"
               />
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -199,6 +233,7 @@ import {
   loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
   saveTerminalInputHistory
 } from "./settings/terminal-input-history-storage";
+import { loadTodoEntries, saveTodoEntries, TODO_FILENAME } from "./settings/todo-storage";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
@@ -230,11 +265,13 @@ const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
+const TODO_TEXTAREA_MIN_HEIGHT_PX = 64;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const terminalInputHistory = ref<string[]>([]);
+const todoDrafts = ref<string[]>([""]);
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
@@ -254,6 +291,10 @@ let unsubscribeSettingsFileChanged: (() => void) | null = null;
 let terminalDataVersion = 0;
 let terminalInputQueue: Promise<void> = Promise.resolve();
 let terminalInputHistoryLoadToken = 0;
+let todoEntriesLoadToken = 0;
+let todoDraftEditVersion = 0;
+let todoPersistedVersion = 0;
+let todoPersistQueue: Promise<void> = Promise.resolve();
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
@@ -286,6 +327,184 @@ async function loadTerminalInputHistoryForProject(path: string) {
 
   terminalInputHistory.value = history;
   resetTerminalInputHistoryNavigation();
+}
+
+function getNormalizedTodoDrafts(entries: string[]) {
+  const nextEntries = entries.length > 0 ? entries : [""];
+  let visibleCount = 1;
+  while (
+    visibleCount < nextEntries.length &&
+    nextEntries[visibleCount - 1].trim().length > 0
+  ) {
+    visibleCount += 1;
+  }
+
+  const visibleEntries = nextEntries.slice(0, visibleCount);
+  if (visibleEntries[visibleEntries.length - 1].trim().length > 0) {
+    visibleEntries.push("");
+  }
+
+  return visibleEntries;
+}
+
+function getPersistedTodoEntries(entries: string[]) {
+  return entries.filter((entry) => entry.trim().length > 0);
+}
+
+function areStringArraysEqual(first: string[], second: string[]) {
+  if (first.length !== second.length) {
+    return false;
+  }
+
+  for (let index = 0; index < first.length; index += 1) {
+    if (first[index] !== second[index]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function resizeTodoTextareaElement(textarea: HTMLTextAreaElement) {
+  textarea.style.height = "auto";
+  const nextHeight = Math.max(textarea.scrollHeight, TODO_TEXTAREA_MIN_HEIGHT_PX);
+  textarea.style.height = `${String(nextHeight)}px`;
+}
+
+function resizeTodoTextareas() {
+  const textareas = document.querySelectorAll<HTMLTextAreaElement>(
+    'textarea[data-todo-textarea="true"]'
+  );
+
+  for (const textarea of textareas) {
+    resizeTodoTextareaElement(textarea);
+  }
+}
+
+interface TodoFocusSnapshot {
+  index: number;
+  selectionStart: number;
+  selectionEnd: number;
+  scrollTop: number;
+}
+
+function getFocusedTodoSnapshot() {
+  const activeElement = document.activeElement;
+  if (!(activeElement instanceof HTMLTextAreaElement)) {
+    return null;
+  }
+
+  if (activeElement.dataset.todoTextarea !== "true") {
+    return null;
+  }
+
+  const index = Number.parseInt(activeElement.dataset.todoIndex ?? "", 10);
+  if (!Number.isInteger(index) || index < 0) {
+    return null;
+  }
+
+  return {
+    index,
+    selectionStart: activeElement.selectionStart,
+    selectionEnd: activeElement.selectionEnd,
+    scrollTop: activeElement.scrollTop
+  } satisfies TodoFocusSnapshot;
+}
+
+function restoreTodoFocus(snapshot: TodoFocusSnapshot | null) {
+  if (!snapshot) {
+    return;
+  }
+
+  const selector = `textarea[data-todo-textarea="true"][data-todo-index="${String(snapshot.index)}"]`;
+  const textarea = document.querySelector<HTMLTextAreaElement>(selector);
+  if (!textarea) {
+    return;
+  }
+
+  textarea.focus();
+
+  const maxSelectionIndex = textarea.value.length;
+  const selectionStart = Math.min(snapshot.selectionStart, maxSelectionIndex);
+  const selectionEnd = Math.min(snapshot.selectionEnd, maxSelectionIndex);
+  textarea.setSelectionRange(selectionStart, selectionEnd);
+  textarea.scrollTop = snapshot.scrollTop;
+}
+
+function persistTodoEntries(entries: string[], version: number) {
+  if (!projectPath.value) {
+    return;
+  }
+
+  const path = projectPath.value;
+  const operation = async () => {
+    await saveTodoEntries(path, entries);
+
+    if (projectPath.value === path && version > todoPersistedVersion) {
+      todoPersistedVersion = version;
+    }
+  };
+
+  todoPersistQueue = todoPersistQueue.then(operation, operation);
+}
+
+async function loadTodoEntriesForProject(path: string, source: "project-open" | "settings-watch") {
+  const loadToken = todoEntriesLoadToken + 1;
+  todoEntriesLoadToken = loadToken;
+  const entries = await loadTodoEntries(path);
+
+  if (projectPath.value !== path || todoEntriesLoadToken !== loadToken) {
+    return;
+  }
+
+  // Ignore watcher reloads while there are newer local edits in-flight.
+  if (source === "settings-watch" && todoDraftEditVersion > todoPersistedVersion) {
+    return;
+  }
+
+  const focusedTodoSnapshot = getFocusedTodoSnapshot();
+  const nextDrafts = getNormalizedTodoDrafts(entries);
+  if (areStringArraysEqual(todoDrafts.value, nextDrafts)) {
+    void nextTick(() => {
+      resizeTodoTextareas();
+      restoreTodoFocus(focusedTodoSnapshot);
+    });
+    return;
+  }
+
+  todoDrafts.value = nextDrafts;
+  void nextTick(() => {
+    resizeTodoTextareas();
+    restoreTodoFocus(focusedTodoSnapshot);
+  });
+}
+
+function handleTodoTextareaInput(index: number, event: Event) {
+  const textarea = event.target;
+  if (!(textarea instanceof HTMLTextAreaElement)) {
+    return;
+  }
+
+  if (index < 0 || index >= todoDrafts.value.length) {
+    return;
+  }
+
+  const nextDrafts = [...todoDrafts.value];
+  nextDrafts[index] = textarea.value;
+  todoDraftEditVersion += 1;
+  todoDrafts.value = getNormalizedTodoDrafts(nextDrafts);
+  resizeTodoTextareaElement(textarea);
+  void nextTick(() => {
+    resizeTodoTextareas();
+  });
+}
+
+function handleTodoTextareaBlur() {
+  if (todoDraftEditVersion <= todoPersistedVersion) {
+    return;
+  }
+
+  persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), todoDraftEditVersion);
 }
 
 async function persistTerminalInputHistory() {
@@ -909,10 +1128,15 @@ async function openProject(path: string) {
   selectedFilePath.value = null;
   terminalInputText.value = "";
   terminalInputHistory.value = [];
+  todoDrafts.value = [""];
+  todoDraftEditVersion = 0;
+  todoPersistedVersion = 0;
+  todoPersistQueue = Promise.resolve();
   resetTerminalInputHistoryNavigation();
   toolbarConfig.value = await loadToolbarConfig(path);
   projectSettings.value = await loadProjectSettings(path);
   await loadTerminalInputHistoryForProject(path);
+  await loadTodoEntriesForProject(path, "project-open");
   await startSettingsWatcher(path);
   await nextTick();
   await startTerminal(path);
@@ -956,6 +1180,10 @@ async function openLastProjectOnStartup() {
     selectedFilePath.value = null;
     terminalInputText.value = "";
     terminalInputHistory.value = [];
+    todoDrafts.value = [""];
+    todoDraftEditVersion = 0;
+    todoPersistedVersion = 0;
+    todoPersistQueue = Promise.resolve();
     resetTerminalInputHistoryNavigation();
     toolbarConfig.value = defaultToolbarConfig;
     projectSettings.value = defaultProjectSettings;
@@ -1045,6 +1273,10 @@ async function handleSettingsFileChanged(filename: string) {
   if (normalizedFilename === PROJECT_SETTINGS_FILENAME) {
     projectSettings.value = await loadProjectSettings(projectPath.value);
   }
+
+  if (normalizedFilename === TODO_FILENAME) {
+    await loadTodoEntriesForProject(projectPath.value, "settings-watch");
+  }
 }
 
 async function startSettingsWatcher(path: string) {
@@ -1099,6 +1331,30 @@ async function sendTextareaToTerminal() {
   appendTerminalInputHistory(text);
   terminalInputText.value = "";
   focusTerminalInput();
+}
+
+async function sendTodoEntryToTerminal(index: number) {
+  if (!isTerminalReady.value) {
+    errorMessage.value = "Terminal is not ready to send input.";
+    return;
+  }
+
+  const text = todoDrafts.value[index];
+  if (typeof text !== "string" || !text.trim()) {
+    return;
+  }
+
+  errorMessage.value = "";
+  const result = await submitTerminalText(text, {
+    sendSlash: "Failed to send slash command from todo to terminal.",
+    sendText: "Failed to send todo prompt to terminal.",
+    submit: "Failed to send Enter to terminal."
+  });
+  if (result !== "submitted") {
+    return;
+  }
+
+  appendTerminalInputHistory(text);
 }
 
 async function handleTextareaPaste(event: ClipboardEvent) {
