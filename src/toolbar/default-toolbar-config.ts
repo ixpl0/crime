@@ -1,34 +1,34 @@
 import { type ToolbarConfig } from "../types/toolbar";
 
 const dryAndReuseReviewPrompt = [
-  "Review the current codebase or diff with a strict DRY lens.",
-  "Identify duplicated logic, repeated branching, copy-pasted types or tests, and places where behavior can be centralized without hurting readability.",
-  "Return findings ordered by severity with file references.",
-  "Then propose concrete refactors with minimal-risk migration steps and required test updates."
+  "Проведи ревью текущего кодбейса или diff со строгим фокусом на DRY.",
+  "Найди дублированную логику, повторяющиеся ветвления, скопированные типы или тесты и места, где поведение можно централизовать без ущерба для читаемости.",
+  "Верни замечания, отсортированные по критичности, с указанием файлов.",
+  "Затем предложи конкретные рефакторинги с шагами миграции с минимальным риском и необходимыми обновлениями тестов."
 ].join(" ");
 
 const codeHygieneReviewPrompt = [
-  "Run a code hygiene review.",
-  "Find dead code, unused imports or variables, stale TODO/FIXME notes, commented-out fragments, over-engineered wrappers, misleading names, and temporary hacks.",
-  "For each finding explain why it is harmful, whether it is safe to remove now, potential side effects, and the smallest cleanup patch."
+  "Проведи ревью гигиены кода.",
+  "Найди мертвый код, неиспользуемые импорты или переменные, устаревшие TODO/FIXME, закомментированные фрагменты, переусложненные обертки, вводящие в заблуждение имена и временные хаки.",
+  "Для каждого замечания объясни, почему это вредно, безопасно ли удалить это сейчас, какие возможны побочные эффекты и какой минимальный патч очистки нужен."
 ].join(" ");
 
 const performanceReviewPrompt = [
-  "Perform a performance review focused on real bottlenecks.",
-  "Inspect algorithmic complexity, unnecessary re-renders or recomputations, hot-path allocations, blocking I/O, and expensive network or database usage.",
-  "Prioritize high-impact issues, estimate expected gains, and suggest measurable fixes with profiling or benchmark steps."
+  "Проведи ревью производительности с фокусом на реальных узких местах.",
+  "Проверь алгоритмическую сложность, лишние перерисовки или перерасчеты, выделения памяти на горячих путях, блокирующий I/O и дорогие обращения к сети или базе данных.",
+  "Приоритизируй проблемы с максимальным влиянием, оцени ожидаемый эффект и предложи измеримые исправления с шагами профилирования или бенчмарков."
 ].join(" ");
 
 const securityReviewPrompt = [
-  "Perform a security review with an attacker mindset.",
-  "Check input validation, auth or authz boundaries, command or code injection vectors, path traversal, XSS or CSRF, secret leakage, insecure defaults, dependency risks, and sensitive data exposure in logs.",
-  "List vulnerabilities by severity, include realistic exploitation scenarios, and provide concrete remediations."
+  "Проведи ревью безопасности с мышлением атакующего.",
+  "Проверь валидацию входных данных, границы auth/authz, векторы command/code injection, path traversal, XSS/CSRF, утечки секретов, небезопасные настройки по умолчанию, риски зависимостей и раскрытие чувствительных данных в логах.",
+  "Перечисли уязвимости по критичности, добавь реалистичные сценарии эксплуатации и предложи конкретные меры устранения."
 ].join(" ");
 
 const engineeringPracticesReviewPrompt = [
-  "Review for engineering best practices and long-term maintainability.",
-  "Evaluate architecture boundaries, error handling, typing discipline, test quality, observability, naming or API clarity, and consistency with framework conventions.",
-  "Highlight deviations, explain trade-offs, and propose actionable improvements ranked by impact."
+  "Проведи ревью инженерных практик и долгосрочной поддерживаемости.",
+  "Оцени границы архитектуры, обработку ошибок, дисциплину типизации, качество тестов, наблюдаемость, ясность имен или API и соответствие соглашениям фреймворка.",
+  "Выдели отклонения, объясни компромиссы и предложи практичные улучшения, ранжированные по влиянию."
 ].join(" ");
 
 export const defaultToolbarConfig: ToolbarConfig = {

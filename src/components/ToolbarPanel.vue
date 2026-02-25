@@ -10,6 +10,7 @@
           <li v-for="(item, itemIndex) in element.items" :key="`item-${elementIndex}-${itemIndex}`">
             <button
               :disabled="!isTerminalReady"
+              :title="getActionTitle(item)"
               class="flex justify-between"
               @click="$emit('execute-action', item)"
             >
@@ -24,7 +25,7 @@
         v-else-if="element.type === 'button'"
         class="btn btn-sm"
         :disabled="!isTerminalReady"
-        :title="element.shortcut ? formatShortcut(element.shortcut) : undefined"
+        :title="getActionTitle(element)"
         @click="$emit('execute-action', element)"
       >
         {{ element.label }}
@@ -59,5 +60,18 @@ defineEmits<{
   "execute-action": [action: ToolbarAction];
   "open-config-editor": [];
 }>();
+
+type ToolbarActionWithShortcut = ToolbarAction & { readonly shortcut?: string };
+
+function getActionTitle(action: ToolbarActionWithShortcut): string | undefined {
+  const commandTitle = "command" in action ? action.command : undefined;
+  const shortcutTitle = action.shortcut ? formatShortcut(action.shortcut) : undefined;
+
+  if (commandTitle && shortcutTitle) {
+    return `${commandTitle}\n${shortcutTitle}`;
+  }
+
+  return commandTitle ?? shortcutTitle;
+}
 </script>
 
