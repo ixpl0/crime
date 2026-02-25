@@ -115,9 +115,27 @@ interface GitFileDiffResponse {
   error?: string;
 }
 
+interface GitLogEntry {
+  hash: string;
+  parentHashes: string[];
+  author: string;
+  date: string;
+  subject: string;
+  refs: string[];
+}
+
+interface GitLogResponse {
+  ok: boolean;
+  available?: boolean;
+  reason?: "git-not-installed" | "not-a-repository";
+  entries?: GitLogEntry[];
+  error?: string;
+}
+
 interface GitApi {
   getStatus: (projectPath: string) => Promise<GitStatusResponse>;
   getFileDiff: (projectPath: string, filePath: string) => Promise<GitFileDiffResponse>;
+  getLog: (projectPath: string, maxCount?: number) => Promise<GitLogResponse>;
 }
 
 interface ZoomApi {

@@ -132,6 +132,14 @@
             >
               Изменения
             </button>
+            <button
+              role="tab"
+              class="tab"
+              :class="{ 'tab-active': activeTab === 'git' }"
+              @click="setActiveTab('git')"
+            >
+              Git
+            </button>
               <div class="dropdown dropdown-bottom">
                 <div tabindex="0" role="tab" class="tab">
                   &#1055;&#1088;&#1086;&#1077;&#1082;&#1090;
@@ -329,6 +337,12 @@
               />
             </div>
           </div>
+          <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
+            <GitGraphPanel
+              v-if="projectPath"
+              :project-path="projectPath"
+            />
+          </div>
           </div>
         </div>
       </div>
@@ -390,6 +404,7 @@ import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import FileContentViewer from "./components/FileContentViewer.vue";
 import ChangesPanel from "./components/ChangesPanel.vue";
+import GitGraphPanel from "./components/GitGraphPanel.vue";
 import {
   ArrowUp,
   ArrowDown,
@@ -432,7 +447,7 @@ const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
-type AppTab = "agent" | "files" | "changes";
+type AppTab = "agent" | "files" | "changes" | "git";
 const terminalPanelHeight = ref(loadInitialTerminalPanelHeight());
 const isTerminalPanelResizeActive = ref(false);
 const terminalInputHistory = ref<string[]>([]);

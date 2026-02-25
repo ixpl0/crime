@@ -1182,6 +1182,72 @@ function registerIpcHandlers() {
 
     return getGitStatusForProject(projectPath);
   });
+
+  ipcMain.handle(IPC_CHANNELS.gitLog, async (_event, projectPath, maxCount) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    const resolvedPath = resolve(projectPath);
+    const repositoryRoot = await getGitRepositoryRoot(resolvedPath);
+    if (repositoryRoot === null) {
+      return { ok: true, available: false, reason: "not-a-repository", entries: [] };
+    }
+
+    const limit = typeof maxCount === "number" && maxCount > 0 ? maxCount : 200;
+    const FIELD_SEPARATOR = "\x1f";
+    const RECORD_SEPARATOR = "\x1e";
+    const formatFields = ["%H", "%P", "%an", "%aI", "%s", "%D"].join(FIELD_SEPARATOR);
+    const format = `${formatFields}${RECORD_SEPARATOR}`;
+
+    let result;
+    try {
+      result = await runCommand(
+        "git",
+        ["log", "--all", "--topo-order", `--max-count=${String(limit)}`, `--format=${format}`],
+        repositoryRoot
+      );
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+        return { ok: true, available: false, reason: "git-not-installed", entries: [] };
+      }
+
+      return { ok: false, error: toErrorMessage(error, "Failed to run git log.") };
+    }
+
+    if (result.code !== 0) {
+      const stderr = result.stderr.toString("utf-8").trim();
+      if (stderr.includes("does not have any commits")) {
+        return { ok: true, available: true, entries: [] };
+      }
+
+      return { ok: false, error: stderr || "git log failed." };
+    }
+
+    const raw = result.stdout.toString("utf-8");
+    const records = raw.split(RECORD_SEPARATOR).filter((record) => record.trim().length > 0);
+    const entries = [];
+
+    for (const record of records) {
+      const fields = record.trim().split(FIELD_SEPARATOR);
+      if (fields.length < 6) {
+        continue;
+      }
+
+      const hash = fields[0];
+      const parentHashes = fields[1].length > 0 ? fields[1].split(" ") : [];
+      const author = fields[2];
+      const date = fields[3];
+      const subject = fields[4];
+      const refs = fields[5].length > 0
+        ? fields[5].split(",").map((ref) => ref.trim()).filter((ref) => ref.length > 0)
+        : [];
+
+      entries.push({ hash, parentHashes, author, date, subject, refs });
+    }
+
+    return { ok: true, available: true, entries };
+  });
 }
 
 function registerGlobalQuickKeys() {
