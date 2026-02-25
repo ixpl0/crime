@@ -20,6 +20,8 @@
           :entry="entry"
           :depth="0"
           :refresh-token="refreshToken"
+          :reveal-path="props.revealPath"
+          :reveal-request-token="props.revealRequestToken"
           :git-statuses="gitStatuses"
           :deleted-children-by-parent="deletedChildrenByParent"
           @select-file="(path) => emit('select-file', path)"
@@ -48,9 +50,17 @@ import {
 } from "./file-tree-status-utils";
 import { toErrorMessage } from "../utils/fail-fast";
 
-const props = defineProps<{
-  projectPath: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectPath: string;
+    revealPath?: string | null;
+    revealRequestToken?: number;
+  }>(),
+  {
+    revealPath: null,
+    revealRequestToken: 0
+  }
+);
 
 const emit = defineEmits<{
   "select-file": [path: string];

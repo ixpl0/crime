@@ -21,6 +21,8 @@
         :entry="child"
         :depth="depth + 1"
         :refresh-token="refreshToken"
+        :reveal-path="revealPath"
+        :reveal-request-token="revealRequestToken"
         :git-statuses="gitStatuses"
         :deleted-children-by-parent="deletedChildrenByParent"
         @select-file="(path) => emit('select-file', path)"
@@ -55,13 +57,21 @@ import {
 } from "./file-tree-status-utils";
 import { toErrorMessage } from "../utils/fail-fast";
 
-const props = defineProps<{
-  entry: FileEntry;
-  depth: number;
-  refreshToken: number;
-  gitStatuses: Record<string, GitFileStatus>;
-  deletedChildrenByParent: DeletedChildrenByParent;
-}>();
+const props = withDefaults(
+  defineProps<{
+    entry: FileEntry;
+    depth: number;
+    refreshToken: number;
+    revealPath?: string | null;
+    revealRequestToken?: number;
+    gitStatuses: Record<string, GitFileStatus>;
+    deletedChildrenByParent: DeletedChildrenByParent;
+  }>(),
+  {
+    revealPath: null,
+    revealRequestToken: 0
+  }
+);
 
 const emit = defineEmits<{
   "select-file": [path: string];
@@ -73,6 +83,36 @@ const loadError = ref("");
 const children = ref<FileEntry[]>([]);
 let hasLoaded = false;
 let lastChildrenSnapshot = "";
+
+function normalizePathForComparison(path: string) {
+  const normalizedPath = path.replace(/[\\/]+/g, "/");
+  if (normalizedPath === "/") {
+    return normalizedPath;
+  }
+
+  const withoutTrailingSlash = normalizedPath.replace(/\/+$/, "");
+  const stablePath = withoutTrailingSlash.length > 0 ? withoutTrailingSlash : normalizedPath;
+  return /^[A-Za-z]:\//.test(stablePath) ? stablePath.toLowerCase() : stablePath;
+}
+
+function isPathInsideBase(basePath: string, targetPath: string) {
+  const normalizedBasePath = normalizePathForComparison(basePath);
+  const normalizedTargetPath = normalizePathForComparison(targetPath);
+
+  if (normalizedTargetPath === normalizedBasePath) {
+    return true;
+  }
+
+  if (normalizedBasePath === "/") {
+    return normalizedTargetPath.startsWith("/");
+  }
+
+  return normalizedTargetPath.startsWith(`${normalizedBasePath}/`);
+}
+
+function isSamePath(leftPath: string, rightPath: string) {
+  return normalizePathForComparison(leftPath) === normalizePathForComparison(rightPath);
+}
 
 const entryStatus = computed<GitFileStatus | null>(() => {
   if (props.entry.isVirtual) {
@@ -204,6 +244,29 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
   hasLoaded = true;
 }
 
+async function revealRequestedPath(revealPath: string | null) {
+  if (!revealPath) {
+    return;
+  }
+
+  if (!props.entry.isDirectory) {
+    if (isSamePath(props.entry.path, revealPath)) {
+      emit("select-file", props.entry.path);
+    }
+    return;
+  }
+
+  if (!isPathInsideBase(props.entry.path, revealPath)) {
+    return;
+  }
+
+  if (!isExpanded.value) {
+    isExpanded.value = true;
+  }
+
+  await loadChildren({ silent: true });
+}
+
 const handleClick = async () => {
   if (!props.entry.isDirectory) {
     emit("select-file", props.entry.path);
@@ -223,6 +286,14 @@ const handleClick = async () => {
 
   await loadChildren();
 };
+
+watch(
+  () => [props.revealPath, props.revealRequestToken] as const,
+  ([revealPath]) => {
+    void revealRequestedPath(revealPath);
+  },
+  { immediate: true }
+);
 
 watch(
   () => props.refreshToken,

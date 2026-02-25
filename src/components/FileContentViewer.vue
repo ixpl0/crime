@@ -9,7 +9,7 @@
       </span>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-auto">
+    <div ref="scrollContainer" class="min-h-0 flex-1 overflow-auto">
       <div v-if="!filePath" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
         Select a file in the tree to preview it.
       </div>
@@ -30,8 +30,9 @@
         <div
           v-for="(line, index) in displayLines"
           :key="`${line.type}:${String(index)}:${line.text}`"
-          class="flex"
-          :class="lineRowClasses(line.type)"
+          class="flex transition-colors duration-500"
+          :data-line-number="index + 1"
+          :class="lineRowClasses(line.type, index + 1)"
         >
           <span class="w-12 shrink-0 select-none border-r border-base-300/50 px-2 py-0.5 text-right text-xs text-base-content/50">
             {{ index + 1 }}
@@ -57,12 +58,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { toErrorMessage } from "../utils/fail-fast";
 
 const props = defineProps<{
   projectPath: string;
   filePath: string | null;
+  targetLine?: number | null;
+  targetRequestToken?: number;
   isActive: boolean;
 }>();
 
@@ -72,7 +75,10 @@ const isLoading = ref(false);
 const loadError = ref("");
 const diffInfoMessage = ref("");
 const displayLines = ref<ViewerLine[]>([]);
+const highlightedLine = ref<number | null>(null);
+const scrollContainer = ref<HTMLElement | null>(null);
 let loadRequestId = 0;
+let clearHighlightTimeoutId: number | null = null;
 
 const fileName = computed(() => {
   if (!props.filePath) {
@@ -104,16 +110,72 @@ function linePrefix(type: ViewerLine["type"]) {
   return "";
 }
 
-function lineRowClasses(type: ViewerLine["type"]) {
+function clearHighlightTimer() {
+  if (clearHighlightTimeoutId === null) {
+    return;
+  }
+
+  window.clearTimeout(clearHighlightTimeoutId);
+  clearHighlightTimeoutId = null;
+}
+
+async function focusTargetLine() {
+  if (!props.isActive || !props.filePath) {
+    return;
+  }
+
+  const targetLine = props.targetLine ?? null;
+  if (targetLine === null || targetLine <= 0) {
+    highlightedLine.value = null;
+    clearHighlightTimer();
+    return;
+  }
+
+  const lineCount = displayLines.value.length;
+  if (lineCount === 0) {
+    return;
+  }
+
+  const lineNumber = Math.min(targetLine, lineCount);
+  highlightedLine.value = lineNumber;
+  clearHighlightTimer();
+  clearHighlightTimeoutId = window.setTimeout(() => {
+    if (highlightedLine.value === lineNumber) {
+      highlightedLine.value = null;
+    }
+    clearHighlightTimeoutId = null;
+  }, 2500);
+
+  await nextTick();
+  const container = scrollContainer.value;
+  if (!container) {
+    return;
+  }
+
+  const row = container.querySelector<HTMLElement>(`[data-line-number="${String(lineNumber)}"]`);
+  row?.scrollIntoView({ block: "center", inline: "nearest" });
+}
+
+function isLineFocusRequested() {
+  return props.targetLine !== null && props.targetLine !== undefined && props.targetLine > 0;
+}
+
+function lineRowClasses(type: ViewerLine["type"], lineNumber: number) {
   if (type === "added") {
-    return "bg-green-500/10 text-green-700";
+    return highlightedLine.value === lineNumber
+      ? "bg-warning/30 text-base-content ring-1 ring-warning/50"
+      : "bg-green-500/10 text-green-700";
   }
 
   if (type === "removed") {
-    return "bg-red-500/10 text-red-700";
+    return highlightedLine.value === lineNumber
+      ? "bg-warning/30 text-base-content ring-1 ring-warning/50"
+      : "bg-red-500/10 text-red-700";
   }
 
-  return "text-base-content";
+  return highlightedLine.value === lineNumber
+    ? "bg-warning/30 text-base-content ring-1 ring-warning/50"
+    : "text-base-content";
 }
 
 async function loadFilePreview() {
@@ -124,6 +186,8 @@ async function loadFilePreview() {
     loadError.value = "";
     diffInfoMessage.value = "";
     displayLines.value = [];
+    highlightedLine.value = null;
+    clearHighlightTimer();
     return;
   }
 
@@ -193,6 +257,16 @@ async function loadFilePreview() {
 
   const diffLines = diffResponse.lines ?? [];
   if (diffLines.length > 0) {
+    if (isLineFocusRequested()) {
+      displayLines.value = fallbackLines;
+      if (fileResponse.ok) {
+        diffInfoMessage.value = "Showing plain file content for line navigation.";
+      } else {
+        loadError.value = fileResponse.error ?? "Failed to read file.";
+      }
+      return;
+    }
+
     displayLines.value = diffLines;
     return;
   }
@@ -211,4 +285,23 @@ watch(
   },
   { immediate: true }
 );
+
+watch(
+  () =>
+    [
+      props.filePath,
+      props.targetLine ?? null,
+      props.targetRequestToken ?? 0,
+      props.isActive,
+      displayLines.value.length
+    ] as const,
+  () => {
+    void focusTargetLine();
+  },
+  { immediate: true }
+);
+
+onBeforeUnmount(() => {
+  clearHighlightTimer();
+});
 </script>

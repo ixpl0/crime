@@ -30,7 +30,7 @@
       <div
         v-if="projectPath"
         class="grid min-h-0 flex-1 gap-4"
-        :class="{ 'lg:grid-cols-[14rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
+        :class="{ 'lg:grid-cols-[18rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
       >
         <aside v-if="!isTodoPanelCollapsed" class="card min-h-0 bg-base-100 shadow-xl">
           <div class="card-body min-h-0 p-3">
@@ -256,6 +256,8 @@
               <FileManagerPanel
                 v-if="projectPath"
                 :project-path="projectPath"
+                :reveal-path="fileTreeRevealPath"
+                :reveal-request-token="fileTreeRevealRequestToken"
                 @select-file="handleFileSelect"
               />
 
@@ -263,6 +265,8 @@
                 v-if="projectPath"
                 :project-path="projectPath"
                 :file-path="selectedFilePath"
+                :target-line="selectedFileTargetLine"
+                :target-request-token="selectedFileTargetRequestToken"
                 :is-active="activeTab === 'files'"
               />
             </div>
@@ -370,6 +374,15 @@ const isToolbarConfigEditorOpen = ref(false);
 const isProjectSettingsEditorOpen = ref(false);
 const activeTab = ref<"agent" | "files">("agent");
 const selectedFilePath = ref<string | null>(null);
+const selectedFileTargetLine = ref<number | null>(null);
+const selectedFileTargetRequestToken = ref(0);
+const fileTreeRevealPath = ref<string | null>(null);
+const fileTreeRevealRequestToken = ref(0);
+const TERMINAL_QUOTED_WINDOWS_PATH_REGEX = /(["'])([A-Za-z]:[\\/][^"'<>|?*\r\n]+)\1/g;
+const TERMINAL_QUOTED_POSIX_PATH_REGEX = /(["'])((?:\/[^"'<>|?*\r\n]+)+\/?)\1/g;
+const TERMINAL_WINDOWS_PATH_REGEX = /[A-Za-z]:[\\/][^\s"'<>|?*]+/g;
+const TERMINAL_POSIX_PATH_REGEX = /(?:^|[\s"'([{])((?:\/[^/\s"'<>|?*]+)+\/?)/g;
+const TERMINAL_PATH_TRAILING_CHARS = new Set([")", "]", "}", ",", ";", "\"", "'", "`"]);
 type HiddenPanelId = "todo";
 
 interface HiddenPanelOption {
@@ -380,6 +393,15 @@ interface HiddenPanelOption {
 interface TodoDraftViewItem {
   index: number;
   value: string;
+}
+
+interface TerminalPathMatch {
+  start: number;
+  end: number;
+  displayText: string;
+  resolvedPath: string;
+  line: number | null;
+  column: number | null;
 }
 
 const hiddenPanelOptions = computed<HiddenPanelOption[]>(() => {
@@ -401,6 +423,7 @@ const todoDraftViewItems = computed<TodoDraftViewItem[]>(() =>
 
 let terminal: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
+let terminalPathLinkProvider: { dispose: () => void } | null = null;
 let unsubscribeTerminalData: (() => void) | null = null;
 let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
@@ -449,6 +472,215 @@ function setLastProjectPathInStorage(path: string) {
 
 function clearLastProjectPathInStorage() {
   window.localStorage.removeItem(LAST_PROJECT_PATH_STORAGE_KEY);
+}
+
+function normalizePathForComparison(path: string) {
+  const normalizedPath = path.replace(/[\\/]+/g, "/");
+  if (normalizedPath === "/") {
+    return normalizedPath;
+  }
+
+  const withoutTrailingSlash = normalizedPath.replace(/\/+$/, "");
+  const stablePath = withoutTrailingSlash.length > 0 ? withoutTrailingSlash : normalizedPath;
+  return /^[A-Za-z]:\//.test(stablePath) ? stablePath.toLowerCase() : stablePath;
+}
+
+function isPathInsideBase(basePath: string, targetPath: string) {
+  const normalizedBasePath = normalizePathForComparison(basePath);
+  const normalizedTargetPath = normalizePathForComparison(targetPath);
+
+  if (normalizedTargetPath === normalizedBasePath) {
+    return true;
+  }
+
+  if (normalizedBasePath === "/") {
+    return normalizedTargetPath.startsWith("/");
+  }
+
+  return normalizedTargetPath.startsWith(`${normalizedBasePath}/`);
+}
+
+function isSamePath(leftPath: string, rightPath: string) {
+  return normalizePathForComparison(leftPath) === normalizePathForComparison(rightPath);
+}
+
+function parsePositiveInteger(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return null;
+  }
+
+  return parsedValue;
+}
+
+function extractTerminalPathLocation(value: string) {
+  const hashLocationMatch = value.match(/^(.*)#L(\d+)(?:C(\d+))?$/);
+  if (hashLocationMatch) {
+    const line = parsePositiveInteger(hashLocationMatch[2]);
+    if (line !== null && hashLocationMatch[1].length > 0) {
+      return {
+        path: hashLocationMatch[1],
+        line,
+        column: parsePositiveInteger(hashLocationMatch[3])
+      };
+    }
+  }
+
+  const colonLocationMatch = value.match(/^(.*):(\d+)(?::(\d+))?$/);
+  if (colonLocationMatch) {
+    const line = parsePositiveInteger(colonLocationMatch[2]);
+    const candidatePath = colonLocationMatch[1];
+    if (line !== null && candidatePath.length > 0 && /[\\/]/.test(candidatePath)) {
+      return {
+        path: candidatePath,
+        line,
+        column: parsePositiveInteger(colonLocationMatch[3])
+      };
+    }
+  }
+
+  const suffixLineMatch = value.match(/^(.*)L(\d+)$/);
+  if (suffixLineMatch) {
+    const line = parsePositiveInteger(suffixLineMatch[2]);
+    const candidatePath = suffixLineMatch[1];
+    const fileName = candidatePath.split(/[\\/]/).pop() ?? "";
+    if (
+      line !== null &&
+      candidatePath.length > 0 &&
+      /[\\/]/.test(candidatePath) &&
+      fileName.includes(".")
+    ) {
+      return {
+        path: candidatePath,
+        line,
+        column: null
+      };
+    }
+  }
+
+  return {
+    path: value,
+    line: null,
+    column: null
+  };
+}
+
+function normalizeTerminalPathCandidate(rawValue: string) {
+  let value = rawValue.trim();
+  while (value.length > 0) {
+    const trailingChar = value[value.length - 1];
+    if (!TERMINAL_PATH_TRAILING_CHARS.has(trailingChar)) {
+      break;
+    }
+
+    value = value.slice(0, -1);
+  }
+
+  if (value.length === 0) {
+    return null;
+  }
+
+  const resolvedLocation = extractTerminalPathLocation(value);
+  const resolvedPath = resolvedLocation.path.trim();
+  if (resolvedPath.length === 0) {
+    return null;
+  }
+
+  return {
+    resolvedPath,
+    line: resolvedLocation.line,
+    column: resolvedLocation.column
+  };
+}
+
+function collectTerminalPathMatches(lineText: string, currentProjectPath: string): TerminalPathMatch[] {
+  const matches: TerminalPathMatch[] = [];
+
+  const addPathMatch = (rawText: string, start: number) => {
+    if (rawText.length === 0) {
+      return;
+    }
+
+    const normalizedPathCandidate = normalizeTerminalPathCandidate(rawText);
+    if (
+      !normalizedPathCandidate ||
+      !isPathInsideBase(currentProjectPath, normalizedPathCandidate.resolvedPath)
+    ) {
+      return;
+    }
+
+    matches.push({
+      start,
+      end: start + rawText.length,
+      displayText: rawText,
+      resolvedPath: normalizedPathCandidate.resolvedPath,
+      line: normalizedPathCandidate.line,
+      column: normalizedPathCandidate.column
+    });
+  };
+
+  TERMINAL_QUOTED_WINDOWS_PATH_REGEX.lastIndex = 0;
+  let quotedWindowsMatch: RegExpExecArray | null;
+  while ((quotedWindowsMatch = TERMINAL_QUOTED_WINDOWS_PATH_REGEX.exec(lineText)) !== null) {
+    const rawText = quotedWindowsMatch[2];
+    if (!rawText) {
+      continue;
+    }
+
+    addPathMatch(rawText, quotedWindowsMatch.index + 1);
+  }
+
+  TERMINAL_QUOTED_POSIX_PATH_REGEX.lastIndex = 0;
+  let quotedPosixMatch: RegExpExecArray | null;
+  while ((quotedPosixMatch = TERMINAL_QUOTED_POSIX_PATH_REGEX.exec(lineText)) !== null) {
+    const rawText = quotedPosixMatch[2];
+    if (!rawText) {
+      continue;
+    }
+
+    addPathMatch(rawText, quotedPosixMatch.index + 1);
+  }
+
+  TERMINAL_WINDOWS_PATH_REGEX.lastIndex = 0;
+  let windowsMatch: RegExpExecArray | null;
+  while ((windowsMatch = TERMINAL_WINDOWS_PATH_REGEX.exec(lineText)) !== null) {
+    addPathMatch(windowsMatch[0], windowsMatch.index);
+  }
+
+  TERMINAL_POSIX_PATH_REGEX.lastIndex = 0;
+  let posixMatch: RegExpExecArray | null;
+  while ((posixMatch = TERMINAL_POSIX_PATH_REGEX.exec(lineText)) !== null) {
+    const rawText = posixMatch[1];
+    if (!rawText) {
+      continue;
+    }
+
+    const matchPrefixLength = posixMatch[0].length - rawText.length;
+    addPathMatch(rawText, posixMatch.index + matchPrefixLength);
+  }
+
+  if (matches.length <= 1) {
+    return matches;
+  }
+
+  matches.sort((left, right) => left.start - right.start || right.end - left.end);
+  const dedupedMatches: TerminalPathMatch[] = [];
+  for (const match of matches) {
+    if (dedupedMatches.length > 0) {
+      const previousMatch = dedupedMatches[dedupedMatches.length - 1];
+      if (match.start < previousMatch.end) {
+        continue;
+      }
+    }
+
+    dedupedMatches.push(match);
+  }
+
+  return dedupedMatches;
 }
 
 function clampNumber(value: number, min: number, max: number) {
@@ -1199,6 +1431,54 @@ function isCursorOnLastLine(textarea: HTMLTextAreaElement) {
   return !textarea.value.slice(textarea.selectionEnd).includes("\n");
 }
 
+function isCursorOnLastVisualLine(textarea: HTMLTextAreaElement) {
+  const style = window.getComputedStyle(textarea);
+  const mirror = document.createElement("div");
+  mirror.setAttribute("aria-hidden", "true");
+  mirror.style.position = "absolute";
+  mirror.style.visibility = "hidden";
+  mirror.style.pointerEvents = "none";
+  mirror.style.top = "0";
+  mirror.style.left = "-9999px";
+  mirror.style.boxSizing = "border-box";
+  mirror.style.width = `${String(textarea.clientWidth)}px`;
+  mirror.style.padding = style.padding;
+  mirror.style.font = style.font;
+  mirror.style.lineHeight = style.lineHeight;
+  mirror.style.letterSpacing = style.letterSpacing;
+  mirror.style.wordSpacing = style.wordSpacing;
+  mirror.style.textTransform = style.textTransform;
+  mirror.style.textIndent = style.textIndent;
+  mirror.style.textAlign = style.textAlign;
+  mirror.style.tabSize = style.tabSize;
+  mirror.style.whiteSpace = "pre-wrap";
+  mirror.style.overflowWrap = "break-word";
+  mirror.style.wordBreak = "break-word";
+
+  mirror.appendChild(document.createTextNode(textarea.value.slice(0, textarea.selectionEnd)));
+  const caretMarker = document.createElement("span");
+  caretMarker.textContent = "\u200b";
+  mirror.appendChild(caretMarker);
+  mirror.appendChild(document.createTextNode(textarea.value.slice(textarea.selectionEnd)));
+
+  const endMarker = document.createElement("span");
+  endMarker.textContent = "\u200b";
+  mirror.appendChild(endMarker);
+
+  document.body.appendChild(mirror);
+  try {
+    const mirrorRect = mirror.getBoundingClientRect();
+    const caretRect = caretMarker.getBoundingClientRect();
+    const endRect = endMarker.getBoundingClientRect();
+    const caretTop = caretRect.top - mirrorRect.top;
+    const endTop = endRect.top - mirrorRect.top;
+    const lineHeightPixels = getComputedLineHeightPixels(style);
+    return endTop - caretTop <= lineHeightPixels * 0.5;
+  } finally {
+    mirror.remove();
+  }
+}
+
 function navigateTerminalInputHistory(direction: -1 | 1) {
   if (terminalInputHistory.value.length === 0) {
     return;
@@ -1473,7 +1753,12 @@ function handleTextareaKeydown(event: KeyboardEvent) {
     return;
   }
 
-  if (event.key === "ArrowDown" && isCursorOnLastLine(textarea)) {
+  if (
+    event.key === "ArrowDown" &&
+    (terminalInputHistoryIndex.value === null
+      ? isCursorOnLastVisualLine(textarea)
+      : isCursorOnLastLine(textarea))
+  ) {
     event.preventDefault();
     navigateTerminalInputHistory(1);
   }
@@ -1703,6 +1988,110 @@ async function attemptSubmitTerminalText(
   return submitTerminalText(rawText, options.messages);
 }
 
+function requestFileTreeReveal(path: string) {
+  fileTreeRevealPath.value = path;
+  fileTreeRevealRequestToken.value += 1;
+}
+
+async function openTerminalPathInFiles(path: string, line: number | null, column: number | null) {
+  void column;
+  const currentProjectPath = projectPath.value;
+  if (!currentProjectPath) {
+    return;
+  }
+
+  if (!isPathInsideBase(currentProjectPath, path)) {
+    errorMessage.value = `Path is outside the current project: ${path}`;
+    return;
+  }
+
+  activeTab.value = "files";
+  requestFileTreeReveal(path);
+  errorMessage.value = "";
+
+  try {
+    const directoryResponse = await window.projectApi.filesystem.readDirectory(path);
+    if (directoryResponse.ok) {
+      selectedFilePath.value = null;
+      selectedFileTargetLine.value = null;
+      selectedFileTargetRequestToken.value += 1;
+      return;
+    }
+  } catch {
+    // Not a directory or inaccessible directory; try opening as a file.
+  }
+
+  try {
+    const fileResponse = await window.projectApi.filesystem.readFile(currentProjectPath, path);
+    if (fileResponse.ok) {
+      selectedFilePath.value = path;
+      selectedFileTargetLine.value = line;
+      selectedFileTargetRequestToken.value += 1;
+      return;
+    }
+
+    reportUiError(
+      "Terminal path open",
+      fileResponse.error,
+      `Failed to open path from terminal: ${path}`
+    );
+  } catch (error) {
+    reportUiError(
+      "Terminal path open",
+      error,
+      `Failed to open path from terminal: ${path}`
+    );
+  }
+}
+
+function registerTerminalPathLinkProvider() {
+  if (!terminal) {
+    return;
+  }
+
+  terminalPathLinkProvider?.dispose();
+  terminalPathLinkProvider = terminal.registerLinkProvider({
+    provideLinks(bufferLineNumber, callback) {
+      const currentProjectPath = projectPath.value;
+      if (!currentProjectPath || !terminal) {
+        callback(undefined);
+        return;
+      }
+
+      const line = terminal.buffer.active.getLine(bufferLineNumber - 1);
+      const lineText = line?.translateToString(false) ?? "";
+      const pathMatches = collectTerminalPathMatches(lineText, currentProjectPath);
+      if (pathMatches.length === 0) {
+        callback(undefined);
+        return;
+      }
+
+      const links = pathMatches.map((pathMatch) => ({
+        range: {
+          start: {
+            x: pathMatch.start + 1,
+            y: bufferLineNumber
+          },
+          end: {
+            x: pathMatch.end,
+            y: bufferLineNumber
+          }
+        },
+        text: pathMatch.displayText,
+        activate: () => {
+          void openTerminalPathInFiles(pathMatch.resolvedPath, pathMatch.line, pathMatch.column);
+        },
+        decorations: {
+          underline: true,
+          pointerCursor: true
+        }
+      }));
+
+      callback(links);
+    }
+  });
+}
+
 function initializeTerminalView() {
   if (terminal || !terminalContainer.value) {
     return;
@@ -1726,6 +2115,7 @@ function initializeTerminalView() {
   fitAddon = new FitAddon();
   terminal.loadAddon(fitAddon);
   terminal.open(terminalContainer.value);
+  registerTerminalPathLinkProvider();
   fitAddon.fit();
   terminal.writeln("Терминал готов. Выберите папку проекта.");
 
@@ -1843,6 +2233,10 @@ async function startTerminal(cwd: string) {
 
 function resetProjectRuntimeState() {
   selectedFilePath.value = null;
+  selectedFileTargetLine.value = null;
+  selectedFileTargetRequestToken.value = 0;
+  fileTreeRevealPath.value = null;
+  fileTreeRevealRequestToken.value = 0;
   terminalInputText.value = "";
   terminalInputHistory.value = [];
   terminalInputHistoryEditVersion = 0;
@@ -1963,6 +2357,11 @@ function executeToolbarAction(action: ToolbarAction) {
 }
 
 function handleFileSelect(path: string) {
+  const currentSelectedPath = selectedFilePath.value;
+  if (!currentSelectedPath || !isSamePath(currentSelectedPath, path)) {
+    selectedFileTargetLine.value = null;
+  }
+
   selectedFilePath.value = path;
 }
 
@@ -2301,6 +2700,8 @@ onBeforeUnmount(() => {
     .catch((error: unknown) => {
       reportUiError("Terminal teardown", error, "Failed to stop terminal.");
     });
+  terminalPathLinkProvider?.dispose();
+  terminalPathLinkProvider = null;
   terminal?.dispose();
   terminal = null;
   fitAddon = null;
