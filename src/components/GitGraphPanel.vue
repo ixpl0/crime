@@ -88,7 +88,7 @@ const props = defineProps<{
 }>();
 
 const ROW_HEIGHT = 28;
-const LANE_WIDTH = 16;
+const LANE_WIDTH = 14;
 const LANE_OFFSET = 12;
 const COMMIT_RADIUS = 4;
 const MAX_COMMITS = 300;
@@ -207,6 +207,41 @@ const refClasses = (refName: string) => {
   return "bg-base-content/10 text-base-content/70";
 };
 
+const compactLanes = (
+  nextLanes: readonly string[],
+  lines: readonly GraphLine[],
+): { compactedLanes: string[]; remappedLines: GraphLine[] } => {
+  const hasEmpty = nextLanes.some((hash) => hash === "");
+  if (!hasEmpty) {
+    return { compactedLanes: [...nextLanes], remappedLines: [...lines] };
+  }
+
+  const indexMap = new Map<number, number>();
+  let newIndex = 0;
+  for (let i = 0; i < nextLanes.length; i++) {
+    if (nextLanes[i] !== "") {
+      indexMap.set(i, newIndex);
+      newIndex++;
+    }
+  }
+
+  const remappedLines = lines.map((line) => {
+    if (!line.toBottom) {
+      return line;
+    }
+
+    const mapped = indexMap.get(line.toLane);
+    if (mapped !== undefined && mapped !== line.toLane) {
+      return { ...line, toLane: mapped };
+    }
+
+    return line;
+  });
+
+  const compactedLanes = nextLanes.filter((hash) => hash !== "");
+  return { compactedLanes, remappedLines };
+};
+
 const buildGraph = (entries: GitLogEntry[]): GraphRow[] => {
   if (entries.length === 0) {
     return [];
@@ -216,107 +251,93 @@ const buildGraph = (entries: GitLogEntry[]): GraphRow[] => {
   let activeLanes: string[] = [];
 
   for (const commit of entries) {
-    const existingLaneIndex = activeLanes.indexOf(commit.hash);
-    let commitLane: number;
+    // 1. Find or create the lane for this commit
+    // We look for ALL lanes that contain this hash to merge them
+    const commitLanes: number[] = [];
+    for (let i = 0; i < activeLanes.length; i++) {
+      if (activeLanes[i] === commit.hash) commitLanes.push(i);
+    }
 
-    if (existingLaneIndex !== -1) {
-      commitLane = existingLaneIndex;
-    } else {
+    let commitLane: number;
+    const isNewLane = commitLanes.length === 0;
+
+    if (isNewLane) {
       commitLane = activeLanes.length;
-      activeLanes = [...activeLanes, commit.hash];
+      activeLanes.push(commit.hash);
+      commitLanes.push(commitLane);
+    } else {
+      commitLane = commitLanes[0];
     }
 
     const lines: GraphLine[] = [];
-
     const nextLanes = [...activeLanes];
+    const continuingLanes = new Set<number>();
+
+    // 2. Top half: All lanes containing this hash merge into commitLane
+    for (let i = 0; i < activeLanes.length; i++) {
+      const laneHash = activeLanes[i];
+      if (laneHash === "") continue;
+
+      if (laneHash === commit.hash) {
+        if (i === commitLane) {
+          if (!isNewLane) {
+            lines.push({ fromLane: i, toLane: i, fromTop: true, toBottom: false, colorLane: i });
+          }
+        } else {
+          // Diagonal merge from another lane into the commit circle
+          lines.push({ fromLane: i, toLane: commitLane, fromTop: true, toBottom: false, colorLane: i });
+        }
+      } else {
+        lines.push({ fromLane: i, toLane: i, fromTop: true, toBottom: false, colorLane: i });
+        continuingLanes.add(i);
+      }
+    }
+
+    // 3. Bottom half: Circle connects to parents, and continuing lanes go straight
+    // IMPORTANT: Clear ALL lanes that merged into this commit
+    for (const l of commitLanes) nextLanes[l] = "";
 
     const parents = commit.parentHashes;
-    const hasParents = parents.length > 0;
+    for (let i = 0; i < parents.length; i++) {
+      const p = parents[i];
+      let targetLane: number;
 
-    if (hasParents) {
-      nextLanes[commitLane] = parents[0];
-    } else {
-      nextLanes[commitLane] = "";
-    }
-
-    for (const [laneIndex, laneHash] of activeLanes.entries()) {
-      if (laneIndex === commitLane) {
-        continue;
-      }
-
-      if (laneHash.length > 0) {
-        lines.push({
-          fromLane: laneIndex,
-          toLane: nextLanes.indexOf(laneHash) !== -1 ? nextLanes.indexOf(laneHash) : laneIndex,
-          fromTop: true,
-          toBottom: true,
-          colorLane: laneIndex,
-        });
-      }
-    }
-
-    if (hasParents) {
-      lines.push({
-        fromLane: commitLane,
-        toLane: commitLane,
-        fromTop: true,
-        toBottom: true,
-        colorLane: commitLane,
-      });
-    } else {
-      lines.push({
-        fromLane: commitLane,
-        toLane: commitLane,
-        fromTop: true,
-        toBottom: false,
-        colorLane: commitLane,
-      });
-    }
-
-    for (let parentIndex = 1; parentIndex < parents.length; parentIndex++) {
-      const parent = parents[parentIndex];
-      const existingParentLane = nextLanes.indexOf(parent);
-
-      if (existingParentLane !== -1) {
-        lines.push({
-          fromLane: commitLane,
-          toLane: existingParentLane,
-          fromTop: false,
-          toBottom: true,
-          colorLane: existingParentLane,
-        });
+      if (i === 0) {
+        // First parent always stays in the current lane to provide a vertical stem.
+        targetLane = commitLane;
       } else {
-        const newLane = nextLanes.length;
-        nextLanes.push(parent);
-        lines.push({
-          fromLane: commitLane,
-          toLane: newLane,
-          fromTop: false,
-          toBottom: true,
-          colorLane: newLane,
-        });
-      }
-    }
-
-    if (!hasParents) {
-      const compactedLanes = nextLanes.filter((_, index) => index !== commitLane);
-      activeLanes = compactedLanes;
-    } else {
-      const closedLanes: number[] = [];
-      for (let laneIndex = nextLanes.length - 1; laneIndex >= 0; laneIndex--) {
-        if (nextLanes[laneIndex] === "") {
-          closedLanes.push(laneIndex);
+        // For additional parents (merges), try to reuse one of the lanes that merged into this commit
+        // to maintain color continuity.
+        targetLane = nextLanes.indexOf(p);
+        if (targetLane === -1) {
+          if (i < commitLanes.length) {
+            targetLane = commitLanes[i];
+          } else {
+            // Find first empty slot or push new
+            const emptyIdx = nextLanes.indexOf("");
+            targetLane = emptyIdx !== -1 ? emptyIdx : nextLanes.length;
+          }
         }
       }
 
-      if (closedLanes.length > 0) {
-        activeLanes = nextLanes.filter((hash) => hash !== "");
-      } else {
-        activeLanes = nextLanes;
-      }
+      nextLanes[targetLane] = p;
+      lines.push({
+        fromLane: commitLane,
+        toLane: targetLane,
+        fromTop: false,
+        toBottom: true,
+        colorLane: i === 0 ? commitLane : targetLane,
+      });
     }
 
-    rows.push({ commit, lane: commitLane, lines });
+    for (const laneIndex of continuingLanes) {
+      lines.push({ fromLane: laneIndex, toLane: laneIndex, fromTop: false, toBottom: true, colorLane: laneIndex });
+    }
+
+    const { compactedLanes, remappedLines } = compactLanes(nextLanes, lines);
+    activeLanes = compactedLanes;
+
+    rows.push({ commit, lane: commitLane, lines: remappedLines });
   }
 
   return rows;
