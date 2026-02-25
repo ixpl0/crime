@@ -274,9 +274,9 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { Terminal } from "xterm";
+import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
-import "xterm/css/xterm.css";
+import "@xterm/xterm/css/xterm.css";
 import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
 import {
   loadToolbarConfig,
@@ -1709,6 +1709,9 @@ function initializeTerminalView() {
   terminal = new Terminal({
     convertEol: true,
     cursorBlink: true,
+    cursorStyle: "bar",
+    cursorInactiveStyle: "none",
+    cursorWidth: 2,
     fontFamily: "Cascadia Mono, Consolas, monospace",
     fontSize: normalizeTerminalFontSize(projectSettings.value.zoom.terminalFontSize),
     theme: {
