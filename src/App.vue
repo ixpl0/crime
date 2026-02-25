@@ -2099,10 +2099,28 @@ async function sendTerminalInput(data: string, fallbackErrorMessage: string) {
 }
 
 async function sendTextareaTextInput(text: string) {
+  const isMultiline = text.includes("\n");
+  const BRACKET_PASTE_START = "\x1b[200~";
+  const BRACKET_PASTE_END = "\x1b[201~";
+
+  if (isMultiline) {
+    const startOk = await sendTerminalInput(BRACKET_PASTE_START, "Failed to send bracket paste start.");
+    if (!startOk) {
+      return false;
+    }
+  }
+
   for (let index = 0; index < text.length; index += TERMINAL_INPUT_CHUNK_SIZE) {
     const chunk = text.slice(index, index + TERMINAL_INPUT_CHUNK_SIZE);
     const ok = await sendTerminalInput(chunk, "Failed to send input to terminal.");
     if (!ok) {
+      return false;
+    }
+  }
+
+  if (isMultiline) {
+    const endOk = await sendTerminalInput(BRACKET_PASTE_END, "Failed to send bracket paste end.");
+    if (!endOk) {
       return false;
     }
   }
