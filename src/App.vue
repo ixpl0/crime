@@ -112,7 +112,7 @@
               role="tab"
               class="tab"
               :class="{ 'tab-active': activeTab === 'agent' }"
-              @click="activeTab = 'agent'"
+              @click="setActiveTab('agent')"
             >
               Агент
             </button>
@@ -120,7 +120,7 @@
               role="tab"
               class="tab"
               :class="{ 'tab-active': activeTab === 'files' }"
-              @click="activeTab = 'files'"
+              @click="setActiveTab('files')"
             >
               Файлы
             </button>
@@ -359,6 +359,7 @@ const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
+type AppTab = "agent" | "files";
 const terminalInputHistory = ref<string[]>([]);
 const todoDrafts = ref<string[]>([""]);
 const todoDragSourceIndex = ref<number | null>(null);
@@ -372,7 +373,7 @@ const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
 const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
 const isToolbarConfigEditorOpen = ref(false);
 const isProjectSettingsEditorOpen = ref(false);
-const activeTab = ref<"agent" | "files">("agent");
+const activeTab = ref<AppTab>("agent");
 const selectedFilePath = ref<string | null>(null);
 const selectedFileTargetLine = ref<number | null>(null);
 const selectedFileTargetRequestToken = ref(0);
@@ -383,6 +384,8 @@ const TERMINAL_QUOTED_POSIX_PATH_REGEX = /(["'])((?:\/[^"'<>|?*\r\n]+)+\/?)\1/g;
 const TERMINAL_WINDOWS_PATH_REGEX = /[A-Za-z]:[\\/][^\s"'<>|?*]+/g;
 const TERMINAL_POSIX_PATH_REGEX = /(?:^|[\s"'([{])((?:\/[^/\s"'<>|?*]+)+\/?)/g;
 const TERMINAL_PATH_TRAILING_CHARS = new Set([")", "]", "}", ",", ";", "\"", "'", "`"]);
+const tabBackHistory: AppTab[] = [];
+const tabForwardHistory: AppTab[] = [];
 type HiddenPanelId = "todo";
 
 interface HiddenPanelOption {
@@ -429,6 +432,7 @@ let unsubscribeTerminalExit: (() => void) | null = null;
 let removeWindowResizeListener: (() => void) | null = null;
 let removeWindowWheelListener: (() => void) | null = null;
 let removeWindowKeydownListener: (() => void) | null = null;
+let removeWindowHistoryMouseListener: (() => void) | null = null;
 let removeWindowErrorListener: (() => void) | null = null;
 let removeWindowUnhandledRejectionListener: (() => void) | null = null;
 let unsubscribeGlobalQuickKey: (() => void) | null = null;
@@ -867,6 +871,60 @@ const showHiddenPanelHandlers: Record<HiddenPanelId, () => void> = {
 
 function showHiddenPanel(panelId: HiddenPanelId) {
   showHiddenPanelHandlers[panelId]();
+}
+
+function clearTabNavigationHistory() {
+  tabBackHistory.length = 0;
+  tabForwardHistory.length = 0;
+}
+
+function setActiveTab(nextTab: AppTab, options?: { trackHistory?: boolean }) {
+  const currentTab = activeTab.value;
+  if (currentTab === nextTab) {
+    return;
+  }
+
+  if (options?.trackHistory ?? true) {
+    tabBackHistory.push(currentTab);
+    tabForwardHistory.length = 0;
+  }
+
+  activeTab.value = nextTab;
+}
+
+function navigateTabHistoryBack() {
+  const previousTab = tabBackHistory.pop();
+  if (!previousTab) {
+    return;
+  }
+
+  tabForwardHistory.push(activeTab.value);
+  setActiveTab(previousTab, { trackHistory: false });
+}
+
+function navigateTabHistoryForward() {
+  const nextTab = tabForwardHistory.pop();
+  if (!nextTab) {
+    return;
+  }
+
+  tabBackHistory.push(activeTab.value);
+  setActiveTab(nextTab, { trackHistory: false });
+}
+
+function handleHistoryNavigationMouseButton(event: MouseEvent) {
+  if (event.button === 3) {
+    event.preventDefault();
+    event.stopPropagation();
+    navigateTabHistoryBack();
+    return;
+  }
+
+  if (event.button === 4) {
+    event.preventDefault();
+    event.stopPropagation();
+    navigateTabHistoryForward();
+  }
 }
 
 async function loadTerminalInputHistoryForProject(
@@ -2005,7 +2063,7 @@ async function openTerminalPathInFiles(path: string, line: number | null, column
     return;
   }
 
-  activeTab.value = "files";
+  setActiveTab("files");
   requestFileTreeReveal(path);
   errorMessage.value = "";
 
@@ -2232,6 +2290,7 @@ async function startTerminal(cwd: string) {
 }
 
 function resetProjectRuntimeState() {
+  clearTabNavigationHistory();
   selectedFilePath.value = null;
   selectedFileTargetLine.value = null;
   selectedFileTargetRequestToken.value = 0;
@@ -2605,6 +2664,11 @@ onMounted(() => {
     window.removeEventListener("keydown", handleBrowserZoomKeyboardShortcut, true);
   };
 
+  window.addEventListener("mouseup", handleHistoryNavigationMouseButton, true);
+  removeWindowHistoryMouseListener = () => {
+    window.removeEventListener("mouseup", handleHistoryNavigationMouseButton, true);
+  };
+
   const handleWindowError = (event: ErrorEvent) => {
     reportUiError(
       "Unhandled runtime error",
@@ -2672,6 +2736,7 @@ onBeforeUnmount(() => {
   removeWindowResizeListener?.();
   removeWindowWheelListener?.();
   removeWindowKeydownListener?.();
+  removeWindowHistoryMouseListener?.();
   removeWindowErrorListener?.();
   removeWindowUnhandledRejectionListener?.();
   if (pendingZoomResizeAnimationFrame !== null) {
