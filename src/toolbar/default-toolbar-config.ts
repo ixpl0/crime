@@ -51,6 +51,11 @@ export const defaultToolbarConfig: ToolbarConfig = {
           label: "Codex CLI",
           value: "codex",
           type: "command"
+        },
+        {
+          label: "Gemini CLI",
+          value: "gemini",
+          type: "command"
         }
       ]
     },

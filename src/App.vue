@@ -208,7 +208,7 @@
             <div class="relative pb-3">
               <div
                 ref="terminalContainer"
-                class="terminal-host w-full overflow-hidden rounded-box border border-base-300 bg-[#05070d]"
+                class="terminal-host w-full overflow-hidden rounded-box border border-[#05070d] bg-[#05070d]"
                 :style="{ height: `${terminalPanelHeight}px` }"
                 @click="focusTerminal"
                 @contextmenu="handleTerminalContextMenu"
@@ -330,7 +330,9 @@ import {
   savePromptSuffixConfig
 } from "./prompt-suffix/prompt-suffix-storage";
 import { defaultPromptSuffixConfig } from "./prompt-suffix/default-prompt-suffix-config";
-import { type ProjectSettings } from "./types/project-settings";
+import {
+  type ProjectSettings
+} from "./types/project-settings";
 import {
   DEFAULT_IDE_ZOOM_FACTOR,
   DEFAULT_TERMINAL_FONT_SIZE,
@@ -343,7 +345,9 @@ import {
   saveProjectSettings,
   TERMINAL_FONT_SIZE_MAX,
   TERMINAL_FONT_SIZE_MIN,
-  TERMINAL_FONT_SIZE_STEP
+  TERMINAL_FONT_SIZE_STEP,
+  TERMINAL_PANEL_MIN_HEIGHT,
+  DEFAULT_TERMINAL_PANEL_HEIGHT
 } from "./settings/project-settings-storage";
 import {
   loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
@@ -394,9 +398,6 @@ const errorMessage = ref("");
 const terminalInputText = ref("");
 const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
-const TERMINAL_PANEL_HEIGHT_STORAGE_KEY = "dream-ide:terminal-panel-height";
-const DEFAULT_TERMINAL_PANEL_HEIGHT = 384;
-const TERMINAL_PANEL_MIN_HEIGHT = 160;
 const TERMINAL_PANEL_MAX_VIEWPORT_RATIO = 0.85;
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
@@ -768,24 +769,23 @@ function normalizeTerminalPanelHeight(value: number) {
 }
 
 function loadInitialTerminalPanelHeight() {
-  const rawValue = window.localStorage.getItem(TERMINAL_PANEL_HEIGHT_STORAGE_KEY);
-  if (!rawValue) {
-    return normalizeTerminalPanelHeight(DEFAULT_TERMINAL_PANEL_HEIGHT);
-  }
-
-  const parsedValue = Number.parseFloat(rawValue);
-  if (!Number.isFinite(parsedValue)) {
-    return normalizeTerminalPanelHeight(DEFAULT_TERMINAL_PANEL_HEIGHT);
-  }
-
-  return normalizeTerminalPanelHeight(parsedValue);
+  return normalizeTerminalPanelHeight(DEFAULT_TERMINAL_PANEL_HEIGHT);
 }
 
 function persistTerminalPanelHeight(value: number) {
-  window.localStorage.setItem(
-    TERMINAL_PANEL_HEIGHT_STORAGE_KEY,
-    String(normalizeTerminalPanelHeight(value))
-  );
+  const normalizedHeight = normalizeTerminalPanelHeight(value);
+
+  if (projectPath.value) {
+    const updatedSettings: ProjectSettings = {
+      ...projectSettings.value,
+      terminal: {
+        ...projectSettings.value.terminal,
+        panelHeight: normalizedHeight
+      }
+    };
+    projectSettings.value = updatedSettings;
+    persistProjectSettings(updatedSettings);
+  }
 }
 
 function scheduleTerminalResizeForPanelHeight() {
@@ -917,6 +917,19 @@ function applyProjectZoomSettings(settings: ProjectSettings) {
   if (didSetIdeZoom || shouldResizeTerminal) {
     scheduleTerminalResizeAfterZoom();
   }
+}
+
+function applyProjectTerminalSettings(settings: ProjectSettings) {
+  const nextHeight = normalizeTerminalPanelHeight(settings.terminal.panelHeight);
+  if (nextHeight !== terminalPanelHeight.value) {
+    terminalPanelHeight.value = nextHeight;
+    scheduleTerminalResizeForPanelHeight();
+  }
+}
+
+function applyProjectSettings(settings: ProjectSettings) {
+  applyProjectZoomSettings(settings);
+  applyProjectTerminalSettings(settings);
 }
 
 function persistProjectSettings(settings: ProjectSettings) {
@@ -2518,7 +2531,7 @@ async function openProject(path: string) {
   toolbarConfig.value = await loadToolbarConfig(path);
   await loadPromptSuffixConfigForProject(path);
   projectSettings.value = await loadProjectSettings(path);
-  applyProjectZoomSettings(projectSettings.value);
+  applyProjectSettings(projectSettings.value);
   await loadTerminalInputHistoryForProject(path, "project-open");
   await loadTodoEntriesForProject(path, "project-open");
   await startSettingsWatcher(path);
@@ -2565,7 +2578,7 @@ async function openLastProjectOnStartup() {
     toolbarConfig.value = defaultToolbarConfig;
     promptSuffixConfig.value = defaultPromptSuffixConfig;
     projectSettings.value = defaultProjectSettings;
-    applyProjectZoomSettings(defaultProjectSettings);
+    applyProjectSettings(defaultProjectSettings);
     isTerminalReady.value = false;
     try {
       const unwatchResponse = await window.projectApi.settings.unwatch();
@@ -2739,7 +2752,7 @@ function handleProjectSettingsSave(settings: ProjectSettings) {
     }
   };
   projectSettings.value = normalizedSettings;
-  applyProjectZoomSettings(normalizedSettings);
+  applyProjectSettings(normalizedSettings);
   persistProjectSettings(normalizedSettings);
   isProjectSettingsEditorOpen.value = false;
 }
@@ -2778,7 +2791,7 @@ async function handleSettingsFileChanged(filename: string) {
 
   if (isProjectSettingsChange) {
     projectSettings.value = await loadProjectSettings(projectPath.value);
-    applyProjectZoomSettings(projectSettings.value);
+    applyProjectSettings(projectSettings.value);
   }
 
   if (isTodoChange) {
@@ -3097,14 +3110,24 @@ onBeforeUnmount(() => {
   field-sizing: content;
 }
 
-.terminal-host :deep(.xterm) {
-  height: 100%;
-  padding: 0.4rem;
-  border-radius: inherit;
+.terminal-host :deep(.xterm),
+.terminal-host :deep(.xterm-viewport),
+.terminal-host :deep(.xterm-screen) {
+  background-color: #05070d !important;
 }
 
 .terminal-host :deep(.xterm-viewport) {
-  overflow-y: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.terminal-host :deep(.xterm-viewport::-webkit-scrollbar) {
+  display: none !important;
+}
+
+.terminal-host :deep(.xterm) {
+  height: 100%;
+  padding: 0.4rem;
   border-radius: inherit;
 }
 </style>

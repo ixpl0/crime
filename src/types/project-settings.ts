@@ -12,7 +12,12 @@ export interface ZoomSettings {
   terminalFontSize: number;
 }
 
+export interface TerminalSettings {
+  panelHeight: number;
+}
+
 export interface ProjectSettings {
   slashCommand: SlashCommandSettings;
   zoom: ZoomSettings;
+  terminal: TerminalSettings;
 }

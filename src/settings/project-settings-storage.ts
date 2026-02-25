@@ -1,6 +1,7 @@
 import {
   type ProjectSettings,
   type SlashCommandSettings,
+  type TerminalSettings,
   type ZoomSettings
 } from "../types/project-settings";
 import {
@@ -18,6 +19,8 @@ export const TERMINAL_FONT_SIZE_MIN = 8;
 export const TERMINAL_FONT_SIZE_MAX = 32;
 export const DEFAULT_TERMINAL_FONT_SIZE = 14;
 export const TERMINAL_FONT_SIZE_STEP = 1;
+export const TERMINAL_PANEL_MIN_HEIGHT = 160;
+export const DEFAULT_TERMINAL_PANEL_HEIGHT = 384;
 
 export const defaultProjectSettings: ProjectSettings = {
   slashCommand: {
@@ -31,6 +34,9 @@ export const defaultProjectSettings: ProjectSettings = {
   zoom: {
     ideZoomFactor: DEFAULT_IDE_ZOOM_FACTOR,
     terminalFontSize: DEFAULT_TERMINAL_FONT_SIZE
+  },
+  terminal: {
+    panelHeight: DEFAULT_TERMINAL_PANEL_HEIGHT
   }
 };
 
@@ -90,6 +96,20 @@ const parseZoomSettings = (value: unknown): ZoomSettings | null => {
   };
 };
 
+const parseTerminalSettings = (value: unknown): TerminalSettings | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (!isNumberInRange(value.panelHeight, TERMINAL_PANEL_MIN_HEIGHT, 10000)) {
+    return null;
+  }
+
+  return {
+    panelHeight: value.panelHeight
+  };
+};
+
 export const parseProjectSettings = (value: unknown): ProjectSettings | null => {
   if (!isRecord(value)) {
     return null;
@@ -110,11 +130,20 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
     return null;
   }
 
+  const parsedTerminal =
+    "terminal" in value ? parseTerminalSettings(value.terminal) : defaultProjectSettings.terminal;
+  if (!parsedTerminal) {
+    return null;
+  }
+
   return {
     slashCommand,
     zoom: {
       ideZoomFactor: parsedZoom.ideZoomFactor,
       terminalFontSize: parsedZoom.terminalFontSize
+    },
+    terminal: {
+      panelHeight: parsedTerminal.panelHeight
     }
   };
 };
