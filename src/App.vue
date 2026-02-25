@@ -86,14 +86,16 @@
                   >
                     <GripVertical :size="14" />
                   </button>
-                  <button
-                    class="btn btn-ghost btn-xs ml-auto normal-case text-base-content/70"
-                    type="button"
-                    :disabled="!isTerminalReady || !todoDraftView.value.trim()"
-                    @click="sendTodoEntryToTerminal(todoDraftView.index)"
-                  >
-                    &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
-                  </button>
+                  <div :title="lastPrompt" class="ml-auto">
+                    <button
+                      class="btn btn-ghost btn-xs normal-case text-base-content/70"
+                      type="button"
+                      :disabled="!isTerminalReady || !todoDraftView.value.trim()"
+                      @click="sendTodoEntryToTerminal(todoDraftView.index)"
+                    >
+                      &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -268,13 +270,15 @@
                     @toggle-suffix="handlePromptSuffixToggle"
                     @open-config-editor="isPromptSuffixConfigEditorOpen = true"
                   />
-                  <button
-                    class="btn btn-sm shrink-0 self-start"
-                    type="submit"
-                    :disabled="!isTerminalReady || !terminalInputText.trim()"
-                  >
-                    &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
-                  </button>
+                  <div :title="lastPrompt" class="shrink-0 self-start">
+                    <button
+                      class="btn btn-sm"
+                      type="submit"
+                      :disabled="!isTerminalReady || !terminalInputText.trim()"
+                    >
+                      &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -451,6 +455,11 @@ type AppTab = "agent" | "files" | "changes" | "git";
 const terminalPanelHeight = ref(loadInitialTerminalPanelHeight());
 const isTerminalPanelResizeActive = ref(false);
 const terminalInputHistory = ref<string[]>([]);
+const lastPrompt = computed(() => {
+  return terminalInputHistory.value.length > 0
+    ? terminalInputHistory.value[terminalInputHistory.value.length - 1]
+    : undefined;
+});
 const todoDrafts = ref<string[]>([""]);
 const todoDragSourceIndex = ref<number | null>(null);
 const todoDragOverIndex = ref<number | null>(null);
