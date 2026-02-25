@@ -124,6 +124,14 @@
             >
               Файлы
             </button>
+            <button
+              role="tab"
+              class="tab"
+              :class="{ 'tab-active': activeTab === 'changes' }"
+              @click="setActiveTab('changes')"
+            >
+              Изменения
+            </button>
               <div class="dropdown dropdown-bottom">
                 <div tabindex="0" role="tab" class="tab">
                   &#1055;&#1088;&#1086;&#1077;&#1082;&#1090;
@@ -304,6 +312,23 @@
               />
             </div>
           </div>
+          <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-y-auto px-1">
+            <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+              <ChangesPanel
+                v-if="projectPath"
+                :project-path="projectPath"
+                :selected-path="changesSelectedFilePath"
+                @select-file="handleChangesFileSelect"
+              />
+
+              <FileContentViewer
+                v-if="projectPath"
+                :project-path="projectPath"
+                :file-path="changesSelectedFilePath"
+                :is-active="activeTab === 'changes'"
+              />
+            </div>
+          </div>
           </div>
         </div>
       </div>
@@ -364,6 +389,7 @@ import PromptSuffixConfigEditor from "./components/PromptSuffixConfigEditor.vue"
 import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import FileContentViewer from "./components/FileContentViewer.vue";
+import ChangesPanel from "./components/ChangesPanel.vue";
 import {
   ArrowUp,
   ArrowDown,
@@ -406,7 +432,7 @@ const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
-type AppTab = "agent" | "files";
+type AppTab = "agent" | "files" | "changes";
 const terminalPanelHeight = ref(loadInitialTerminalPanelHeight());
 const isTerminalPanelResizeActive = ref(false);
 const terminalInputHistory = ref<string[]>([]);
@@ -427,6 +453,7 @@ const isPromptSuffixConfigEditorOpen = ref(false);
 const isProjectSettingsEditorOpen = ref(false);
 const activeTab = ref<AppTab>("agent");
 const selectedFilePath = ref<string | null>(null);
+const changesSelectedFilePath = ref<string | null>(null);
 const selectedFileTargetLine = ref<number | null>(null);
 const selectedFileTargetRequestToken = ref(0);
 const fileTreeRevealPath = ref<string | null>(null);
@@ -2488,6 +2515,7 @@ async function startTerminal(cwd: string) {
 function resetProjectRuntimeState() {
   clearTabNavigationHistory();
   selectedFilePath.value = null;
+  changesSelectedFilePath.value = null;
   selectedFileTargetLine.value = null;
   selectedFileTargetRequestToken.value = 0;
   fileTreeRevealPath.value = null;
@@ -2661,6 +2689,10 @@ function handleFileSelect(path: string) {
   }
 
   selectedFilePath.value = path;
+}
+
+function handleChangesFileSelect(path: string) {
+  changesSelectedFilePath.value = path;
 }
 
 function sendQuickKey(data: string) {
