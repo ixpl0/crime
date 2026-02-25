@@ -1105,6 +1105,12 @@ function setActiveTab(nextTab: AppTab, options?: { trackHistory?: boolean }) {
   }
 
   activeTab.value = nextTab;
+
+  if (nextTab === "agent") {
+    void nextTick(() => {
+      void resizeTerminalBackend();
+    });
+  }
 }
 
 function navigateTabHistoryBack() {
