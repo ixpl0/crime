@@ -149,13 +149,26 @@
                 </div>
                 <ul
                   tabindex="0"
-                  class="dropdown-content menu bg-base-100 rounded-box z-10 w-40 p-0 shadow"
+                  class="dropdown-content menu bg-base-100 rounded-box z-10 w-72 p-0 shadow"
                 >
                   <li>
                     <button :disabled="isOpening" @click="openProjectFolder">
-                      &#1054;&#1090;&#1082;&#1088;&#1099;&#1090;&#1100;
+                      &#1054;&#1090;&#1082;&#1088;&#1099;&#1090;&#1100;...
                     </button>
                   </li>
+                  <template v-if="recentProjects.length > 0">
+                    <div class="divider my-0"></div>
+                    <li v-for="recent in recentProjects" :key="recent">
+                      <button
+                        :disabled="isOpening"
+                        class="flex flex-col items-start gap-0 py-2"
+                        @click="openProject(recent)"
+                      >
+                        <span class="font-medium text-base-content">{{ getProjectNameFromPath(recent) }}</span>
+                        <span class="text-[10px] opacity-50 truncate w-full" :title="recent">{{ recent }}</span>
+                      </button>
+                    </li>
+                  </template>
                 </ul>
               </div>
             </div>
@@ -450,6 +463,7 @@ const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
 const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
+const RECENT_PROJECTS_STORAGE_KEY = "dream-ide:recent-projects";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
 type AppTab = "agent" | "files" | "changes" | "git";
 const terminalPanelHeight = ref(loadInitialTerminalPanelHeight());
@@ -460,7 +474,61 @@ const lastPrompt = computed(() => {
     ? terminalInputHistory.value[terminalInputHistory.value.length - 1]
     : undefined;
 });
+const recentProjects = ref<string[]>([]);
 const todoDrafts = ref<string[]>([""]);
+
+function getRecentProjectsFromStorage(): string[] {
+  try {
+    const stored = window.localStorage.getItem(RECENT_PROJECTS_STORAGE_KEY);
+    if (!stored) {
+      return [];
+    }
+    const parsed: unknown = JSON.parse(stored);
+    return Array.isArray(parsed) ? (parsed as unknown[]).filter((p): p is string => typeof p === "string") : [];
+  } catch (error) {
+    console.error("Failed to parse recent projects from storage", error);
+    return [];
+  }
+}
+
+function setRecentProjectsInStorage(paths: string[]) {
+  window.localStorage.setItem(RECENT_PROJECTS_STORAGE_KEY, JSON.stringify(paths));
+}
+
+function addToRecentProjects(path: string) {
+  const current = getRecentProjectsFromStorage();
+  const filtered = current.filter((p) => normalizePathForComparison(p) !== normalizePathForComparison(path));
+  const updated = [path, ...filtered].slice(0, 10);
+  recentProjects.value = updated;
+  setRecentProjectsInStorage(updated);
+}
+
+async function validateRecentProjects() {
+  const current = getRecentProjectsFromStorage();
+  const validPaths: string[] = [];
+
+  for (const path of current) {
+    try {
+      const response = await window.projectApi.filesystem.readDirectory(path);
+      if (response.ok) {
+        validPaths.push(path);
+      }
+    } catch (error) {
+      console.warn(`Failed to validate project path: ${path}`, error);
+    }
+  }
+
+  if (validPaths.length !== current.length) {
+    recentProjects.value = validPaths;
+    setRecentProjectsInStorage(validPaths);
+  }
+}
+
+function getProjectNameFromPath(path: string) {
+  const normalized = path.replace(/\\/g, "/");
+  const parts = normalized.split("/").filter((p) => p.length > 0);
+  return parts[parts.length - 1] || path;
+}
 const todoDragSourceIndex = ref<number | null>(null);
 const todoDragOverIndex = ref<number | null>(null);
 const isTodoPanelCollapsed = ref(
@@ -2603,6 +2671,7 @@ async function loadPromptSuffixConfigForProject(path: string) {
 
 async function openProject(path: string) {
   projectPath.value = path;
+  addToRecentProjects(path);
   resetProjectRuntimeState();
   toolbarConfig.value = await loadToolbarConfig(path);
   await loadPromptSuffixConfigForProject(path);
@@ -3018,6 +3087,9 @@ async function handleTextareaPaste(event: ClipboardEvent) {
 }
 
 onMounted(() => {
+  recentProjects.value = getRecentProjectsFromStorage();
+  void validateRecentProjects();
+
   unsubscribeTerminalData = window.projectApi.terminal.onData((data) => {
     terminalDataVersion += 1;
     // Keep terminal stream untouched: PTY output must reach xterm as-is.
