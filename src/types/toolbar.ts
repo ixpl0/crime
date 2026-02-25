@@ -1,25 +1,18 @@
-export type ToolbarAction =
-  | { readonly command: string; readonly rawInput?: never }
-  | { readonly rawInput: string; readonly command?: never };
+export type ToolbarActionType = "prompt" | "command" | "raw-input";
 
-export type ToolbarButton = {
+export interface ToolbarAction {
   readonly label: string;
+  readonly value: string;
+  readonly type: ToolbarActionType;
   readonly shortcut?: string;
-} & ToolbarAction;
-
-export interface ToolbarDropdown {
-  readonly type: "dropdown";
-  readonly label: string;
-  readonly items: readonly ToolbarButton[];
 }
 
-export type ToolbarStandaloneButton = {
-  readonly type: "button";
+export interface ToolbarDropdown {
   readonly label: string;
-  readonly shortcut?: string;
-} & ToolbarAction;
+  readonly items: readonly ToolbarAction[];
+}
 
-export type ToolbarElement = ToolbarDropdown | ToolbarStandaloneButton;
+export type ToolbarElement = ToolbarDropdown | ToolbarAction;
 
 export interface ToolbarConfig {
   readonly elements: readonly ToolbarElement[];

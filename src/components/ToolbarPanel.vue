@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-2">
     <template v-for="(element, elementIndex) in toolbarConfig.elements" :key="`element-${elementIndex}`">
-      <div v-if="element.type === 'dropdown'" class="dropdown">
+      <div v-if="'items' in element" class="dropdown">
         <div tabindex="0" role="button" class="btn btn-sm">{{ element.label }} <ChevronDown :size="14" /></div>
         <ul
           tabindex="0"
@@ -22,7 +22,7 @@
       </div>
 
       <button
-        v-else-if="element.type === 'button'"
+        v-else
         class="btn btn-sm"
         :disabled="!isTerminalReady"
         :title="getActionTitle(element)"
@@ -61,17 +61,15 @@ defineEmits<{
   "open-config-editor": [];
 }>();
 
-type ToolbarActionWithShortcut = ToolbarAction & { readonly shortcut?: string };
-
-function getActionTitle(action: ToolbarActionWithShortcut): string | undefined {
-  const commandTitle = "command" in action ? action.command : undefined;
+function getActionTitle(action: ToolbarAction): string | undefined {
+  const valueTitle = action.value;
   const shortcutTitle = action.shortcut ? formatShortcut(action.shortcut) : undefined;
 
-  if (commandTitle && shortcutTitle) {
-    return `${commandTitle}\n${shortcutTitle}`;
+  if (valueTitle && shortcutTitle) {
+    return `${valueTitle}\n${shortcutTitle}`;
   }
 
-  return commandTitle ?? shortcutTitle;
+  return valueTitle || shortcutTitle;
 }
 </script>
 

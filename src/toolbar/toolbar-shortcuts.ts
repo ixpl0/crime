@@ -224,28 +224,21 @@ export interface ShortcutMapping {
   readonly action: ToolbarAction;
 }
 
+const toElementActions = (element: ToolbarConfig["elements"][number]): readonly ToolbarAction[] =>
+  "items" in element ? element.items : [element];
+
 export const buildShortcutMap = (config: ToolbarConfig): readonly ShortcutMapping[] =>
-  config.elements.flatMap((element): readonly ShortcutMapping[] => {
-    if (element.type === "button" && element.shortcut) {
-      const parsed = parseShortcut(element.shortcut);
+  config.elements.flatMap((element): readonly ShortcutMapping[] =>
+    toElementActions(element).flatMap((action): readonly ShortcutMapping[] => {
+      if (!action.shortcut) {
+        return [];
+      }
+
+      const parsed = parseShortcut(action.shortcut);
       if (!parsed) {
         return [];
       }
-      return [{ parsed, action: element }];
-    }
 
-    if (element.type === "dropdown") {
-      return element.items.flatMap((item): readonly ShortcutMapping[] => {
-        if (!item.shortcut) {
-          return [];
-        }
-        const parsed = parseShortcut(item.shortcut);
-        if (!parsed) {
-          return [];
-        }
-        return [{ parsed, action: item }];
-      });
-    }
-
-    return [];
-  });
+      return [{ parsed, action }];
+    })
+  );

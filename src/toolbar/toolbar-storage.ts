@@ -1,4 +1,9 @@
-import { type ToolbarConfig, type ToolbarElement, type ToolbarAction, type ToolbarButton } from "../types/toolbar";
+import {
+  type ToolbarAction,
+  type ToolbarActionType,
+  type ToolbarConfig,
+  type ToolbarElement
+} from "../types/toolbar";
 import { defaultToolbarConfig } from "./default-toolbar-config";
 import {
   isRecord,
@@ -8,41 +13,26 @@ import {
 
 export const TOOLBAR_CONFIG_FILENAME = "agent-toolbar.json";
 
-const parseToolbarActionRecord = (value: Record<string, unknown>): ToolbarAction | null => {
-  const command = typeof value.command === "string" ? value.command : null;
-  const rawInput = typeof value.rawInput === "string" ? value.rawInput : null;
-  if ((command === null) === (rawInput === null)) {
-    return null;
-  }
+const isToolbarActionType = (value: unknown): value is ToolbarActionType =>
+  value === "prompt" || value === "command" || value === "raw-input";
 
-  if (command !== null) {
-    return { command };
-  }
-
-  if (rawInput === null) {
-    return null;
-  }
-
-  return { rawInput };
-};
-
-const parseToolbarButton = (value: unknown): ToolbarButton | null => {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  if (typeof value.label !== "string") {
-    return null;
-  }
-
-  const action = parseToolbarActionRecord(value);
-  if (!action) {
+const parseToolbarAction = (value: unknown): ToolbarAction | null => {
+  if (!isRecord(value) || typeof value.label !== "string") {
     return null;
   }
 
   const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
 
-  return { label: value.label, shortcut, ...action };
+  if (typeof value.value !== "string" || !isToolbarActionType(value.type)) {
+    return null;
+  }
+
+  return {
+    label: value.label,
+    value: value.value,
+    type: value.type,
+    shortcut
+  };
 };
 
 const parseToolbarElement = (value: unknown): ToolbarElement | null => {
@@ -50,18 +40,14 @@ const parseToolbarElement = (value: unknown): ToolbarElement | null => {
     return null;
   }
 
-  if (typeof value.label !== "string") {
-    return null;
-  }
-
-  if (value.type === "dropdown") {
-    if (!Array.isArray(value.items)) {
+  if (Array.isArray(value.items)) {
+    if (typeof value.label !== "string") {
       return null;
     }
 
-    const items: ToolbarButton[] = [];
+    const items: ToolbarAction[] = [];
     for (const item of value.items) {
-      const parsedItem = parseToolbarButton(item);
+      const parsedItem = parseToolbarAction(item);
       if (!parsedItem) {
         return null;
       }
@@ -69,21 +55,10 @@ const parseToolbarElement = (value: unknown): ToolbarElement | null => {
       items.push(parsedItem);
     }
 
-    return { type: "dropdown", label: value.label, items };
+    return { label: value.label, items };
   }
 
-  if (value.type === "button") {
-    const action = parseToolbarActionRecord(value);
-    if (!action) {
-      return null;
-    }
-
-    const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
-
-    return { type: "button", label: value.label, shortcut, ...action };
-  }
-
-  return null;
+  return parseToolbarAction(value);
 };
 
 export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {

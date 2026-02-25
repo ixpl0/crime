@@ -181,6 +181,14 @@
             @close="isToolbarConfigEditorOpen = false"
           />
 
+          <PromptSuffixConfigEditor
+            :current-config="promptSuffixConfig"
+            :config-file-path="`${projectPath}/${settingsDirectoryName}/${PROMPT_SUFFIX_CONFIG_FILENAME}`"
+            :open="isPromptSuffixConfigEditorOpen"
+            @save="handlePromptSuffixConfigSave"
+            @close="isPromptSuffixConfigEditorOpen = false"
+          />
+
           <ProjectSettingsEditor
             :current-settings="projectSettings"
             :config-file-path="`${projectPath}/${settingsDirectoryName}/${PROJECT_SETTINGS_FILENAME}`"
@@ -218,9 +226,15 @@
                   @input="handleTextareaInput"
                   @paste="handleTextareaPaste"
                 />
-                <div class="flex justify-end">
+                <div class="flex min-w-0 items-start gap-2">
+                  <PromptSuffixPanel
+                    class="min-w-0 flex-1"
+                    :suffix-config="promptSuffixConfig"
+                    @toggle-suffix="handlePromptSuffixToggle"
+                    @open-config-editor="isPromptSuffixConfigEditorOpen = true"
+                  />
                   <button
-                    class="btn btn-sm"
+                    class="btn btn-sm shrink-0 self-start"
                     type="submit"
                     :disabled="!isTerminalReady || !terminalInputText.trim()"
                   >
@@ -284,12 +298,19 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
+import { type PromptSuffixConfig } from "./types/prompt-suffix";
 import {
   loadToolbarConfig,
   saveToolbarConfig,
   TOOLBAR_CONFIG_FILENAME
 } from "./toolbar/toolbar-storage";
 import { defaultToolbarConfig } from "./toolbar/default-toolbar-config";
+import {
+  loadPromptSuffixConfig,
+  PROMPT_SUFFIX_CONFIG_FILENAME,
+  savePromptSuffixConfig
+} from "./prompt-suffix/prompt-suffix-storage";
+import { defaultPromptSuffixConfig } from "./prompt-suffix/default-prompt-suffix-config";
 import { type ProjectSettings } from "./types/project-settings";
 import {
   DEFAULT_IDE_ZOOM_FACTOR,
@@ -315,6 +336,8 @@ import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
 import { toContextualErrorMessage, toErrorMessage } from "./utils/fail-fast";
 import ToolbarPanel from "./components/ToolbarPanel.vue";
 import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
+import PromptSuffixPanel from "./components/PromptSuffixPanel.vue";
+import PromptSuffixConfigEditor from "./components/PromptSuffixConfigEditor.vue";
 import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
 import FileManagerPanel from "./components/FileManagerPanel.vue";
 import FileContentViewer from "./components/FileContentViewer.vue";
@@ -370,8 +393,10 @@ const isTodoPanelCollapsed = ref(
 const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
+const promptSuffixConfig = ref<PromptSuffixConfig>(defaultPromptSuffixConfig);
 const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
 const isToolbarConfigEditorOpen = ref(false);
+const isPromptSuffixConfigEditorOpen = ref(false);
 const isProjectSettingsEditorOpen = ref(false);
 const activeTab = ref<AppTab>("agent");
 const selectedFilePath = ref<string | null>(null);
@@ -449,6 +474,9 @@ let todoEntriesLoadToken = 0;
 let todoDraftEditVersion = 0;
 let todoPersistedVersion = 0;
 let todoPersistQueue: Promise<void> = Promise.resolve();
+let promptSuffixConfigEditVersion = 0;
+let promptSuffixConfigPersistedVersion = 0;
+let promptSuffixConfigPersistQueue: Promise<void> = Promise.resolve();
 let projectSettingsPersistQueue: Promise<void> = Promise.resolve();
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
@@ -1853,6 +1881,25 @@ function getSlashCommandText(text: string) {
   return trimmedStart;
 }
 
+function appendPromptSuffixes(rawText: string) {
+  if (getSlashCommandText(rawText)) {
+    return rawText;
+  }
+
+  const activeSuffixValues = promptSuffixConfig.value.items
+    .filter((item) => item.enabled)
+    .map((item) => item.value.trim())
+    .filter((value) => value.length > 0);
+
+  if (activeSuffixValues.length === 0) {
+    return rawText;
+  }
+
+  const cleanedText = rawText.replace(/[\r\n]+$/, "");
+  const suffixLines = activeSuffixValues.map((value) => `- ${value}`).join("\n");
+  return `${cleanedText}\n\nДополнительные требования:\n${suffixLines}`;
+}
+
 function enqueueTerminalOperation<T>(operation: () => Promise<T>) {
   const queuedOperation = terminalInputQueue.then(operation, operation);
   terminalInputQueue = queuedOperation.then(
@@ -1990,6 +2037,7 @@ interface SubmitTerminalTextMessages {
 interface SubmitTerminalTextAttemptOptions {
   notReady: string;
   messages: SubmitTerminalTextMessages;
+  inputType: "prompt" | "command";
 }
 
 async function submitTerminalText(
@@ -2042,8 +2090,11 @@ async function attemptSubmitTerminalText(
     return "empty";
   }
 
+  const textToSubmit =
+    options.inputType === "prompt" ? appendPromptSuffixes(rawText) : rawText;
+
   errorMessage.value = "";
-  return submitTerminalText(rawText, options.messages);
+  return submitTerminalText(textToSubmit, options.messages);
 }
 
 function requestFileTreeReveal(path: string) {
@@ -2307,6 +2358,9 @@ function resetProjectRuntimeState() {
   todoDraftEditVersion = 0;
   todoPersistedVersion = 0;
   todoPersistQueue = Promise.resolve();
+  promptSuffixConfigEditVersion = 0;
+  promptSuffixConfigPersistedVersion = 0;
+  promptSuffixConfigPersistQueue = Promise.resolve();
   projectSettingsPersistQueue = Promise.resolve();
   resetTerminalInputHistoryNavigation();
 }
@@ -2315,6 +2369,7 @@ async function openProject(path: string) {
   projectPath.value = path;
   resetProjectRuntimeState();
   toolbarConfig.value = await loadToolbarConfig(path);
+  promptSuffixConfig.value = await loadPromptSuffixConfig(path);
   projectSettings.value = await loadProjectSettings(path);
   applyProjectZoomSettings(projectSettings.value);
   await loadTerminalInputHistoryForProject(path, "project-open");
@@ -2361,6 +2416,7 @@ async function openLastProjectOnStartup() {
     projectPath.value = null;
     resetProjectRuntimeState();
     toolbarConfig.value = defaultToolbarConfig;
+    promptSuffixConfig.value = defaultPromptSuffixConfig;
     projectSettings.value = defaultProjectSettings;
     applyProjectZoomSettings(defaultProjectSettings);
     isTerminalReady.value = false;
@@ -2393,7 +2449,25 @@ async function runTerminalCommand(command: string) {
       sendSlash: "Failed to send slash command to terminal.",
       sendText: "Failed to send command text to terminal.",
       submit: "Failed to submit command in terminal."
-    }
+    },
+    inputType: "command"
+  });
+  if (result !== "submitted") {
+    return;
+  }
+
+  focusTerminal();
+}
+
+async function runToolbarPrompt(promptText: string) {
+  const result = await attemptSubmitTerminalText(promptText, {
+    notReady: "Terminal is not ready to send prompt.",
+    messages: {
+      sendSlash: "Failed to send slash command from prompt.",
+      sendText: "Failed to send prompt text to terminal.",
+      submit: "Failed to submit prompt in terminal."
+    },
+    inputType: "prompt"
   });
   if (result !== "submitted") {
     return;
@@ -2407,12 +2481,17 @@ function executeToolbarAction(action: ToolbarAction) {
     return;
   }
 
-  if (typeof action.command === "string") {
-    void runTerminalCommand(action.command);
+  if (action.type === "prompt") {
+    void runToolbarPrompt(action.value);
     return;
   }
 
-  void sendTerminalInput(action.rawInput, "Failed to send input to terminal.");
+  if (action.type === "raw-input") {
+    void sendTerminalInput(action.value, "Failed to send raw input to terminal.");
+    return;
+  }
+
+  void runTerminalCommand(action.value);
 }
 
 function handleFileSelect(path: string) {
@@ -2432,6 +2511,38 @@ function sendQuickKey(data: string) {
   void sendTerminalInput(data, "Failed to send quick key to terminal.");
 }
 
+function persistPromptSuffixSettings(config: PromptSuffixConfig, version: number) {
+  if (!projectPath.value) {
+    return;
+  }
+
+  const path = projectPath.value;
+  const operation = async () => {
+    try {
+      await savePromptSuffixConfig(path, config);
+    } catch (error) {
+      reportUiError(
+        "Prompt suffix config",
+        error,
+        "Failed to persist prompt suffix configuration."
+      );
+      return;
+    }
+
+    if (projectPath.value === path && version > promptSuffixConfigPersistedVersion) {
+      promptSuffixConfigPersistedVersion = version;
+    }
+  };
+
+  promptSuffixConfigPersistQueue = promptSuffixConfigPersistQueue.then(operation, operation);
+}
+
+function applyPromptSuffixConfig(config: PromptSuffixConfig) {
+  promptSuffixConfigEditVersion += 1;
+  promptSuffixConfig.value = config;
+  persistPromptSuffixSettings(config, promptSuffixConfigEditVersion);
+}
+
 async function handleToolbarConfigSave(config: ToolbarConfig) {
   toolbarConfig.value = config;
   if (projectPath.value) {
@@ -2447,6 +2558,29 @@ async function handleToolbarConfigSave(config: ToolbarConfig) {
     }
   }
   isToolbarConfigEditorOpen.value = false;
+}
+
+function handlePromptSuffixToggle(index: number) {
+  const currentItems = promptSuffixConfig.value.items;
+  if (index < 0 || index >= currentItems.length) {
+    return;
+  }
+
+  const nextItems = currentItems.map((item, itemIndex) =>
+    itemIndex === index
+      ? {
+          ...item,
+          enabled: !item.enabled
+        }
+      : item
+  );
+
+  applyPromptSuffixConfig({ items: nextItems });
+}
+
+function handlePromptSuffixConfigSave(config: PromptSuffixConfig) {
+  applyPromptSuffixConfig(config);
+  isPromptSuffixConfigEditorOpen.value = false;
 }
 
 function handleProjectSettingsSave(settings: ProjectSettings) {
@@ -2473,6 +2607,9 @@ async function handleSettingsFileChanged(filename: string) {
   const isWildcardChange = normalizedFilename === SETTINGS_WATCH_ALL;
   const isToolbarConfigChange =
     isWildcardChange || normalizedFilenameLower === TOOLBAR_CONFIG_FILENAME.toLowerCase();
+  const isPromptSuffixConfigChange =
+    isWildcardChange ||
+    normalizedFilenameLower === PROMPT_SUFFIX_CONFIG_FILENAME.toLowerCase();
   const isProjectSettingsChange =
     isWildcardChange || normalizedFilenameLower === PROJECT_SETTINGS_FILENAME.toLowerCase();
   const isTodoChange =
@@ -2483,6 +2620,13 @@ async function handleSettingsFileChanged(filename: string) {
 
   if (isToolbarConfigChange) {
     toolbarConfig.value = await loadToolbarConfig(projectPath.value);
+  }
+
+  if (
+    isPromptSuffixConfigChange &&
+    promptSuffixConfigEditVersion <= promptSuffixConfigPersistedVersion
+  ) {
+    promptSuffixConfig.value = await loadPromptSuffixConfig(projectPath.value);
   }
 
   if (isProjectSettingsChange) {
@@ -2555,7 +2699,8 @@ async function sendTextareaToTerminal() {
       sendSlash: "Failed to send slash command to terminal.",
       sendText: "Failed to send input to terminal.",
       submit: "Failed to send Enter to terminal."
-    }
+    },
+    inputType: "prompt"
   });
   if (result !== "submitted") {
     return;
@@ -2578,7 +2723,8 @@ async function sendTodoEntryToTerminal(index: number) {
       sendSlash: "Failed to send slash command from todo to terminal.",
       sendText: "Failed to send todo prompt to terminal.",
       submit: "Failed to send Enter to terminal."
-    }
+    },
+    inputType: "prompt"
   });
   if (result !== "submitted") {
     return;
