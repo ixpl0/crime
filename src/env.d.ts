@@ -19,6 +19,10 @@ interface TerminalApi {
   onExit: (listener: (code: number | null) => void) => () => void;
 }
 
+interface ClipboardApi {
+  writeText: (text: string) => Promise<TerminalResponse>;
+}
+
 interface SettingsReadResponse {
   ok: boolean;
   content?: string | null;
@@ -126,6 +130,7 @@ interface ProjectApi {
   openFolder: () => Promise<string | null>;
   settings: SettingsApi;
   terminal: TerminalApi;
+  clipboard: ClipboardApi;
   filesystem: FilesystemApi;
   git: GitApi;
   zoom: ZoomApi;

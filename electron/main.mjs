@@ -1,4 +1,13 @@
-import { app, BrowserWindow, dialog, globalShortcut, ipcMain, nativeTheme, screen } from "electron";
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  nativeTheme,
+  screen
+} from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve, normalize, relative, isAbsolute } from "node:path";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
@@ -695,6 +704,7 @@ function registerIpcHandlers() {
   ipcMain.removeHandler(IPC_CHANNELS.terminalInput);
   ipcMain.removeHandler(IPC_CHANNELS.terminalResize);
   ipcMain.removeHandler(IPC_CHANNELS.terminalStop);
+  ipcMain.removeHandler(IPC_CHANNELS.clipboardWriteText);
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadDirectory);
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadFile);
   ipcMain.removeHandler(IPC_CHANNELS.gitStatus);
@@ -971,6 +981,22 @@ function registerIpcHandlers() {
   ipcMain.handle(IPC_CHANNELS.terminalStop, async (event) => {
     stopTerminalSession(event.sender.id);
     return { ok: true };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.clipboardWriteText, async (_event, text) => {
+    if (typeof text !== "string") {
+      return { ok: false, error: "Clipboard text must be a string." };
+    }
+
+    try {
+      clipboard.writeText(text);
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to write clipboard text."
+      };
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.filesystemReadDirectory, async (_event, dirPath) => {

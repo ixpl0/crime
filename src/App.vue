@@ -201,6 +201,8 @@
               ref="terminalContainer"
               class="terminal-host h-96 w-full overflow-hidden rounded-box border border-base-300 bg-[#05070d]"
               @click="focusTerminal"
+              @contextmenu="handleTerminalContextMenu"
+              @auxclick="handleTerminalAuxClick"
             />
 
             <form class="flex min-w-0 gap-3" @submit.prevent="sendTextareaToTerminal">
@@ -1738,6 +1740,48 @@ function initializeTerminalView() {
 
 function focusTerminal() {
   terminal?.focus();
+}
+
+async function copyTerminalSelection(clickType: "right" | "middle") {
+  if (!terminal) {
+    return;
+  }
+
+  const selectedText = terminal.getSelection();
+  if (selectedText.length === 0) {
+    return;
+  }
+
+  try {
+    const response = await window.projectApi.clipboard.writeText(selectedText);
+    if (!response.ok) {
+      reportUiError(
+        "Terminal copy",
+        response.error,
+        `Failed to copy terminal selection with ${clickType} click.`
+      );
+    }
+  } catch (error) {
+    reportUiError(
+      "Terminal copy",
+      error,
+      `Failed to copy terminal selection with ${clickType} click.`
+    );
+  }
+}
+
+function handleTerminalContextMenu(event: MouseEvent) {
+  event.preventDefault();
+  void copyTerminalSelection("right");
+}
+
+function handleTerminalAuxClick(event: MouseEvent) {
+  if (event.button !== 1) {
+    return;
+  }
+
+  event.preventDefault();
+  void copyTerminalSelection("middle");
 }
 
 function focusTerminalInput() {

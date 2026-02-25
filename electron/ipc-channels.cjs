@@ -11,6 +11,7 @@ const IPC_CHANNELS = Object.freeze({
   terminalStop: "terminal:stop",
   terminalData: "terminal:data",
   terminalExit: "terminal:exit",
+  clipboardWriteText: "clipboard:write-text",
   filesystemReadDirectory: "filesystem:read-directory",
   filesystemReadFile: "filesystem:read-file",
   gitStatus: "git:status",

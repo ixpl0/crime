@@ -16,6 +16,7 @@ const IPC_CHANNELS = Object.freeze({
   "terminalStop": "terminal:stop",
   "terminalData": "terminal:data",
   "terminalExit": "terminal:exit",
+  "clipboardWriteText": "clipboard:write-text",
   "filesystemReadDirectory": "filesystem:read-directory",
   "filesystemReadFile": "filesystem:read-file",
   "gitStatus": "git:status",
@@ -160,6 +161,9 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.on(IPC_CHANNELS.terminalExit, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalExit, handler);
     }
+  },
+  clipboard: {
+    writeText: (text) => ipcRenderer.invoke(IPC_CHANNELS.clipboardWriteText, text)
   },
   filesystem: {
     readDirectory: (dirPath) => ipcRenderer.invoke(IPC_CHANNELS.filesystemReadDirectory, dirPath),
