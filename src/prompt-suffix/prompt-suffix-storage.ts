@@ -2,12 +2,11 @@ import {
   type PromptSuffixConfig,
   type PromptSuffixItem
 } from "../types/prompt-suffix";
-import { defaultPromptSuffixConfig } from "./default-prompt-suffix-config";
 import {
   isRecord,
-  loadJsonProjectSetting,
   saveJsonProjectSetting
 } from "../settings/settings-storage-helpers";
+import { toErrorMessage } from "../utils/fail-fast";
 
 export const PROMPT_SUFFIX_CONFIG_FILENAME = "prompt-suffixes.json";
 
@@ -58,15 +57,28 @@ export const parsePromptSuffixConfig = (value: unknown): PromptSuffixConfig | nu
 };
 
 export const loadPromptSuffixConfig = async (projectPath: string): Promise<PromptSuffixConfig> => {
-  return loadJsonProjectSetting(
-    projectPath,
-    PROMPT_SUFFIX_CONFIG_FILENAME,
-    parsePromptSuffixConfig,
-    defaultPromptSuffixConfig,
-    {
-      settingLabel: "prompt suffix config"
-    }
-  );
+  const response = await window.projectApi.settings.read(projectPath, PROMPT_SUFFIX_CONFIG_FILENAME);
+  if (!response.ok) {
+    throw new Error(toErrorMessage(response.error, "Failed to read prompt suffix config."));
+  }
+
+  if (!response.content) {
+    throw new Error("Prompt suffix config file is missing.");
+  }
+
+  let parsedContent: unknown;
+  try {
+    parsedContent = JSON.parse(response.content);
+  } catch (error) {
+    throw new Error(toErrorMessage(error, "Prompt suffix config has invalid JSON."));
+  }
+
+  const parsedConfig = parsePromptSuffixConfig(parsedContent);
+  if (!parsedConfig) {
+    throw new Error("Prompt suffix config has invalid structure.");
+  }
+
+  return parsedConfig;
 };
 
 export const savePromptSuffixConfig = async (

@@ -205,13 +205,32 @@
               @open-config-editor="isToolbarConfigEditorOpen = true"
             />
 
-            <div
-              ref="terminalContainer"
-              class="terminal-host h-96 w-full overflow-hidden rounded-box border border-base-300 bg-[#05070d]"
-              @click="focusTerminal"
-              @contextmenu="handleTerminalContextMenu"
-              @auxclick="handleTerminalAuxClick"
-            />
+            <div class="relative pb-3">
+              <div
+                ref="terminalContainer"
+                class="terminal-host w-full overflow-hidden rounded-box border border-base-300 bg-[#05070d]"
+                :style="{ height: `${terminalPanelHeight}px` }"
+                @click="focusTerminal"
+                @contextmenu="handleTerminalContextMenu"
+                @auxclick="handleTerminalAuxClick"
+              />
+              <button
+                type="button"
+                class="terminal-resize-handle group absolute inset-x-0 bottom-0 z-10 flex h-5 cursor-ns-resize items-center justify-center border-0 bg-transparent p-0"
+                title="Потяните, чтобы изменить высоту терминала"
+                aria-label="Изменить высоту терминала"
+                @pointerdown="handleTerminalPanelResizePointerDown"
+              >
+                <span
+                  class="h-1 w-14 rounded-full transition-colors duration-150"
+                  :class="
+                    isTerminalPanelResizeActive
+                      ? 'bg-base-content/40'
+                      : 'bg-base-300/80 group-hover:bg-base-content/30 group-focus-visible:bg-base-content/30'
+                  "
+                />
+              </button>
+            </div>
 
             <form class="flex min-w-0 gap-3" @submit.prevent="sendTextareaToTerminal">
               <div class="flex min-w-0 flex-1 flex-col gap-2">
@@ -375,6 +394,10 @@ const errorMessage = ref("");
 const terminalInputText = ref("");
 const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
+const TERMINAL_PANEL_HEIGHT_STORAGE_KEY = "dream-ide:terminal-panel-height";
+const DEFAULT_TERMINAL_PANEL_HEIGHT = 384;
+const TERMINAL_PANEL_MIN_HEIGHT = 160;
+const TERMINAL_PANEL_MAX_VIEWPORT_RATIO = 0.85;
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
@@ -383,6 +406,8 @@ const SETTINGS_WATCH_ALL = "*";
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
 type AppTab = "agent" | "files";
+const terminalPanelHeight = ref(loadInitialTerminalPanelHeight());
+const isTerminalPanelResizeActive = ref(false);
 const terminalInputHistory = ref<string[]>([]);
 const todoDrafts = ref<string[]>([""]);
 const todoDragSourceIndex = ref<number | null>(null);
@@ -394,6 +419,7 @@ const terminalInputHistoryIndex = ref<number | null>(null);
 const terminalInputDraft = ref("");
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
 const promptSuffixConfig = ref<PromptSuffixConfig>(defaultPromptSuffixConfig);
+const emptyPromptSuffixConfig: PromptSuffixConfig = { items: [] };
 const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
 const isToolbarConfigEditorOpen = ref(false);
 const isPromptSuffixConfigEditorOpen = ref(false);
@@ -460,9 +486,13 @@ let removeWindowKeydownListener: (() => void) | null = null;
 let removeWindowHistoryMouseListener: (() => void) | null = null;
 let removeWindowErrorListener: (() => void) | null = null;
 let removeWindowUnhandledRejectionListener: (() => void) | null = null;
+let removeWindowTerminalPanelResizeListeners: (() => void) | null = null;
 let unsubscribeGlobalQuickKey: (() => void) | null = null;
 let unsubscribeSettingsFileChanged: (() => void) | null = null;
 let pendingZoomResizeAnimationFrame: number | null = null;
+let pendingTerminalPanelResizeAnimationFrame: number | null = null;
+let terminalPanelResizeStartY = 0;
+let terminalPanelResizeStartHeight = 0;
 let terminalDataVersion = 0;
 let terminalInputQueue: Promise<void> = Promise.resolve();
 let terminalInputHistoryLoadToken = 0;
@@ -726,6 +756,108 @@ function normalizeIdeZoomFactor(value: number) {
 
 function normalizeTerminalFontSize(value: number) {
   return Math.round(clampNumber(value, TERMINAL_FONT_SIZE_MIN, TERMINAL_FONT_SIZE_MAX));
+}
+
+function getTerminalPanelMaxHeight() {
+  const viewportLimitedHeight = Math.floor(window.innerHeight * TERMINAL_PANEL_MAX_VIEWPORT_RATIO);
+  return Math.max(TERMINAL_PANEL_MIN_HEIGHT, viewportLimitedHeight);
+}
+
+function normalizeTerminalPanelHeight(value: number) {
+  return Math.round(clampNumber(value, TERMINAL_PANEL_MIN_HEIGHT, getTerminalPanelMaxHeight()));
+}
+
+function loadInitialTerminalPanelHeight() {
+  const rawValue = window.localStorage.getItem(TERMINAL_PANEL_HEIGHT_STORAGE_KEY);
+  if (!rawValue) {
+    return normalizeTerminalPanelHeight(DEFAULT_TERMINAL_PANEL_HEIGHT);
+  }
+
+  const parsedValue = Number.parseFloat(rawValue);
+  if (!Number.isFinite(parsedValue)) {
+    return normalizeTerminalPanelHeight(DEFAULT_TERMINAL_PANEL_HEIGHT);
+  }
+
+  return normalizeTerminalPanelHeight(parsedValue);
+}
+
+function persistTerminalPanelHeight(value: number) {
+  window.localStorage.setItem(
+    TERMINAL_PANEL_HEIGHT_STORAGE_KEY,
+    String(normalizeTerminalPanelHeight(value))
+  );
+}
+
+function scheduleTerminalResizeForPanelHeight() {
+  if (pendingTerminalPanelResizeAnimationFrame !== null) {
+    return;
+  }
+
+  pendingTerminalPanelResizeAnimationFrame = window.requestAnimationFrame(() => {
+    pendingTerminalPanelResizeAnimationFrame = null;
+    void resizeTerminalBackend();
+  });
+}
+
+function stopTerminalPanelResize() {
+  removeWindowTerminalPanelResizeListeners?.();
+  removeWindowTerminalPanelResizeListeners = null;
+
+  if (!isTerminalPanelResizeActive.value) {
+    return;
+  }
+
+  isTerminalPanelResizeActive.value = false;
+  document.body.style.removeProperty("cursor");
+  document.body.style.removeProperty("user-select");
+  persistTerminalPanelHeight(terminalPanelHeight.value);
+}
+
+function handleTerminalPanelResizePointerMove(event: PointerEvent) {
+  if (!isTerminalPanelResizeActive.value) {
+    return;
+  }
+
+  event.preventDefault();
+  const deltaY = event.clientY - terminalPanelResizeStartY;
+  const nextHeight = normalizeTerminalPanelHeight(terminalPanelResizeStartHeight + deltaY);
+  if (nextHeight === terminalPanelHeight.value) {
+    return;
+  }
+
+  terminalPanelHeight.value = nextHeight;
+  scheduleTerminalResizeForPanelHeight();
+}
+
+function handleTerminalPanelResizePointerDown(event: PointerEvent) {
+  if (event.button !== 0) {
+    return;
+  }
+
+  event.preventDefault();
+  stopTerminalPanelResize();
+
+  terminalPanelResizeStartY = event.clientY;
+  terminalPanelResizeStartHeight = terminalPanelHeight.value;
+  isTerminalPanelResizeActive.value = true;
+  document.body.style.cursor = "ns-resize";
+  document.body.style.userSelect = "none";
+
+  const handlePointerMove = (moveEvent: PointerEvent) => {
+    handleTerminalPanelResizePointerMove(moveEvent);
+  };
+  const handlePointerUp = () => {
+    stopTerminalPanelResize();
+  };
+
+  window.addEventListener("pointermove", handlePointerMove, { passive: false });
+  window.addEventListener("pointerup", handlePointerUp, true);
+  window.addEventListener("pointercancel", handlePointerUp, true);
+  removeWindowTerminalPanelResizeListeners = () => {
+    window.removeEventListener("pointermove", handlePointerMove);
+    window.removeEventListener("pointerup", handlePointerUp, true);
+    window.removeEventListener("pointercancel", handlePointerUp, true);
+  };
 }
 
 function scheduleTerminalResizeAfterZoom() {
@@ -2365,11 +2497,26 @@ function resetProjectRuntimeState() {
   resetTerminalInputHistoryNavigation();
 }
 
+async function loadPromptSuffixConfigForProject(path: string) {
+  try {
+    promptSuffixConfig.value = await loadPromptSuffixConfig(path);
+    return;
+  } catch (error) {
+    promptSuffixConfig.value = emptyPromptSuffixConfig;
+
+    reportUiError(
+      "Prompt suffix config",
+      error,
+      "Failed to load prompt suffix config. Fix .ide/prompt-suffixes.json or use Reset in Prompt Suffix Settings."
+    );
+  }
+}
+
 async function openProject(path: string) {
   projectPath.value = path;
   resetProjectRuntimeState();
   toolbarConfig.value = await loadToolbarConfig(path);
-  promptSuffixConfig.value = await loadPromptSuffixConfig(path);
+  await loadPromptSuffixConfigForProject(path);
   projectSettings.value = await loadProjectSettings(path);
   applyProjectZoomSettings(projectSettings.value);
   await loadTerminalInputHistoryForProject(path, "project-open");
@@ -2626,7 +2773,7 @@ async function handleSettingsFileChanged(filename: string) {
     isPromptSuffixConfigChange &&
     promptSuffixConfigEditVersion <= promptSuffixConfigPersistedVersion
   ) {
-    promptSuffixConfig.value = await loadPromptSuffixConfig(projectPath.value);
+    await loadPromptSuffixConfigForProject(projectPath.value);
   }
 
   if (isProjectSettingsChange) {
@@ -2792,6 +2939,10 @@ onMounted(() => {
   const handleWindowResize = () => {
     resizeTodoTextareas();
     resizeTerminalInputTextareaElement();
+    const nextTerminalPanelHeight = normalizeTerminalPanelHeight(terminalPanelHeight.value);
+    if (nextTerminalPanelHeight !== terminalPanelHeight.value) {
+      terminalPanelHeight.value = nextTerminalPanelHeight;
+    }
     void resizeTerminalBackend();
   };
 
@@ -2885,9 +3036,14 @@ onBeforeUnmount(() => {
   removeWindowHistoryMouseListener?.();
   removeWindowErrorListener?.();
   removeWindowUnhandledRejectionListener?.();
+  stopTerminalPanelResize();
   if (pendingZoomResizeAnimationFrame !== null) {
     window.cancelAnimationFrame(pendingZoomResizeAnimationFrame);
     pendingZoomResizeAnimationFrame = null;
+  }
+  if (pendingTerminalPanelResizeAnimationFrame !== null) {
+    window.cancelAnimationFrame(pendingTerminalPanelResizeAnimationFrame);
+    pendingTerminalPanelResizeAnimationFrame = null;
   }
   void window.projectApi.settings.unwatch()
     .then((response) => {
@@ -2923,6 +3079,14 @@ onBeforeUnmount(() => {
 <style scoped>
 .terminal-host {
   overflow: hidden;
+}
+
+.terminal-resize-handle {
+  touch-action: none;
+}
+
+.terminal-resize-handle:focus-visible {
+  outline: none;
 }
 
 .todo-list-scroll {

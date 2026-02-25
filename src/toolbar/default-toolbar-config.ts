@@ -31,6 +31,12 @@ const engineeringPracticesReviewPrompt = [
   "Выдели отклонения, объясни компромиссы и предложи практичные улучшения, ранжированные по влиянию."
 ].join(" ");
 
+const decompositionReviewPrompt = [
+  "Проведи ревью декомпозиции кода и размера модулей.",
+  "Найди крупные файлы и перегруженные функции, где смешаны ответственности, высокая связность, глубокая вложенность и длинные ветвления.",
+  "Для каждого замечания укажи риск для поддерживаемости и предложи конкретный план разбиения на модули и функции с минимальным риском регрессий."
+].join(" ");
+
 export const defaultToolbarConfig: ToolbarConfig = {
   elements: [
     {
@@ -44,11 +50,6 @@ export const defaultToolbarConfig: ToolbarConfig = {
         {
           label: "Codex CLI",
           value: "codex",
-          type: "command"
-        },
-        {
-          label: "Aider",
-          value: "aider",
           type: "command"
         }
       ]
@@ -80,6 +81,11 @@ export const defaultToolbarConfig: ToolbarConfig = {
           label: "\u0418\u043d\u0436\u0435\u043d\u0435\u0440\u043d\u044b\u0435 \u043f\u0440\u0430\u043a\u0442\u0438\u043a\u0438",
           value: engineeringPracticesReviewPrompt,
           type: "prompt"
+        },
+        {
+          label: "\u0414\u0435\u043a\u043e\u043c\u043f\u043e\u0437\u0438\u0446\u0438\u044f \u0438 \u043a\u0440\u0443\u043f\u043d\u044b\u0435 \u0444\u0430\u0439\u043b\u044b",
+          value: decompositionReviewPrompt,
+          type: "prompt"
         }
       ]
     },
@@ -101,6 +107,11 @@ export const defaultToolbarConfig: ToolbarConfig = {
     {
       label: "\u041a\u043e\u043c\u043c\u0438\u0442 \u043f\u0443\u0448",
       value: "\u043a\u043e\u043c\u043c\u0438\u0442 \u043f\u0443\u0448",
+      type: "prompt"
+    },
+    {
+      label: "Обнови доку",
+      value: "Изучи проект и обнови документацию, если нужно",
       type: "prompt"
     }
   ]

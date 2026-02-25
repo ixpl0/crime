@@ -1,22 +1,23 @@
 ﻿<template>
-  <div class="flex flex-wrap items-center gap-2">
+  <div class="flex flex-wrap items-stretch gap-x-2 gap-y-0">
     <label
       v-for="(item, index) in suffixConfig.items"
       :key="`suffix-${index}`"
-      class="label cursor-pointer gap-2 rounded-btn px-2 py-1 hover:bg-base-100/60"
+      class="label inline-flex h-8 cursor-pointer items-center gap-2 rounded-btn px-2 py-0 whitespace-nowrap hover:bg-base-100/60"
       :title="item.value"
     >
       <input
         type="checkbox"
-        class="checkbox checkbox-sm"
+        class="checkbox checkbox-xs shrink-0"
         :checked="item.enabled"
         @change="$emit('toggle-suffix', index)"
       >
-      <span class="label-text text-sm">{{ item.label }}</span>
+      <span class="label-text text-xs">{{ item.label }}</span>
     </label>
 
     <button
-      class="btn btn-sm btn-ghost"
+      type="button"
+      class="btn btn-sm btn-square btn-ghost h-8 min-h-8"
       title="Edit suffixes"
       @click="$emit('open-config-editor')"
     >
