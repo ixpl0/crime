@@ -22,18 +22,6 @@
     >
       <Pencil :size="16" />
     </button>
-
-    <div
-      class="tooltip tooltip-top"
-      data-tip="Суффиксы применяются только к prompt-сообщениям. Для command-сообщений текст не модифицируется."
-    >
-      <span
-        class="inline-flex h-7 w-7 cursor-help select-none items-center justify-center rounded-full text-sm font-bold text-base-content/70"
-        aria-label="О подсказках суффиксов"
-      >
-        ?
-      </span>
-    </div>
   </div>
 </template>
 
