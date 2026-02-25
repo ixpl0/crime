@@ -17,25 +17,42 @@ Electron + Vue 3 desktop IDE with integrated terminal and configurable toolbar.
 
 ```
 electron/
-  main.mjs          — Electron main process, IPC handlers, PTY management
-  preload.cjs       — Context bridge (contextIsolation: true)
+  main.mjs               — Electron main process, IPC handlers, PTY, git, filesystem
+  preload.cjs            — Context bridge (contextIsolation: true)
+  ipc-channels.cjs       — IPC channel name constants
+  settings-constants.cjs — Settings directory name (".ide")
+  quick-key-bindings.cjs — Global quick key definitions
 src/
-  components/       — Vue components (ToolbarPanel, ToolbarConfigEditor)
-  composables/      — Reusable logic (use-toolbar-shortcuts)
-  toolbar/          — Toolbar module (storage, shortcuts, default config)
-  types/            — TypeScript interfaces
-  App.vue           — Main component (terminal, toolbar, project picker)
-  env.d.ts          — Global type declarations (window.projectApi)
-  main.ts           — Vue app entrypoint
-  style.css         — Tailwind + daisyUI imports
+  components/            — Vue components (Toolbar, PromptSuffix, FileManager, Settings editors)
+  composables/           — Reusable logic (use-toolbar-shortcuts)
+  toolbar/               — Toolbar module (storage, shortcuts, default config)
+  prompt-suffix/         — Prompt suffix module (storage, defaults)
+  settings/              — Project settings, terminal history, todo storage
+  types/                 — TypeScript interfaces (toolbar, project-settings, prompt-suffix)
+  utils/                 — Helpers (fail-fast error handling)
+  App.vue                — Main component (terminal, toolbar, project picker, file manager)
+  env.d.ts               — Global type declarations (window.projectApi)
+  main.ts                — Vue app entrypoint
+  style.css              — Tailwind + daisyUI imports
 ```
 
 ## Architecture
 
 - **IPC pattern**: Renderer → `ipcRenderer.invoke()` → Main process → `ipcMain.handle()`
-- **Channels**: `project:open-folder`, `settings:read/write`, `terminal:start/input/resize/run-command`
-- **Toolbar config**: per-project in `.ide/toolbar.json`
-- **Terminal history**: per-project in `.ide/terminal-input-history.json`
+- **Channels**: defined in `electron/ipc-channels.cjs`, exposed via `electron/preload.cjs`
+  - `project:open-folder`
+  - `settings:read/write/watch/unwatch`, `settings:file-changed`
+  - `terminal:start/input/resize/stop`, `terminal:data/exit`
+  - `clipboard:write-text`
+  - `filesystem:read-directory/read-file`
+  - `git:status/file-diff`
+  - `global:quick-key`
+- **Per-project config** (in `.ide/` directory):
+  - `agent-toolbar.json` — toolbar actions and dropdowns
+  - `settings.json` — zoom, terminal, slash-command settings
+  - `prompt-suffixes.json` — prompt suffix presets
+  - `terminal-input-history.json` — terminal input history
+  - `todo.json` — todo list
 
 ## Engineering Principles
 
