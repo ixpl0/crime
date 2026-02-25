@@ -205,7 +205,7 @@
               @open-config-editor="isToolbarConfigEditorOpen = true"
             />
 
-            <div class="relative pb-3">
+            <div>
               <div
                 ref="terminalContainer"
                 class="terminal-host w-full overflow-hidden rounded-box border border-[#05070d] bg-[#05070d]"
@@ -216,17 +216,17 @@
               />
               <button
                 type="button"
-                class="terminal-resize-handle group absolute inset-x-0 bottom-0 z-10 flex h-5 cursor-ns-resize items-center justify-center border-0 bg-transparent p-0"
+                class="terminal-resize-handle group relative -mt-[6px] flex h-3 w-full cursor-ns-resize items-center justify-center border-0 bg-transparent p-0"
                 title="Потяните, чтобы изменить высоту терминала"
                 aria-label="Изменить высоту терминала"
                 @pointerdown="handleTerminalPanelResizePointerDown"
               >
                 <span
-                  class="h-1 w-14 rounded-full transition-colors duration-150"
+                  class="h-1 w-[17%] rounded-full transition-colors duration-150"
                   :class="
                     isTerminalPanelResizeActive
-                      ? 'bg-base-content/40'
-                      : 'bg-base-300/80 group-hover:bg-base-content/30 group-focus-visible:bg-base-content/30'
+                      ? 'bg-[#6b7280]'
+                      : 'bg-[#374151] group-hover:bg-[#4b5563] group-focus-visible:bg-[#4b5563]'
                   "
                 />
               </button>
