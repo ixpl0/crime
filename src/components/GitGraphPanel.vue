@@ -1,6 +1,10 @@
 <template>
   <div class="flex h-full min-h-0 flex-col rounded-box border border-base-300 bg-base-200">
-    <div class="min-h-0 flex-1 overflow-y-auto" ref="scrollContainer">
+    <div
+      class="min-h-0 overflow-y-auto"
+      :class="selectedCommitDetails ? 'h-1/2 shrink-0' : 'flex-1'"
+      ref="scrollContainer"
+    >
       <div v-if="isLoading" class="flex items-center justify-center py-8">
         <span class="loading loading-spinner loading-md" />
       </div>
@@ -17,9 +21,9 @@
         <div
           v-for="(row, rowIndex) in graphRows"
           :key="row.commit.hash"
-          class="group flex items-stretch hover:bg-base-300/50"
+          class="group flex cursor-pointer items-stretch hover:bg-base-300/50"
           :class="rowIndex === selectedRowIndex ? 'bg-base-300' : ''"
-          @click="selectedRowIndex = rowIndex"
+          @click="selectCommit(rowIndex)"
         >
           <svg
             class="shrink-0"
@@ -56,15 +60,143 @@
               {{ formatRef(ref) }}
             </span>
             <span class="min-w-0 truncate text-sm">{{ row.commit.subject }}</span>
-            <span class="ml-auto shrink-0 text-xs text-base-content/40">
-              {{ formatShortHash(row.commit.hash) }}
-            </span>
+            <button
+              class="ml-auto shrink-0 cursor-pointer rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
+              :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
+              @click.stop="copyHash(row.commit.hash)"
+            >
+              {{ copiedHash === row.commit.hash ? "copied" : formatShortHash(row.commit.hash) }}
+            </button>
             <span class="shrink-0 text-xs text-base-content/40">
               {{ formatRelativeDate(row.commit.date) }}
             </span>
             <span class="shrink-0 text-xs text-base-content/50">
               {{ row.commit.author }}
             </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="selectedCommitDetails"
+      class="flex min-h-0 flex-1 flex-col border-t border-base-300"
+    >
+      <div class="flex items-center gap-2 border-b border-base-300 px-3 py-1.5">
+        <span class="text-xs font-semibold text-base-content/70">Commit details</span>
+        <button
+          class="btn btn-ghost btn-xs btn-square ml-auto"
+          title="Закрыть"
+          @click="closeDetails"
+        >
+          <X :size="14" />
+        </button>
+      </div>
+
+      <div v-if="isDetailsLoading" class="flex items-center justify-center py-6">
+        <span class="loading loading-spinner loading-sm" />
+      </div>
+
+      <div v-else-if="detailsError" class="px-3 py-4 text-sm text-error">
+        {{ detailsError }}
+      </div>
+
+      <div v-else class="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+        <div class="mb-3 flex flex-col gap-1.5">
+          <div class="flex items-center gap-2">
+            <span class="shrink-0 text-xs text-base-content/50 w-16">Hash</span>
+            <button
+              class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-xs text-base-content/80 transition-colors hover:bg-base-content/10"
+              :title="copiedHash === selectedCommitDetails.hash ? 'Скопировано!' : 'Скопировать полный хеш'"
+              @click="copyHash(selectedCommitDetails.hash)"
+            >
+              {{ copiedHash === selectedCommitDetails.hash ? "copied!" : selectedCommitDetails.hash }}
+            </button>
+          </div>
+
+          <div v-if="selectedCommitDetails.parentHashes.length > 0" class="flex items-start gap-2">
+            <span class="shrink-0 text-xs text-base-content/50 w-16">
+              {{ selectedCommitDetails.parentHashes.length > 1 ? "Parents" : "Parent" }}
+            </span>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="parentHash in selectedCommitDetails.parentHashes"
+                :key="parentHash"
+                class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-xs text-base-content/60 transition-colors hover:bg-base-content/10"
+                :title="copiedHash === parentHash ? 'Скопировано!' : 'Скопировать хеш'"
+                @click="copyHash(parentHash)"
+              >
+                {{ copiedHash === parentHash ? "copied!" : formatShortHash(parentHash) }}
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="shrink-0 text-xs text-base-content/50 w-16">Author</span>
+            <span class="text-xs">
+              {{ selectedCommitDetails.authorName }}
+              <span class="text-base-content/40">&lt;{{ selectedCommitDetails.authorEmail }}&gt;</span>
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="shrink-0 text-xs text-base-content/50 w-16">Date</span>
+            <span class="text-xs text-base-content/70">{{ formatFullDate(selectedCommitDetails.authorDate) }}</span>
+          </div>
+
+          <div
+            v-if="showCommitter"
+            class="flex items-center gap-2"
+          >
+            <span class="shrink-0 text-xs text-base-content/50 w-16">Committer</span>
+            <span class="text-xs">
+              {{ selectedCommitDetails.committerName }}
+              <span class="text-base-content/40">&lt;{{ selectedCommitDetails.committerEmail }}&gt;</span>
+            </span>
+          </div>
+
+          <div
+            v-if="selectedCommitDetails.refs.length > 0"
+            class="flex items-center gap-2"
+          >
+            <span class="shrink-0 text-xs text-base-content/50 w-16">Refs</span>
+            <div class="flex flex-wrap gap-1">
+              <span
+                v-for="ref in selectedCommitDetails.refs"
+                :key="ref"
+                class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium"
+                :class="refClasses(ref)"
+              >
+                {{ formatRef(ref) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <p class="text-sm font-medium">{{ selectedCommitDetails.subject }}</p>
+          <p
+            v-if="selectedCommitDetails.body"
+            class="mt-1 whitespace-pre-wrap text-xs text-base-content/70"
+          >{{ selectedCommitDetails.body }}</p>
+        </div>
+
+        <div v-if="selectedCommitDetails.files.length > 0">
+          <div class="mb-1 text-xs text-base-content/50">
+            {{ String(selectedCommitDetails.files.length) }} {{ fileCountLabel }}
+            <span class="text-success">+{{ String(totalAdditions) }}</span>
+            <span class="text-error">-{{ String(totalDeletions) }}</span>
+          </div>
+          <div class="flex flex-col">
+            <div
+              v-for="file in selectedCommitDetails.files"
+              :key="file.path"
+              class="flex items-center gap-2 rounded px-1.5 py-0.5 text-xs hover:bg-base-300/50"
+            >
+              <span class="shrink-0 font-mono text-success">+{{ String(file.additions) }}</span>
+              <span class="shrink-0 font-mono text-error">-{{ String(file.deletions) }}</span>
+              <span class="min-w-0 truncate font-mono text-base-content/70">{{ file.path }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -81,6 +213,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { X } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
 
 const props = defineProps<{
@@ -92,6 +225,7 @@ const LANE_WIDTH = 14;
 const LANE_OFFSET = 12;
 const COMMIT_RADIUS = 4;
 const MAX_COMMITS = 300;
+const COPY_FEEDBACK_MS = 1500;
 
 const LANE_COLORS = [
   "#6366f1",
@@ -127,9 +261,40 @@ const infoMessage = ref("");
 const selectedRowIndex = ref<number | null>(null);
 const scrollContainer = ref<HTMLElement | null>(null);
 const maxLaneCount = ref(0);
+const copiedHash = ref<string | null>(null);
+const selectedCommitDetails = ref<GitCommitDetails | null>(null);
+const isDetailsLoading = ref(false);
+const detailsError = ref("");
 let loadRequestId = 0;
+let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+let detailsRequestId = 0;
 
 const graphSvgWidth = computed(() => LANE_OFFSET + maxLaneCount.value * LANE_WIDTH + LANE_OFFSET);
+
+const showCommitter = computed(() => {
+  const details = selectedCommitDetails.value;
+  if (!details) {
+    return false;
+  }
+
+  return details.committerName !== details.authorName || details.committerEmail !== details.authorEmail;
+});
+
+const totalAdditions = computed(() =>
+  selectedCommitDetails.value?.files.reduce((sum, file) => sum + file.additions, 0) ?? 0
+);
+
+const totalDeletions = computed(() =>
+  selectedCommitDetails.value?.files.reduce((sum, file) => sum + file.deletions, 0) ?? 0
+);
+
+const fileCountLabel = computed(() => {
+  const count = selectedCommitDetails.value?.files.length ?? 0;
+  if (count === 1) {
+    return "file changed";
+  }
+  return "files changed";
+});
 
 const laneX = (lane: number) => LANE_OFFSET + lane * LANE_WIDTH;
 const laneColor = (lane: number) => LANE_COLORS[lane % LANE_COLORS.length];
@@ -175,6 +340,18 @@ const formatRelativeDate = (isoDate: string) => {
   return `${String(diffYears)}y ago`;
 };
 
+const formatFullDate = (isoDate: string) => {
+  const date = new Date(isoDate);
+  return date.toLocaleString("ru-RU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
 const formatRef = (refName: string) => {
   if (refName.startsWith("HEAD -> ")) {
     return refName.slice(8);
@@ -205,6 +382,71 @@ const refClasses = (refName: string) => {
   }
 
   return "bg-base-content/10 text-base-content/70";
+};
+
+const copyHash = async (hash: string) => {
+  try {
+    await window.projectApi.clipboard.writeText(hash);
+    copiedHash.value = hash;
+    if (copyFeedbackTimer !== null) {
+      clearTimeout(copyFeedbackTimer);
+    }
+    copyFeedbackTimer = setTimeout(() => {
+      copiedHash.value = null;
+      copyFeedbackTimer = null;
+    }, COPY_FEEDBACK_MS);
+  } catch {
+    // noop
+  }
+};
+
+const selectCommit = async (rowIndex: number) => {
+  if (selectedRowIndex.value === rowIndex) {
+    closeDetails();
+    return;
+  }
+
+  selectedRowIndex.value = rowIndex;
+  const row = graphRows.value[rowIndex];
+
+  const requestId = ++detailsRequestId;
+  isDetailsLoading.value = true;
+  detailsError.value = "";
+  selectedCommitDetails.value = null;
+
+  let response: GitCommitDetailsResponse;
+  try {
+    response = await window.projectApi.git.getCommitDetails(props.projectPath, row.commit.hash);
+  } catch (error) {
+    if (requestId !== detailsRequestId) {
+      return;
+    }
+
+    isDetailsLoading.value = false;
+    detailsError.value = toErrorMessage(error, "Failed to load commit details.");
+    return;
+  }
+
+  if (requestId !== detailsRequestId) {
+    return;
+  }
+
+  isDetailsLoading.value = false;
+
+  if (!response.ok || !response.details) {
+    detailsError.value = response.error ?? "Failed to load commit details.";
+    return;
+  }
+
+  selectedCommitDetails.value = response.details;
+};
+
+const closeDetails = () => {
+  selectedRowIndex.value = null;
+  selectedCommitDetails.value = null;
+  detailsError.value = "";
+  isDetailsLoading.value = false;
+  detailsRequestId++;
 };
 
 const compactLanes = (
@@ -251,11 +493,11 @@ const buildGraph = (entries: GitLogEntry[]): GraphRow[] => {
   let activeLanes: string[] = [];
 
   for (const commit of entries) {
-    // 1. Find or create the lane for this commit
-    // We look for ALL lanes that contain this hash to merge them
     const commitLanes: number[] = [];
     for (let i = 0; i < activeLanes.length; i++) {
-      if (activeLanes[i] === commit.hash) commitLanes.push(i);
+      if (activeLanes[i] === commit.hash) {
+        commitLanes.push(i);
+      }
     }
 
     let commitLane: number;
@@ -273,10 +515,11 @@ const buildGraph = (entries: GitLogEntry[]): GraphRow[] => {
     const nextLanes = [...activeLanes];
     const continuingLanes = new Set<number>();
 
-    // 2. Top half: All lanes containing this hash merge into commitLane
     for (let i = 0; i < activeLanes.length; i++) {
       const laneHash = activeLanes[i];
-      if (laneHash === "") continue;
+      if (laneHash === "") {
+        continue;
+      }
 
       if (laneHash === commit.hash) {
         if (i === commitLane) {
@@ -284,7 +527,6 @@ const buildGraph = (entries: GitLogEntry[]): GraphRow[] => {
             lines.push({ fromLane: i, toLane: i, fromTop: true, toBottom: false, colorLane: i });
           }
         } else {
-          // Diagonal merge from another lane into the commit circle
           lines.push({ fromLane: i, toLane: commitLane, fromTop: true, toBottom: false, colorLane: i });
         }
       } else {
@@ -293,9 +535,9 @@ const buildGraph = (entries: GitLogEntry[]): GraphRow[] => {
       }
     }
 
-    // 3. Bottom half: Circle connects to parents, and continuing lanes go straight
-    // IMPORTANT: Clear ALL lanes that merged into this commit
-    for (const l of commitLanes) nextLanes[l] = "";
+    for (const l of commitLanes) {
+      nextLanes[l] = "";
+    }
 
     const parents = commit.parentHashes;
     for (let i = 0; i < parents.length; i++) {
@@ -303,17 +545,13 @@ const buildGraph = (entries: GitLogEntry[]): GraphRow[] => {
       let targetLane: number;
 
       if (i === 0) {
-        // First parent always stays in the current lane to provide a vertical stem.
         targetLane = commitLane;
       } else {
-        // For additional parents (merges), try to reuse one of the lanes that merged into this commit
-        // to maintain color continuity.
         targetLane = nextLanes.indexOf(p);
         if (targetLane === -1) {
           if (i < commitLanes.length) {
             targetLane = commitLanes[i];
           } else {
-            // Find first empty slot or push new
             const emptyIdx = nextLanes.indexOf("");
             targetLane = emptyIdx !== -1 ? emptyIdx : nextLanes.length;
           }
@@ -400,7 +638,7 @@ const loadLog = async () => {
 
   maxLaneCount.value = maxLane;
   infoMessage.value = entries.length > 0 ? `${String(entries.length)} commits` : "";
-  selectedRowIndex.value = null;
+  closeDetails();
 };
 
 onMounted(() => {
@@ -409,6 +647,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   loadRequestId++;
+  detailsRequestId++;
+  if (copyFeedbackTimer !== null) {
+    clearTimeout(copyFeedbackTimer);
+  }
 });
 
 watch(() => props.projectPath, () => {

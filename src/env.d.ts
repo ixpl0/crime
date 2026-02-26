@@ -132,10 +132,40 @@ interface GitLogResponse {
   error?: string;
 }
 
+interface GitCommitFileChange {
+  path: string;
+  additions: number;
+  deletions: number;
+}
+
+interface GitCommitDetails {
+  hash: string;
+  parentHashes: string[];
+  authorName: string;
+  authorEmail: string;
+  authorDate: string;
+  committerName: string;
+  committerEmail: string;
+  committerDate: string;
+  subject: string;
+  body: string;
+  refs: string[];
+  files: GitCommitFileChange[];
+}
+
+interface GitCommitDetailsResponse {
+  ok: boolean;
+  available?: boolean;
+  reason?: "git-not-installed" | "not-a-repository";
+  details?: GitCommitDetails;
+  error?: string;
+}
+
 interface GitApi {
   getStatus: (projectPath: string) => Promise<GitStatusResponse>;
   getFileDiff: (projectPath: string, filePath: string) => Promise<GitFileDiffResponse>;
   getLog: (projectPath: string, maxCount?: number) => Promise<GitLogResponse>;
+  getCommitDetails: (projectPath: string, hash: string) => Promise<GitCommitDetailsResponse>;
 }
 
 interface ZoomApi {

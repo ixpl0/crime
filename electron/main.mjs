@@ -709,6 +709,8 @@ function registerIpcHandlers() {
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadFile);
   ipcMain.removeHandler(IPC_CHANNELS.gitStatus);
   ipcMain.removeHandler(IPC_CHANNELS.gitFileDiff);
+  ipcMain.removeHandler(IPC_CHANNELS.gitLog);
+  ipcMain.removeHandler(IPC_CHANNELS.gitCommitDetails);
 
   ipcMain.handle(IPC_CHANNELS.projectOpenFolder, async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
@@ -1247,6 +1249,113 @@ function registerIpcHandlers() {
     }
 
     return { ok: true, available: true, entries };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitCommitDetails, async (_event, projectPath, hash) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    if (!hash || typeof hash !== "string" || !/^[0-9a-f]{4,40}$/i.test(hash)) {
+      return { ok: false, error: "Invalid commit hash." };
+    }
+
+    const resolvedPath = resolve(projectPath);
+    const repositoryRoot = await getGitRepositoryRoot(resolvedPath);
+    if (repositoryRoot === null) {
+      return { ok: true, available: false, reason: "not-a-repository" };
+    }
+
+    const FIELD_SEPARATOR = "\x1f";
+    const formatFields = [
+      "%H", "%P", "%an", "%ae", "%aI", "%cn", "%ce", "%cI", "%D", "%s"
+    ].join(FIELD_SEPARATOR);
+    const BODY_MARKER = "\x1eBODY\x1e";
+    const format = `${formatFields}${BODY_MARKER}%b${BODY_MARKER}`;
+
+    let metaResult;
+    try {
+      metaResult = await runCommand(
+        "git",
+        ["log", "-1", `--format=${format}`, hash],
+        repositoryRoot
+      );
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+        return { ok: true, available: false, reason: "git-not-installed" };
+      }
+
+      return { ok: false, error: toErrorMessage(error, "Failed to get commit details.") };
+    }
+
+    if (metaResult.code !== 0) {
+      const stderr = metaResult.stderr.toString("utf-8").trim();
+      return { ok: false, error: stderr || "git log failed." };
+    }
+
+    const metaRaw = metaResult.stdout.toString("utf-8");
+    const bodyStart = metaRaw.indexOf(BODY_MARKER);
+    const bodyEnd = metaRaw.lastIndexOf(BODY_MARKER);
+
+    if (bodyStart === -1 || bodyEnd === -1 || bodyStart === bodyEnd) {
+      return { ok: false, error: "Failed to parse commit details." };
+    }
+
+    const fieldsRaw = metaRaw.slice(0, bodyStart);
+    const body = metaRaw.slice(bodyStart + BODY_MARKER.length, bodyEnd).trim();
+    const fields = fieldsRaw.split(FIELD_SEPARATOR);
+
+    if (fields.length < 10) {
+      return { ok: false, error: "Unexpected commit format." };
+    }
+
+    const refs = fields[8].length > 0
+      ? fields[8].split(",").map((ref) => ref.trim()).filter((ref) => ref.length > 0)
+      : [];
+
+    let statsResult;
+    try {
+      statsResult = await runCommand(
+        "git",
+        ["diff-tree", "--no-commit-id", "-r", "--numstat", hash],
+        repositoryRoot
+      );
+    } catch {
+      statsResult = { code: 1, stdout: Buffer.from(""), stderr: Buffer.from("") };
+    }
+
+    const files = [];
+    if (statsResult.code === 0) {
+      const statsRaw = statsResult.stdout.toString("utf-8").trim();
+      if (statsRaw.length > 0) {
+        for (const line of statsRaw.split("\n")) {
+          const parts = line.split("\t");
+          if (parts.length >= 3) {
+            const additions = parts[0] === "-" ? 0 : parseInt(parts[0], 10);
+            const deletions = parts[1] === "-" ? 0 : parseInt(parts[1], 10);
+            const path = parts.slice(2).join("\t");
+            files.push({ path, additions, deletions });
+          }
+        }
+      }
+    }
+
+    const details = {
+      hash: fields[0],
+      parentHashes: fields[1].length > 0 ? fields[1].split(" ") : [],
+      authorName: fields[2],
+      authorEmail: fields[3],
+      authorDate: fields[4],
+      committerName: fields[5],
+      committerEmail: fields[6],
+      committerDate: fields[7],
+      subject: fields[9],
+      body,
+      refs,
+      files
+    };
+
+    return { ok: true, available: true, details };
   });
 }
 

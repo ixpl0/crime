@@ -17,6 +17,7 @@ const IPC_CHANNELS = Object.freeze({
   gitStatus: "git:status",
   gitFileDiff: "git:file-diff",
   gitLog: "git:log",
+  gitCommitDetails: "git:commit-details",
   globalQuickKey: "global:quick-key"
 });
 

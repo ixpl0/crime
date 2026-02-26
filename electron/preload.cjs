@@ -22,6 +22,7 @@ const IPC_CHANNELS = Object.freeze({
   "gitStatus": "git:status",
   "gitFileDiff": "git:file-diff",
   "gitLog": "git:log",
+  "gitCommitDetails": "git:commit-details",
   "globalQuickKey": "global:quick-key"
 });
 
@@ -176,7 +177,9 @@ contextBridge.exposeInMainWorld("projectApi", {
     getFileDiff: (projectPath, filePath) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitFileDiff, projectPath, filePath),
     getLog: (projectPath, maxCount) =>
-      ipcRenderer.invoke(IPC_CHANNELS.gitLog, projectPath, maxCount)
+      ipcRenderer.invoke(IPC_CHANNELS.gitLog, projectPath, maxCount),
+    getCommitDetails: (projectPath, hash) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitCommitDetails, projectPath, hash)
   },
   zoom: {
     getFactor: () => webFrame.getZoomFactor(),
