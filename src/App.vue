@@ -2156,10 +2156,19 @@ function appendPromptSuffixes(rawText: string) {
     return rawText;
   }
 
-  const activeSuffixValues = promptSuffixConfig.value.items
-    .filter((item) => item.enabled)
+  const currentItems = promptSuffixConfig.value.items;
+  const activeSuffixValues = currentItems
+    .filter((item) => item.mode !== "off")
     .map((item) => item.value.trim())
     .filter((value) => value.length > 0);
+
+  const hasOnceItems = currentItems.some((item) => item.mode === "once");
+  if (hasOnceItems) {
+    const resetItems = currentItems.map((item) =>
+      item.mode === "once" ? { ...item, mode: "off" as const } : item
+    );
+    applyPromptSuffixConfig({ items: resetItems });
+  }
 
   if (activeSuffixValues.length === 0) {
     return rawText;
@@ -2875,11 +2884,12 @@ function handlePromptSuffixToggle(index: number) {
     return;
   }
 
+  const cycleNext = { off: "once", once: "always", always: "off" } as const;
   const nextItems = currentItems.map((item, itemIndex) =>
     itemIndex === index
       ? {
           ...item,
-          enabled: !item.enabled
+          mode: cycleNext[item.mode]
         }
       : item
   );

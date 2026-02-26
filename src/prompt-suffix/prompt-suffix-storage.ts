@@ -1,6 +1,7 @@
 import {
   type PromptSuffixConfig,
-  type PromptSuffixItem
+  type PromptSuffixItem,
+  type PromptSuffixMode
 } from "../types/prompt-suffix";
 import {
   isRecord,
@@ -10,23 +11,30 @@ import { toErrorMessage } from "../utils/fail-fast";
 
 export const PROMPT_SUFFIX_CONFIG_FILENAME = "prompt-suffixes.json";
 
+const VALID_MODES: readonly PromptSuffixMode[] = ["off", "once", "always"];
+
 const parsePromptSuffixItem = (value: unknown): PromptSuffixItem | null => {
   if (!isRecord(value)) {
     return null;
   }
 
-  if (
-    typeof value.label !== "string" ||
-    typeof value.value !== "string" ||
-    typeof value.enabled !== "boolean"
-  ) {
+  if (typeof value.label !== "string" || typeof value.value !== "string") {
+    return null;
+  }
+
+  let mode: PromptSuffixMode;
+  if (typeof value.mode === "string" && VALID_MODES.includes(value.mode as PromptSuffixMode)) {
+    mode = value.mode as PromptSuffixMode;
+  } else if (typeof value.enabled === "boolean") {
+    mode = value.enabled ? "always" : "off";
+  } else {
     return null;
   }
 
   return {
     label: value.label,
     value: value.value,
-    enabled: value.enabled
+    mode
   };
 };
 

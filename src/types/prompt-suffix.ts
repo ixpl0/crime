@@ -1,7 +1,9 @@
+export type PromptSuffixMode = "off" | "once" | "always";
+
 export interface PromptSuffixItem {
   readonly label: string;
   readonly value: string;
-  readonly enabled: boolean;
+  readonly mode: PromptSuffixMode;
 }
 
 export interface PromptSuffixConfig {
