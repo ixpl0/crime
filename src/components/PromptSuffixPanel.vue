@@ -3,7 +3,7 @@
     <label
       v-for="(item, index) in suffixConfig.items"
       :key="`suffix-${index}`"
-      class="label inline-flex h-8 cursor-pointer items-center gap-2 rounded-btn px-2 py-0 whitespace-nowrap hover:bg-base-100/60"
+      class="label inline-flex h-8 cursor-pointer select-none items-center gap-2 rounded-btn px-2 py-0 whitespace-nowrap hover:bg-base-100/60"
       :title="item.value"
       @click.prevent="$emit('toggle-suffix', index)"
     >
@@ -43,10 +43,10 @@ defineEmits<{
 
 const suffixIndicatorClass = (mode: PromptSuffixMode) => {
   if (mode === "once") {
-    return "border-warning bg-warning/20 text-warning-content";
+    return "border-warning bg-warning/20 text-warning";
   }
   if (mode === "always") {
-    return "border-success bg-success/20 text-success-content";
+    return "border-success bg-success/20 text-success";
   }
   return "border-base-content/30";
 };
