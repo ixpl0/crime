@@ -3,32 +3,30 @@ import { type ToolbarConfig } from "../types/toolbar";
 import { type ToolbarAction } from "../types/toolbar";
 import { buildShortcutMap, matchesShortcut, type ShortcutMapping } from "../toolbar/toolbar-shortcuts";
 
-export const useToolbarShortcuts = (
-  config: Ref<ToolbarConfig>,
+function isTextInputTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  // xterm uses an internal textarea for keyboard capture; treat it as terminal context.
+  if (target.classList.contains("xterm-helper-textarea") || target.closest(".terminal-host")) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  return tagName === "textarea" || tagName === "input" || target.isContentEditable;
+}
+
+function createShortcutKeydownHandler(
+  getMappings: () => readonly ShortcutMapping[],
   executeAction: (action: ToolbarAction) => void
-): void => {
-  let shortcutMappings: readonly ShortcutMapping[] = buildShortcutMap(config.value);
-
-  const isTextInput = (target: EventTarget | null): boolean => {
-    if (!(target instanceof HTMLElement)) {
-      return false;
-    }
-
-    // xterm uses an internal textarea for keyboard capture; treat it as terminal context.
-    if (target.classList.contains("xterm-helper-textarea") || target.closest(".terminal-host")) {
-      return false;
-    }
-
-    const tagName = target.tagName.toLowerCase();
-    return tagName === "textarea" || tagName === "input" || target.isContentEditable;
-  };
-
-  const handleKeydown = (event: KeyboardEvent): void => {
-    if (isTextInput(event.target) && !event.altKey) {
+) {
+  return (event: KeyboardEvent): void => {
+    if (isTextInputTarget(event.target) && !event.altKey) {
       return;
     }
 
-    for (const mapping of shortcutMappings) {
+    for (const mapping of getMappings()) {
       if (matchesShortcut(event, mapping.parsed)) {
         event.preventDefault();
         event.stopPropagation();
@@ -37,6 +35,19 @@ export const useToolbarShortcuts = (
       }
     }
   };
+}
+
+function stopShortcutTracking(handler: (event: KeyboardEvent) => void, stopWatch: () => void) {
+  window.removeEventListener("keydown", handler);
+  stopWatch();
+}
+
+export const useToolbarShortcuts = (
+  config: Ref<ToolbarConfig>,
+  executeAction: (action: ToolbarAction) => void
+): void => {
+  let shortcutMappings: readonly ShortcutMapping[] = buildShortcutMap(config.value);
+  const handleKeydown = createShortcutKeydownHandler(() => shortcutMappings, executeAction);
 
   window.addEventListener("keydown", handleKeydown);
 
@@ -49,7 +60,6 @@ export const useToolbarShortcuts = (
   );
 
   onScopeDispose(() => {
-    window.removeEventListener("keydown", handleKeydown);
-    stopWatch();
+    stopShortcutTracking(handleKeydown, stopWatch);
   });
 };

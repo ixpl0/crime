@@ -110,6 +110,39 @@ const parseTerminalSettings = (value: unknown): TerminalSettings | null => {
   };
 };
 
+function parseOptionalZoomSettings(value: Record<string, unknown>): ZoomSettings | null {
+  if (!("zoom" in value)) {
+    return defaultProjectSettings.zoom;
+  }
+
+  return parseZoomSettings(value.zoom);
+}
+
+function parseOptionalTerminalSettings(value: Record<string, unknown>): TerminalSettings | null {
+  if (!("terminal" in value)) {
+    return defaultProjectSettings.terminal;
+  }
+
+  return parseTerminalSettings(value.terminal);
+}
+
+function toProjectSettings(
+  slashCommand: SlashCommandSettings,
+  zoom: ZoomSettings,
+  terminal: TerminalSettings
+): ProjectSettings {
+  return {
+    slashCommand,
+    zoom: {
+      ideZoomFactor: zoom.ideZoomFactor,
+      terminalFontSize: zoom.terminalFontSize
+    },
+    terminal: {
+      panelHeight: terminal.panelHeight
+    }
+  };
+}
+
 export const parseProjectSettings = (value: unknown): ProjectSettings | null => {
   if (!isRecord(value)) {
     return null;
@@ -124,28 +157,17 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
     return null;
   }
 
-  const parsedZoom =
-    "zoom" in value ? parseZoomSettings(value.zoom) : defaultProjectSettings.zoom;
-  if (!parsedZoom) {
+  const parsedZoom = parseOptionalZoomSettings(value);
+  if (parsedZoom === null) {
     return null;
   }
 
-  const parsedTerminal =
-    "terminal" in value ? parseTerminalSettings(value.terminal) : defaultProjectSettings.terminal;
-  if (!parsedTerminal) {
+  const parsedTerminal = parseOptionalTerminalSettings(value);
+  if (parsedTerminal === null) {
     return null;
   }
 
-  return {
-    slashCommand,
-    zoom: {
-      ideZoomFactor: parsedZoom.ideZoomFactor,
-      terminalFontSize: parsedZoom.terminalFontSize
-    },
-    terminal: {
-      panelHeight: parsedTerminal.panelHeight
-    }
-  };
+  return toProjectSettings(slashCommand, parsedZoom, parsedTerminal);
 };
 
 export const loadProjectSettings = async (projectPath: string): Promise<ProjectSettings> => {

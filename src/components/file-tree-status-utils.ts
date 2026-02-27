@@ -110,37 +110,35 @@ export function toGitStatusMap(entries: GitStatusEntry[]) {
   return statusByPath;
 }
 
-export function buildDeletedChildrenByParent(projectPath: string, gitEntries: GitStatusEntry[]) {
-  const deletedChildrenByParent: DeletedChildrenByParent = {};
-  const separator: "\\" | "/" = projectPath.includes("\\") ? "\\" : "/";
-
-  for (const gitEntry of gitEntries) {
-    if (gitEntry.status !== "deleted") {
-      continue;
-    }
-
-    const segments = getRelativeSegments(projectPath, gitEntry.path);
-    if (segments.length === 0) {
-      continue;
-    }
-
-    let parentPath = projectPath;
-    for (let index = 0; index < segments.length; index += 1) {
-      const name = segments[index];
-      const isDirectory = index < segments.length - 1;
-      const entryPath = joinPath(parentPath, name, separator);
-
-      addVirtualChild(deletedChildrenByParent, parentPath, {
-        name,
-        isDirectory,
-        path: entryPath,
-        isVirtual: true
-      });
-
-      parentPath = entryPath;
-    }
+function appendDeletedEntryChildren(
+  deletedChildrenByParent: DeletedChildrenByParent,
+  projectPath: string,
+  separator: "\\" | "/",
+  deletedPath: string
+) {
+  const segments = getRelativeSegments(projectPath, deletedPath);
+  if (segments.length === 0) {
+    return;
   }
 
+  let parentPath = projectPath;
+  for (let index = 0; index < segments.length; index += 1) {
+    const name = segments[index];
+    const isDirectory = index < segments.length - 1;
+    const entryPath = joinPath(parentPath, name, separator);
+
+    addVirtualChild(deletedChildrenByParent, parentPath, {
+      name,
+      isDirectory,
+      path: entryPath,
+      isVirtual: true
+    });
+
+    parentPath = entryPath;
+  }
+}
+
+function sortDeletedChildrenByParent(deletedChildrenByParent: DeletedChildrenByParent) {
   for (const parentPath of Object.keys(deletedChildrenByParent)) {
     const children = deletedChildrenByParent[parentPath];
     if (!children) {
@@ -149,6 +147,19 @@ export function buildDeletedChildrenByParent(projectPath: string, gitEntries: Gi
 
     deletedChildrenByParent[parentPath] = sortEntries(children);
   }
+}
 
+export function buildDeletedChildrenByParent(projectPath: string, gitEntries: GitStatusEntry[]) {
+  const deletedChildrenByParent: DeletedChildrenByParent = {};
+  const separator: "\\" | "/" = projectPath.includes("\\") ? "\\" : "/";
+
+  for (const gitEntry of gitEntries) {
+    if (gitEntry.status !== "deleted") {
+      continue;
+    }
+    appendDeletedEntryChildren(deletedChildrenByParent, projectPath, separator, gitEntry.path);
+  }
+
+  sortDeletedChildrenByParent(deletedChildrenByParent);
   return deletedChildrenByParent;
 }

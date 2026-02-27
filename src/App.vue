@@ -8,7 +8,7 @@
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
             <h1 class="card-title text-3xl">Dream IDE</h1>
-            <p class="opacity-80">Выберите папку, чтобы открыть её как проект.</p>
+            <p class="opacity-80">Choose a folder to open it as a project.</p>
             <div class="card-actions justify-end">
               <button
                 class="btn btn-primary"
@@ -16,7 +16,7 @@
                 :disabled="isOpening"
                 @click="openProjectFolder"
               >
-                {{ isOpening ? "Открываем..." : "Открыть папку" }}
+                {{ isOpening ? "Opening..." : "Open Folder" }}
               </button>
             </div>
           </div>
@@ -32,441 +32,147 @@
         class="grid min-h-0 flex-1 gap-4"
         :class="{ 'lg:grid-cols-[18rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
       >
-        <aside v-if="!isTodoPanelCollapsed" class="card min-h-0 bg-base-100 shadow-xl">
-          <div class="card-body min-h-0 p-3">
-            <div class="flex items-center justify-between gap-2">
-              <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
-                &#1047;&#1072;&#1076;&#1072;&#1095;&#1080;
-              </h2>
-              <button
-                class="btn btn-ghost btn-xs"
-                type="button"
-                title="Скрыть блок задач"
-                @click="toggleTodoPanelCollapse"
-              >
-                <EyeOff :size="14" class="opacity-60" />
-              </button>
-            </div>
-            <div class="todo-list-scroll mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
-              <div
-                v-for="todoDraftView in todoDraftViewItems"
-                :key="`todo-draft-${todoDraftView.index}`"
-                class="space-y-1 rounded-lg border border-transparent p-1 transition-colors"
-                :class="{
-                  'border-primary/40 bg-primary/10':
-                    todoDragOverIndex === todoDraftView.index &&
-                    todoDragSourceIndex !== null &&
-                    todoDragSourceIndex !== todoDraftView.index
-                }"
-                @dragenter.prevent="handleTodoDragEnter(todoDraftView.index, $event)"
-                @dragover.prevent="handleTodoDragOver(todoDraftView.index, $event)"
-                @drop.prevent="handleTodoDrop(todoDraftView.index, $event)"
-              >
-                <textarea
-                  :value="todoDraftView.value"
-                  data-todo-textarea="true"
-                  :data-todo-index="todoDraftView.index"
-                  class="textarea textarea-autosize-native textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden text-sm leading-relaxed"
-                  rows="1"
-                  placeholder="&#1055;&#1088;&#1086;&#1084;&#1087;&#1090;"
-                  @input="handleTodoTextareaInput(todoDraftView.index, $event)"
-                  @keydown="handleTodoTextareaKeydown"
-                  @blur="handleTodoTextareaBlur"
-                />
-                <div class="flex items-center gap-2">
-                  <button
-                    v-if="shouldShowTodoDragHandle(todoDraftView.index)"
-                    class="btn btn-ghost btn-xs btn-square cursor-grab text-base-content/60 active:cursor-grabbing"
-                    type="button"
-                    :draggable="canDragTodoDraft(todoDraftView.index)"
-                    :disabled="!canDragTodoDraft(todoDraftView.index)"
-                    title="Drag to reorder"
-                    @dragstart="handleTodoDragStart(todoDraftView.index, $event)"
-                    @dragend="handleTodoDragEnd"
-                  >
-                    <GripVertical :size="14" />
-                  </button>
-                  <div :title="lastPrompt" class="ml-auto">
-                    <button
-                      class="btn btn-ghost btn-xs normal-case text-base-content/70"
-                      type="button"
-                      :disabled="!isTerminalReady || !todoDraftView.value.trim()"
-                      @click="sendTodoEntryToTerminal(todoDraftView.index)"
-                    >
-                      &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
+        <TasksPanel
+          v-if="!isTodoPanelCollapsed"
+          :todo-draft-view-items="todoDraftViewItems"
+          :todo-drag-source-index="todoDragSourceIndex"
+          :todo-drag-over-index="todoDragOverIndex"
+          :is-terminal-ready="isTerminalReady"
+          :last-prompt="lastPrompt"
+          :toggle-collapse="toggleTodoPanelCollapse"
+          :can-drag-todo-draft="canDragTodoDraft"
+          :should-show-todo-drag-handle="shouldShowTodoDragHandle"
+          :handle-todo-drag-start="handleTodoDragStart"
+          :handle-todo-drag-enter="handleTodoDragEnter"
+          :handle-todo-drag-over="handleTodoDragOver"
+          :handle-todo-drag-end="handleTodoDragEnd"
+          :handle-todo-drop="handleTodoDrop"
+          :handle-todo-textarea-input="handleTodoTextareaInput"
+          :handle-todo-textarea-keydown="handleTodoTextareaKeydown"
+          :handle-todo-textarea-blur="handleTodoTextareaBlur"
+          :send-todo-entry-to-terminal="sendTodoEntryToTerminal"
+        />
 
-        <div class="card min-h-0 bg-base-100 shadow-xl">
-          <div class="card-body flex min-h-0 flex-col gap-4">
-          <div v-if="errorMessage" class="alert alert-error">
-            <span>{{ errorMessage }}</span>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <div role="tablist" class="tabs tabs-bordered">
-            <button
-              role="tab"
-              class="tab"
-              :class="{ 'tab-active': activeTab === 'agent' }"
-              @click="setActiveTab('agent')"
-            >
-              Агент
-            </button>
-            <button
-              role="tab"
-              class="tab"
-              :class="{ 'tab-active': activeTab === 'files' }"
-              @click="setActiveTab('files')"
-            >
-              Файлы
-            </button>
-            <button
-              role="tab"
-              class="tab"
-              :class="{ 'tab-active': activeTab === 'changes' }"
-              @click="setActiveTab('changes')"
-            >
-              Изменения
-            </button>
-            <button
-              role="tab"
-              class="tab"
-              :class="{ 'tab-active': activeTab === 'git' }"
-              @click="setActiveTab('git')"
-            >
-              Git
-            </button>
-              <div
-                class="dropdown dropdown-bottom manual-dropdown"
-                :class="{ 'dropdown-open': isProjectDropdownOpen }"
-                @focusout="handleProjectDropdownFocusOut"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  class="tab"
-                  :aria-expanded="isProjectDropdownOpen"
-                  @click="toggleProjectDropdown"
-                  @keydown="handleProjectDropdownTriggerKeydown"
-                >
-                  &#1055;&#1088;&#1086;&#1077;&#1082;&#1090;
-                  <ChevronDown :size="14" class="ml-1" />
-                </button>
-                <ul
-                  class="dropdown-content menu bg-base-100 rounded-box z-10 w-72 p-0 shadow"
-                  @keydown.esc.stop.prevent="setProjectDropdownOpen(false)"
-                >
-                  <li>
-                    <button
-                      :disabled="isOpening"
-                      :tabindex="isProjectDropdownOpen ? 0 : -1"
-                      @click="handleProjectDropdownOpenFolderClick"
-                    >
-                      &#1054;&#1090;&#1082;&#1088;&#1099;&#1090;&#1100;...
-                    </button>
-                  </li>
-                  <template v-if="recentProjects.length > 0">
-                    <div class="divider my-0"></div>
-                    <li v-for="recent in recentProjects" :key="recent">
-                      <button
-                        :disabled="isOpening"
-                        :tabindex="isProjectDropdownOpen ? 0 : -1"
-                        class="flex flex-col items-start gap-0 py-2"
-                        @click="handleProjectDropdownRecentClick(recent)"
-                      >
-                        <span class="font-medium text-base-content">{{ getProjectNameFromPath(recent) }}</span>
-                        <span class="text-[10px] opacity-50 truncate w-full" :title="recent">{{ recent }}</span>
-                      </button>
-                    </li>
-                  </template>
-                </ul>
-              </div>
-            </div>
-
-            <div
-              v-if="hiddenPanelOptions.length > 0"
-              class="dropdown dropdown-end manual-dropdown"
-              :class="{ 'dropdown-open': isHiddenPanelsDropdownOpen }"
-              @focusout="handleHiddenPanelsDropdownFocusOut"
-            >
-              <button
-                type="button"
-                class="btn btn-sm btn-ghost"
-                :aria-expanded="isHiddenPanelsDropdownOpen"
-                @click="toggleHiddenPanelsDropdown"
-                @keydown="handleHiddenPanelsDropdownTriggerKeydown"
-                title="Показать скрытые панели"
-              >
-                <Eye :size="16" />
-                <ChevronDown :size="14" />
-              </button>
-              <ul
-                class="dropdown-content menu bg-base-100 rounded-box z-10 mt-1 w-56 p-1 shadow"
-                @keydown.esc.stop.prevent="setHiddenPanelsDropdownOpen(false)"
-              >
-                <li v-for="panelOption in hiddenPanelOptions" :key="panelOption.id">
-                  <button
-                    type="button"
-                    :tabindex="isHiddenPanelsDropdownOpen ? 0 : -1"
-                    @click="handleHiddenPanelOptionClick(panelOption.id)"
-                  >
-                    {{ panelOption.title }}
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            <button
-              class="btn btn-sm btn-ghost"
-              title="Project settings"
-              @click="isProjectSettingsEditorOpen = true"
-            >
-              <Settings :size="16" />
-            </button>
-          </div>
-
-          <ToolbarConfigEditor
-            :current-config="toolbarConfig"
-            :config-file-path="`${projectPath}/${settingsDirectoryName}/${TOOLBAR_CONFIG_FILENAME}`"
-            :open="isToolbarConfigEditorOpen"
-            @save="handleToolbarConfigSave"
-            @close="isToolbarConfigEditorOpen = false"
-          />
-
-          <PromptSuffixConfigEditor
-            :current-config="promptSuffixConfig"
-            :config-file-path="`${projectPath}/${settingsDirectoryName}/${PROMPT_SUFFIX_CONFIG_FILENAME}`"
-            :open="isPromptSuffixConfigEditorOpen"
-            @save="handlePromptSuffixConfigSave"
-            @close="isPromptSuffixConfigEditorOpen = false"
-          />
-
-          <ProjectSettingsEditor
-            :current-settings="projectSettings"
-            :config-file-path="`${projectPath}/${settingsDirectoryName}/${PROJECT_SETTINGS_FILENAME}`"
-            :open="isProjectSettingsEditorOpen"
-            @save="handleProjectSettingsSave"
-            @close="isProjectSettingsEditorOpen = false"
-          />
-
-          <div v-show="activeTab === 'agent'" class="min-h-0 flex-1 space-y-4 overflow-y-auto px-1">
-            <ToolbarPanel
-              :toolbar-config="toolbarConfig"
-              :is-terminal-ready="isTerminalReady"
-              @execute-action="executeToolbarAction"
-              @open-config-editor="isToolbarConfigEditorOpen = true"
-            />
-
-            <div>
-              <div
-                ref="terminalContainer"
-                class="terminal-host w-full overflow-hidden rounded-box border border-[#05070d] bg-[#05070d]"
-                :style="{ height: `${terminalPanelHeight}px` }"
-                @click="focusTerminal"
-                @contextmenu="handleTerminalContextMenu"
-                @auxclick="handleTerminalAuxClick"
-              />
-              <button
-                type="button"
-                class="terminal-resize-handle group relative -mt-[6px] flex h-3 w-full cursor-ns-resize items-center justify-center border-0 bg-transparent p-0"
-                title="Потяните, чтобы изменить высоту терминала"
-                aria-label="Изменить высоту терминала"
-                @pointerdown="handleTerminalPanelResizePointerDown"
-              >
-                <span
-                  class="h-1 w-[17%] rounded-full transition-colors duration-150"
-                  :class="
-                    isTerminalPanelResizeActive
-                      ? 'bg-[#6b7280]'
-                      : 'bg-[#374151] group-hover:bg-[#4b5563] group-focus-visible:bg-[#4b5563]'
-                  "
-                />
-              </button>
-            </div>
-
-            <form class="flex min-w-0 gap-3" @submit.prevent="sendTextareaToTerminal">
-              <div class="flex min-w-0 flex-1 flex-col gap-2">
-                <textarea
-                  ref="terminalInputTextarea"
-                  v-model="terminalInputText"
-                  class="textarea textarea-autosize-native textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden"
-                  rows="1"
-                  :disabled="!isTerminalReady"
-                  placeholder="&#1042;&#1074;&#1077;&#1076;&#1080;&#1090;&#1077; &#1090;&#1077;&#1082;&#1089;&#1090; &#1076;&#1083;&#1103; &#1086;&#1090;&#1087;&#1088;&#1072;&#1074;&#1082;&#1080; &#1074; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;"
-                  @keydown="handleTextareaKeydown"
-                  @input="handleTextareaInput"
-                  @paste="handleTextareaPaste"
-                />
-                <div class="flex min-w-0 items-start gap-2">
-                  <PromptSuffixPanel
-                    class="min-w-0 flex-1"
-                    :suffix-config="promptSuffixConfig"
-                    @toggle-suffix="handlePromptSuffixToggle"
-                    @open-config-editor="isPromptSuffixConfigEditorOpen = true"
-                  />
-                  <div :title="lastPrompt" class="shrink-0 self-start">
-                    <button
-                      class="btn btn-sm"
-                      type="submit"
-                      :disabled="!isTerminalReady || !terminalInputText.trim()"
-                    >
-                      &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="grid shrink-0 grid-cols-4 gap-1 self-start">
-                <template v-for="(quickKey, index) in quickKeyGridSlots" :key="`quick-key-${index}`">
-                  <button
-                    v-if="quickKey"
-                    type="button"
-                    class="btn btn-sm min-w-0 px-2"
-                    :disabled="!isTerminalReady"
-                    :title="quickKey.accelerator"
-                    @click="sendQuickKey(quickKey.input)"
-                  >
-                    <ArrowUp v-if="quickKey.icon === 'arrow-up'" :size="14" />
-                    <ArrowDown v-else-if="quickKey.icon === 'arrow-down'" :size="14" />
-                    <ArrowLeft v-else-if="quickKey.icon === 'arrow-left'" :size="14" />
-                    <ArrowRight v-else-if="quickKey.icon === 'arrow-right'" :size="14" />
-                    <CornerDownLeft v-else-if="quickKey.icon === 'enter'" :size="14" />
-                    <template v-else>{{ quickKey.label }}</template>
-                  </button>
-                  <span v-else />
-                </template>
-              </div>
-            </form>
-          </div>
-          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1">
-            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
-              <FileManagerPanel
-                v-if="projectPath"
-                class="h-full min-h-0"
-                :project-path="projectPath"
-                :selected-path="filesDisplayPath"
-                :reveal-path="fileTreeRevealPath"
-                :reveal-request-token="fileTreeRevealRequestToken"
-                @select-file="handleFileSelect"
-              />
-
-              <FileContentViewer
-                v-if="projectPath"
-                class="h-full min-h-0"
-                :project-path="projectPath"
-                :file-path="selectedFilePath"
-                :target-line="selectedFileTargetLine"
-                :target-request-token="selectedFileTargetRequestToken"
-                :is-active="activeTab === 'files'"
-              />
-            </div>
-          </div>
-          <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1">
-            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
-              <ChangesPanel
-                v-if="projectPath"
-                class="h-full min-h-0"
-                :project-path="projectPath"
-                :selected-path="changesSelectedFilePath"
-                @select-file="handleChangesFileSelect"
-                @open-path="handleChangesPathOpen"
-              />
-
-              <FileContentViewer
-                v-if="projectPath"
-                class="h-full min-h-0"
-                :project-path="projectPath"
-                :file-path="changesSelectedFilePath"
-                :is-active="activeTab === 'changes'"
-              />
-            </div>
-          </div>
-          <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
-            <GitGraphPanel
-              v-if="projectPath"
-              :project-path="projectPath"
-            />
-          </div>
-          </div>
-        </div>
+        <MainPanel
+          :project-path="projectPath"
+          :settings-directory-name="settingsDirectoryName"
+          :toolbar-config-filename="TOOLBAR_CONFIG_FILENAME"
+          :prompt-suffix-config-filename="PROMPT_SUFFIX_CONFIG_FILENAME"
+          :project-settings-filename="PROJECT_SETTINGS_FILENAME"
+          :error-message="errorMessage"
+          :active-tab="activeTab"
+          :is-opening="isOpening"
+          :is-project-dropdown-open="isProjectDropdownOpen"
+          :is-hidden-panels-dropdown-open="isHiddenPanelsDropdownOpen"
+          :hidden-panel-options="hiddenPanelOptions"
+          :recent-projects="recentProjects"
+          :get-project-name-from-path="getProjectNameFromPath"
+          :set-active-tab="setActiveTab"
+          :toggle-project-dropdown="toggleProjectDropdown"
+          :handle-project-dropdown-focus-out="handleProjectDropdownFocusOut"
+          :handle-project-dropdown-trigger-keydown="handleProjectDropdownTriggerKeydown"
+          :set-project-dropdown-open="setProjectDropdownOpen"
+          :open-project-folder="handleProjectDropdownOpenFolderClick"
+          :open-recent-project="handleProjectDropdownRecentClick"
+          :toggle-hidden-panels-dropdown="toggleHiddenPanelsDropdown"
+          :handle-hidden-panels-dropdown-focus-out="handleHiddenPanelsDropdownFocusOut"
+          :handle-hidden-panels-dropdown-trigger-keydown="handleHiddenPanelsDropdownTriggerKeydown"
+          :set-hidden-panels-dropdown-open="setHiddenPanelsDropdownOpen"
+          :show-hidden-panel="handleHiddenPanelOptionClick"
+          :open-project-settings="openProjectSettingsEditor"
+          :toolbar-config="toolbarConfig"
+          :prompt-suffix-config="promptSuffixConfig"
+          :project-settings="projectSettings"
+          :is-toolbar-config-editor-open="isToolbarConfigEditorOpen"
+          :is-prompt-suffix-config-editor-open="isPromptSuffixConfigEditorOpen"
+          :is-project-settings-editor-open="isProjectSettingsEditorOpen"
+          :handle-toolbar-config-save="handleToolbarConfigSave"
+          :handle-prompt-suffix-config-save="handlePromptSuffixConfigSave"
+          :handle-project-settings-save="handleProjectSettingsSave"
+          :close-toolbar-config-editor="closeToolbarConfigEditor"
+          :close-prompt-suffix-config-editor="closePromptSuffixConfigEditor"
+          :close-project-settings-editor="closeProjectSettingsEditor"
+          :is-terminal-ready="isTerminalReady"
+          :terminal-panel-height="terminalPanelHeight"
+          :is-terminal-panel-resize-active="isTerminalPanelResizeActive"
+          :terminal-input-text="terminalInputText"
+          :quick-key-grid-slots="quickKeyGridSlots"
+          :last-prompt="lastPrompt"
+          :set-terminal-container="setTerminalContainerElement"
+          :set-terminal-input-textarea="setTerminalInputTextareaElement"
+          :execute-toolbar-action="executeToolbarAction"
+          :open-toolbar-config-editor="openToolbarConfigEditor"
+          :focus-terminal="focusTerminal"
+          :handle-terminal-context-menu="handleTerminalContextMenu"
+          :handle-terminal-aux-click="handleTerminalAuxClick"
+          :handle-terminal-panel-resize-pointer-down="handleTerminalPanelResizePointerDown"
+          :set-terminal-input-text="setTerminalInputText"
+          :handle-textarea-keydown="handleTextareaKeydown"
+          :handle-textarea-input="handleTextareaInput"
+          :handle-textarea-paste="handleTextareaPaste"
+          :send-textarea-to-terminal="sendTextareaToTerminal"
+          :handle-prompt-suffix-toggle="handlePromptSuffixToggle"
+          :open-prompt-suffix-config-editor="openPromptSuffixConfigEditor"
+          :send-quick-key="sendQuickKey"
+          :files-display-path="filesDisplayPath"
+          :file-tree-reveal-path="fileTreeRevealPath"
+          :file-tree-reveal-request-token="fileTreeRevealRequestToken"
+          :handle-file-select="handleFileSelect"
+          :selected-file-path="selectedFilePath"
+          :selected-file-target-line="selectedFileTargetLine"
+          :selected-file-target-request-token="selectedFileTargetRequestToken"
+          :changes-selected-file-path="changesSelectedFilePath"
+          :handle-changes-file-select="handleChangesFileSelect"
+          :handle-changes-path-open="handleChangesPathOpen"
+        />
       </div>
     </section>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { Terminal } from "@xterm/xterm";
-import { FitAddon } from "@xterm/addon-fit";
+import { ref, type ComponentPublicInstance } from "vue";
 import "@xterm/xterm/css/xterm.css";
 import { type ToolbarAction, type ToolbarConfig } from "./types/toolbar";
 import { type PromptSuffixConfig } from "./types/prompt-suffix";
 import {
-  loadToolbarConfig,
   saveToolbarConfig,
   TOOLBAR_CONFIG_FILENAME
 } from "./toolbar/toolbar-storage";
 import { defaultToolbarConfig } from "./toolbar/default-toolbar-config";
 import {
-  loadPromptSuffixConfig,
   PROMPT_SUFFIX_CONFIG_FILENAME,
   savePromptSuffixConfig
 } from "./prompt-suffix/prompt-suffix-storage";
 import { defaultPromptSuffixConfig } from "./prompt-suffix/default-prompt-suffix-config";
+import { type ProjectSettings } from "./types/project-settings";
 import {
-  type ProjectSettings
-} from "./types/project-settings";
-import {
-  DEFAULT_IDE_ZOOM_FACTOR,
-  DEFAULT_TERMINAL_FONT_SIZE,
   defaultProjectSettings,
-  IDE_ZOOM_FACTOR_MAX,
-  IDE_ZOOM_FACTOR_MIN,
-  IDE_ZOOM_FACTOR_STEP,
-  loadProjectSettings,
   PROJECT_SETTINGS_FILENAME,
-  saveProjectSettings,
-  TERMINAL_FONT_SIZE_MAX,
-  TERMINAL_FONT_SIZE_MIN,
-  TERMINAL_FONT_SIZE_STEP,
-  TERMINAL_PANEL_MIN_HEIGHT,
-  DEFAULT_TERMINAL_PANEL_HEIGHT
+  saveProjectSettings
 } from "./settings/project-settings-storage";
 import {
   loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
-  saveTerminalInputHistory,
-  TERMINAL_INPUT_HISTORY_FILENAME
+  saveTerminalInputHistory
 } from "./settings/terminal-input-history-storage";
-import { loadTodoEntries, saveTodoEntries, TODO_FILENAME } from "./settings/todo-storage";
 import { useToolbarShortcuts } from "./composables/use-toolbar-shortcuts";
-import { toContextualErrorMessage, toErrorMessage } from "./utils/fail-fast";
-import ToolbarPanel from "./components/ToolbarPanel.vue";
-import ToolbarConfigEditor from "./components/ToolbarConfigEditor.vue";
-import PromptSuffixPanel from "./components/PromptSuffixPanel.vue";
-import PromptSuffixConfigEditor from "./components/PromptSuffixConfigEditor.vue";
-import ProjectSettingsEditor from "./components/ProjectSettingsEditor.vue";
-import FileManagerPanel from "./components/FileManagerPanel.vue";
-import FileContentViewer from "./components/FileContentViewer.vue";
-import ChangesPanel from "./components/ChangesPanel.vue";
-import GitGraphPanel from "./components/GitGraphPanel.vue";
+import { toContextualErrorMessage } from "./utils/fail-fast";
+import { useRecentProjects } from "./app/use-recent-projects";
+import { useAppNavigation } from "./app/use-app-navigation";
+import { useAppRuntime } from "./app/use-app-runtime";
+import { useFileNavigation } from "./app/use-file-navigation";
 import {
-  ArrowUp,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  CornerDownLeft,
-  Settings,
-  ChevronDown,
-  Eye,
-  EyeOff,
-  GripVertical
-} from "lucide-vue-next";
+  normalizeProjectZoomSettings,
+  normalizeTerminalFontSize
+} from "./app/project-layout-utils";
+import { useProjectLayout } from "./app/use-project-layout";
+import { useProjectSession } from "./app/use-project-session";
+import { useTodoPanel } from "./app/use-todo-panel";
+import { useTerminalInputHistory } from "./app/use-terminal-input-history";
+import { useTerminalSubmit } from "./app/use-terminal-submit";
+import { useTerminalView } from "./app/use-terminal-view";
+import MainPanel from "./components/MainPanel.vue";
+import TasksPanel from "./components/TasksPanel.vue";
 
 const settingsDirectoryName = window.projectApi.settings.directoryName;
 const QUICK_KEY_GRID_SIZE = 12;
@@ -486,184 +192,253 @@ const isOpening = ref(false);
 const isTerminalReady = ref(false);
 const projectPath = ref<string | null>(null);
 const errorMessage = ref("");
-const terminalInputText = ref("");
-const terminalInputTextarea = ref<HTMLTextAreaElement | null>(null);
 const terminalContainer = ref<HTMLElement | null>(null);
-const TERMINAL_PANEL_MAX_VIEWPORT_RATIO = 0.85;
 const TERMINAL_INPUT_HISTORY_LIMIT = 200;
 const TERMINAL_INPUT_CHUNK_SIZE = 2048;
 const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
 const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
-const SETTINGS_WATCH_ALL = "*";
-const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
 const RECENT_PROJECTS_STORAGE_KEY = "dream-ide:recent-projects";
 const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
-type AppTab = "agent" | "files" | "changes" | "git";
-const terminalPanelHeight = ref(loadInitialTerminalPanelHeight());
-const isTerminalPanelResizeActive = ref(false);
-const terminalInputHistory = ref<string[]>([]);
-const lastPrompt = computed(() => {
-  return terminalInputHistory.value.length > 0
-    ? terminalInputHistory.value[terminalInputHistory.value.length - 1]
-    : undefined;
-});
-const recentProjects = ref<string[]>([]);
-const todoDrafts = ref<string[]>([""]);
-
-function getRecentProjectsFromStorage(): string[] {
-  try {
-    const stored = window.localStorage.getItem(RECENT_PROJECTS_STORAGE_KEY);
-    if (!stored) {
-      return [];
-    }
-    const parsed: unknown = JSON.parse(stored);
-    return Array.isArray(parsed) ? (parsed as unknown[]).filter((p): p is string => typeof p === "string") : [];
-  } catch (error) {
-    console.error("Failed to parse recent projects from storage", error);
-    return [];
-  }
-}
-
-function setRecentProjectsInStorage(paths: string[]) {
-  window.localStorage.setItem(RECENT_PROJECTS_STORAGE_KEY, JSON.stringify(paths));
-}
-
-function addToRecentProjects(path: string) {
-  const current = getRecentProjectsFromStorage();
-  const filtered = current.filter((p) => normalizePathForComparison(p) !== normalizePathForComparison(path));
-  const updated = [path, ...filtered].slice(0, 10);
-  recentProjects.value = updated;
-  setRecentProjectsInStorage(updated);
-}
-
-async function validateRecentProjects() {
-  const current = getRecentProjectsFromStorage();
-  const validPaths: string[] = [];
-
-  for (const path of current) {
-    try {
-      const response = await window.projectApi.filesystem.readDirectory(path);
-      if (response.ok) {
-        validPaths.push(path);
-      }
-    } catch (error) {
-      console.warn(`Failed to validate project path: ${path}`, error);
-    }
-  }
-
-  if (validPaths.length !== current.length) {
-    recentProjects.value = validPaths;
-    setRecentProjectsInStorage(validPaths);
-  }
-}
-
-function getProjectNameFromPath(path: string) {
-  const normalized = path.replace(/\\/g, "/");
-  const parts = normalized.split("/").filter((p) => p.length > 0);
-  return parts[parts.length - 1] || path;
-}
-const todoDragSourceIndex = ref<number | null>(null);
-const todoDragOverIndex = ref<number | null>(null);
-const isTodoPanelCollapsed = ref(
-  window.localStorage.getItem(TODO_PANEL_COLLAPSED_STORAGE_KEY) === "1"
+const {
+  recentProjects,
+  getProjectNameFromPath,
+  loadRecentProjectsFromStorage,
+  addRecentProject,
+  validateRecentProjects
+} = useRecentProjects(
+  RECENT_PROJECTS_STORAGE_KEY,
+  (path) => window.projectApi.filesystem.readDirectory(path)
 );
-const terminalInputHistoryIndex = ref<number | null>(null);
-const terminalInputDraft = ref("");
+const {
+  isTodoPanelCollapsed,
+  todoDragSourceIndex,
+  todoDragOverIndex,
+  todoDraftViewItems,
+  toggleTodoPanelCollapse,
+  handleTodoPanelCollapsedChanged,
+  canDragTodoDraft,
+  shouldShowTodoDragHandle,
+  handleTodoDragStart,
+  handleTodoDragEnter,
+  handleTodoDragOver,
+  handleTodoDragEnd,
+  handleTodoDrop,
+  handleTodoTextareaInput,
+  handleTodoTextareaKeydown,
+  handleTodoTextareaBlur,
+  loadTodoEntriesForProject,
+  getTodoEntry,
+  removeTodoEntry,
+  resetTodoRuntimeState,
+  resizeTodoTextareas
+} = useTodoPanel({
+  projectPath,
+  collapsedStorageKey: TODO_PANEL_COLLAPSED_STORAGE_KEY,
+  reportUiError
+});
 const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
 const promptSuffixConfig = ref<PromptSuffixConfig>(defaultPromptSuffixConfig);
-const emptyPromptSuffixConfig: PromptSuffixConfig = { items: [] };
 const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
 const isToolbarConfigEditorOpen = ref(false);
 const isPromptSuffixConfigEditorOpen = ref(false);
 const isProjectSettingsEditorOpen = ref(false);
-const activeTab = ref<AppTab>("agent");
-const isProjectDropdownOpen = ref(false);
-const isHiddenPanelsDropdownOpen = ref(false);
-const selectedFilePath = ref<string | null>(null);
-const filesDisplayPath = ref<string | null>(null);
-const changesSelectedFilePath = ref<string | null>(null);
-const selectedFileTargetLine = ref<number | null>(null);
-const selectedFileTargetRequestToken = ref(0);
-const fileTreeRevealPath = ref<string | null>(null);
-const fileTreeRevealRequestToken = ref(0);
-const TERMINAL_QUOTED_WINDOWS_PATH_REGEX = /(["'])([A-Za-z]:[\\/][^"'<>|?*\r\n]+)\1/g;
-const TERMINAL_QUOTED_POSIX_PATH_REGEX = /(["'])((?:\/[^"'<>|?*\r\n]+)+\/?)\1/g;
-const TERMINAL_WINDOWS_PATH_REGEX = /[A-Za-z]:[\\/][^\s"'<>|?*]+/g;
-const TERMINAL_POSIX_PATH_REGEX = /(?:^|[\s"'([{])((?:\/[^/\s"'<>|?*]+)+\/?)/g;
-const TERMINAL_PATH_TRAILING_CHARS = new Set([")", "]", "}", ",", ";", "\"", "'", "`"]);
-const tabBackHistory: AppTab[] = [];
-const tabForwardHistory: AppTab[] = [];
-type HiddenPanelId = "todo";
-
-interface HiddenPanelOption {
-  id: HiddenPanelId;
-  title: string;
-}
-
-interface TodoDraftViewItem {
-  index: number;
-  value: string;
-}
-
-interface TerminalPathMatch {
-  start: number;
-  end: number;
-  displayText: string;
-  resolvedPath: string;
-  line: number | null;
-  column: number | null;
-}
-
-const hiddenPanelOptions = computed<HiddenPanelOption[]>(() => {
-  const options: HiddenPanelOption[] = [];
-
-  if (isTodoPanelCollapsed.value) {
-    options.push({
-      id: "todo",
-      title: "\u0417\u0430\u0434\u0430\u0447\u0438"
-    });
+const {
+  sendTerminalInput,
+  attemptSubmitTerminalText,
+  sendAltVShortcut,
+  markTerminalDataReceived,
+  resetTerminalSessionState
+} = useTerminalSubmit({
+  isTerminalReady,
+  errorMessage,
+  projectSettings,
+  promptSuffixConfig,
+  applyPromptSuffixConfig,
+  terminalInputChunkSize: TERMINAL_INPUT_CHUNK_SIZE,
+  textareaSubmitActivityTimeoutCapMs: TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS,
+  textareaSubmitQuietTimeoutCapMs: TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS,
+  sendTerminalInputRequest: (data) => window.projectApi.terminal.input(data)
+});
+const {
+  terminalInputText,
+  terminalInputTextarea,
+  lastPrompt,
+  resizeTerminalInputTextareaElement,
+  appendTerminalInputHistory,
+  loadTerminalInputHistoryForProject,
+  handleTextareaKeydown,
+  handleTextareaInput,
+  handleTextareaPaste,
+  sendTextareaToTerminal,
+  resetTerminalInputRuntimeState
+} = useTerminalInputHistory({
+  projectPath,
+  historyLimit: TERMINAL_INPUT_HISTORY_LIMIT,
+  reportUiError,
+  loadTerminalInputHistory: loadTerminalInputHistoryFromProject,
+  saveTerminalInputHistory,
+  sendTerminalInput,
+  submitTextFromTextarea: (text) =>
+    attemptSubmitTerminalText(text, {
+      notReady: "Terminal is not ready to send input.",
+      messages: {
+        sendSlash: "Failed to send slash command to terminal.",
+        sendText: "Failed to send input to terminal.",
+        submit: "Failed to send Enter to terminal."
+      },
+      inputType: "prompt"
+  }),
+  sendAltVShortcut
+});
+const {
+  activeTab,
+  isProjectDropdownOpen,
+  isHiddenPanelsDropdownOpen,
+  hiddenPanelOptions,
+  setProjectDropdownOpen,
+  setHiddenPanelsDropdownOpen,
+  toggleProjectDropdown,
+  toggleHiddenPanelsDropdown,
+  handleProjectDropdownTriggerKeydown,
+  handleHiddenPanelsDropdownTriggerKeydown,
+  handleProjectDropdownFocusOut,
+  handleHiddenPanelsDropdownFocusOut,
+  handleProjectDropdownOpenFolderClick,
+  handleProjectDropdownRecentClick,
+  handleHiddenPanelOptionClick,
+  setActiveTab,
+  clearTabNavigationHistory,
+  handleHistoryNavigationMouseButton
+} = useAppNavigation({
+  isTodoPanelCollapsed,
+  onOpenProjectFolder: () => {
+    void openProjectFolder();
+  },
+  onOpenRecentProject: (path) => {
+    void openProject(path);
+  },
+  onAgentTabActivated: () => {
+    void resizeTerminalBackend();
   }
-
-  return options;
+});
+const {
+  selectedFilePath,
+  filesDisplayPath,
+  changesSelectedFilePath,
+  selectedFileTargetLine,
+  selectedFileTargetRequestToken,
+  fileTreeRevealPath,
+  fileTreeRevealRequestToken,
+  openTerminalPathInFiles,
+  handleFileSelect,
+  handleChangesFileSelect,
+  handleChangesPathOpen,
+  resetFileNavigationState
+} = useFileNavigation({
+  projectPath,
+  errorMessage,
+  activateFilesTab: () => {
+    setActiveTab("files");
+  },
+  reportUiError,
+  readDirectory: (path) => window.projectApi.filesystem.readDirectory(path),
+  readFile: (currentProjectPath, path) =>
+    window.projectApi.filesystem.readFile(currentProjectPath, path)
+});
+const {
+  startTerminal,
+  resizeTerminalBackend,
+  focusTerminal,
+  handleTerminalContextMenu,
+  handleTerminalAuxClick,
+  writeTerminalOutput,
+  writeTerminalNotice,
+  syncTerminalFontSize,
+  disposeTerminalView
+} = useTerminalView({
+  terminalContainer,
+  projectPath,
+  isTerminalReady,
+  getTerminalFontSize: () =>
+    normalizeTerminalFontSize(projectSettings.value.zoom.terminalFontSize),
+  sendTerminalInput,
+  openTerminalPath: openTerminalPathInFiles,
+  reportUiError,
+  writeClipboardText: (text) => window.projectApi.clipboard.writeText(text),
+  resizeTerminalBackendRequest: (size) => window.projectApi.terminal.resize(size),
+  startTerminalBackendRequest: (cwd, size) => window.projectApi.terminal.start(cwd, size),
+  resetTerminalSessionState
+});
+const {
+  terminalPanelHeight,
+  isTerminalPanelResizeActive,
+  applyProjectSettings,
+  handleTerminalPanelResizePointerDown,
+  startProjectLayoutListeners,
+  stopProjectLayout
+} = useProjectLayout({
+  projectPath,
+  projectSettings,
+  terminalContainer,
+  resizeTodoTextareas,
+  resizeTerminalInputTextareaElement,
+  resizeTerminalBackend,
+  syncTerminalFontSize,
+  persistProjectSettings,
+  reportUiError
+});
+const {
+  openProject,
+  openProjectFolder,
+  openLastProjectOnStartup,
+  stopSettingsWatcher
+} = useProjectSession({
+  projectPath,
+  isOpening,
+  isTerminalReady,
+  errorMessage,
+  toolbarConfig,
+  promptSuffixConfig,
+  projectSettings,
+  addRecentProject,
+  resetProjectRuntimeState,
+  applyProjectSettings,
+  canReloadPromptSuffixConfig: () =>
+    promptSuffixConfigEditVersion <= promptSuffixConfigPersistedVersion,
+  loadTerminalInputHistoryForProject,
+  loadTodoEntriesForProject,
+  startTerminal,
+  reportUiError
 });
 
-const todoDraftViewItems = computed<TodoDraftViewItem[]>(() =>
-  todoDrafts.value.map((value, index) => ({ index, value })).reverse()
-);
-
-let terminal: Terminal | null = null;
-let fitAddon: FitAddon | null = null;
-let terminalPathLinkProvider: { dispose: () => void } | null = null;
-let unsubscribeTerminalData: (() => void) | null = null;
-let unsubscribeTerminalExit: (() => void) | null = null;
-let removeWindowResizeListener: (() => void) | null = null;
-let removeWindowWheelListener: (() => void) | null = null;
-let removeWindowKeydownListener: (() => void) | null = null;
-let removeWindowHistoryMouseListener: (() => void) | null = null;
-let removeWindowErrorListener: (() => void) | null = null;
-let removeWindowUnhandledRejectionListener: (() => void) | null = null;
-let removeWindowTerminalPanelResizeListeners: (() => void) | null = null;
-let unsubscribeGlobalQuickKey: (() => void) | null = null;
-let unsubscribeSettingsFileChanged: (() => void) | null = null;
-let pendingZoomResizeAnimationFrame: number | null = null;
-let pendingTerminalPanelResizeAnimationFrame: number | null = null;
-let terminalPanelResizeStartY = 0;
-let terminalPanelResizeStartHeight = 0;
-let terminalDataVersion = 0;
-let terminalInputQueue: Promise<void> = Promise.resolve();
-let terminalInputHistoryLoadToken = 0;
-let terminalInputHistoryEditVersion = 0;
-let terminalInputHistoryPersistedVersion = 0;
-let terminalInputHistoryPersistQueue: Promise<void> = Promise.resolve();
-let terminalInputHistoryReloadPending = false;
-let todoEntriesLoadToken = 0;
-let todoDraftEditVersion = 0;
-let todoPersistedVersion = 0;
-let todoPersistQueue: Promise<void> = Promise.resolve();
 let promptSuffixConfigEditVersion = 0;
 let promptSuffixConfigPersistedVersion = 0;
 let promptSuffixConfigPersistQueue: Promise<void> = Promise.resolve();
 let projectSettingsPersistQueue: Promise<void> = Promise.resolve();
+
+useAppRuntime({
+  isTodoPanelCollapsed,
+  isTerminalReady,
+  loadRecentProjectsFromStorage,
+  validateRecentProjects,
+  subscribeTerminalData: (listener) => window.projectApi.terminal.onData(listener),
+  markTerminalDataReceived,
+  writeTerminalOutput,
+  subscribeTerminalExit: (listener) => window.projectApi.terminal.onExit(listener),
+  writeTerminalNotice,
+  startProjectLayoutListeners,
+  handleHistoryNavigationMouseButton,
+  reportUiError,
+  subscribeGlobalQuickKey: (listener) => window.projectApi.onGlobalQuickKey(listener),
+  sendQuickKey,
+  resizeTerminalInputTextareaElement,
+  openLastProjectOnStartup,
+  handleTodoPanelCollapsedChanged,
+  stopProjectLayout,
+  stopSettingsWatcher,
+  stopTerminalRequest: () => window.projectApi.terminal.stop(),
+  disposeTerminalView
+});
 
 useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
@@ -672,419 +447,6 @@ function reportUiError(context: string, error: unknown, fallbackMessage: string)
   errorMessage.value = message;
   console.error(message, error);
   return message;
-}
-
-function getLastProjectPathFromStorage() {
-  const storedPath = window.localStorage.getItem(LAST_PROJECT_PATH_STORAGE_KEY);
-  if (!storedPath) {
-    return null;
-  }
-
-  const normalizedPath = storedPath.trim();
-  return normalizedPath.length > 0 ? normalizedPath : null;
-}
-
-function setLastProjectPathInStorage(path: string) {
-  window.localStorage.setItem(LAST_PROJECT_PATH_STORAGE_KEY, path);
-}
-
-function clearLastProjectPathInStorage() {
-  window.localStorage.removeItem(LAST_PROJECT_PATH_STORAGE_KEY);
-}
-
-function normalizePathForComparison(path: string) {
-  const normalizedPath = path.replace(/[\\/]+/g, "/");
-  if (normalizedPath === "/") {
-    return normalizedPath;
-  }
-
-  const withoutTrailingSlash = normalizedPath.replace(/\/+$/, "");
-  const stablePath = withoutTrailingSlash.length > 0 ? withoutTrailingSlash : normalizedPath;
-  return /^[A-Za-z]:\//.test(stablePath) ? stablePath.toLowerCase() : stablePath;
-}
-
-function isPathInsideBase(basePath: string, targetPath: string) {
-  const normalizedBasePath = normalizePathForComparison(basePath);
-  const normalizedTargetPath = normalizePathForComparison(targetPath);
-
-  if (normalizedTargetPath === normalizedBasePath) {
-    return true;
-  }
-
-  if (normalizedBasePath === "/") {
-    return normalizedTargetPath.startsWith("/");
-  }
-
-  return normalizedTargetPath.startsWith(`${normalizedBasePath}/`);
-}
-
-function isSamePath(leftPath: string, rightPath: string) {
-  return normalizePathForComparison(leftPath) === normalizePathForComparison(rightPath);
-}
-
-function parsePositiveInteger(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const parsedValue = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
-    return null;
-  }
-
-  return parsedValue;
-}
-
-function extractTerminalPathLocation(value: string) {
-  const hashLocationMatch = value.match(/^(.*)#L(\d+)(?:C(\d+))?$/);
-  if (hashLocationMatch) {
-    const line = parsePositiveInteger(hashLocationMatch[2]);
-    if (line !== null && hashLocationMatch[1].length > 0) {
-      return {
-        path: hashLocationMatch[1],
-        line,
-        column: parsePositiveInteger(hashLocationMatch[3])
-      };
-    }
-  }
-
-  const colonLocationMatch = value.match(/^(.*):(\d+)(?::(\d+))?$/);
-  if (colonLocationMatch) {
-    const line = parsePositiveInteger(colonLocationMatch[2]);
-    const candidatePath = colonLocationMatch[1];
-    if (line !== null && candidatePath.length > 0 && /[\\/]/.test(candidatePath)) {
-      return {
-        path: candidatePath,
-        line,
-        column: parsePositiveInteger(colonLocationMatch[3])
-      };
-    }
-  }
-
-  const suffixLineMatch = value.match(/^(.*)L(\d+)$/);
-  if (suffixLineMatch) {
-    const line = parsePositiveInteger(suffixLineMatch[2]);
-    const candidatePath = suffixLineMatch[1];
-    const fileName = candidatePath.split(/[\\/]/).pop() ?? "";
-    if (
-      line !== null &&
-      candidatePath.length > 0 &&
-      /[\\/]/.test(candidatePath) &&
-      fileName.includes(".")
-    ) {
-      return {
-        path: candidatePath,
-        line,
-        column: null
-      };
-    }
-  }
-
-  return {
-    path: value,
-    line: null,
-    column: null
-  };
-}
-
-function normalizeTerminalPathCandidate(rawValue: string) {
-  let value = rawValue.trim();
-  while (value.length > 0) {
-    const trailingChar = value[value.length - 1];
-    if (!TERMINAL_PATH_TRAILING_CHARS.has(trailingChar)) {
-      break;
-    }
-
-    value = value.slice(0, -1);
-  }
-
-  if (value.length === 0) {
-    return null;
-  }
-
-  const resolvedLocation = extractTerminalPathLocation(value);
-  const resolvedPath = resolvedLocation.path.trim();
-  if (resolvedPath.length === 0) {
-    return null;
-  }
-
-  return {
-    resolvedPath,
-    line: resolvedLocation.line,
-    column: resolvedLocation.column
-  };
-}
-
-function collectTerminalPathMatches(lineText: string, currentProjectPath: string): TerminalPathMatch[] {
-  const matches: TerminalPathMatch[] = [];
-
-  const addPathMatch = (rawText: string, start: number) => {
-    if (rawText.length === 0) {
-      return;
-    }
-
-    const normalizedPathCandidate = normalizeTerminalPathCandidate(rawText);
-    if (
-      !normalizedPathCandidate ||
-      !isPathInsideBase(currentProjectPath, normalizedPathCandidate.resolvedPath)
-    ) {
-      return;
-    }
-
-    matches.push({
-      start,
-      end: start + rawText.length,
-      displayText: rawText,
-      resolvedPath: normalizedPathCandidate.resolvedPath,
-      line: normalizedPathCandidate.line,
-      column: normalizedPathCandidate.column
-    });
-  };
-
-  TERMINAL_QUOTED_WINDOWS_PATH_REGEX.lastIndex = 0;
-  let quotedWindowsMatch: RegExpExecArray | null;
-  while ((quotedWindowsMatch = TERMINAL_QUOTED_WINDOWS_PATH_REGEX.exec(lineText)) !== null) {
-    const rawText = quotedWindowsMatch[2];
-    if (!rawText) {
-      continue;
-    }
-
-    addPathMatch(rawText, quotedWindowsMatch.index + 1);
-  }
-
-  TERMINAL_QUOTED_POSIX_PATH_REGEX.lastIndex = 0;
-  let quotedPosixMatch: RegExpExecArray | null;
-  while ((quotedPosixMatch = TERMINAL_QUOTED_POSIX_PATH_REGEX.exec(lineText)) !== null) {
-    const rawText = quotedPosixMatch[2];
-    if (!rawText) {
-      continue;
-    }
-
-    addPathMatch(rawText, quotedPosixMatch.index + 1);
-  }
-
-  TERMINAL_WINDOWS_PATH_REGEX.lastIndex = 0;
-  let windowsMatch: RegExpExecArray | null;
-  while ((windowsMatch = TERMINAL_WINDOWS_PATH_REGEX.exec(lineText)) !== null) {
-    addPathMatch(windowsMatch[0], windowsMatch.index);
-  }
-
-  TERMINAL_POSIX_PATH_REGEX.lastIndex = 0;
-  let posixMatch: RegExpExecArray | null;
-  while ((posixMatch = TERMINAL_POSIX_PATH_REGEX.exec(lineText)) !== null) {
-    const rawText = posixMatch[1];
-    if (!rawText) {
-      continue;
-    }
-
-    const matchPrefixLength = posixMatch[0].length - rawText.length;
-    addPathMatch(rawText, posixMatch.index + matchPrefixLength);
-  }
-
-  if (matches.length <= 1) {
-    return matches;
-  }
-
-  matches.sort((left, right) => left.start - right.start || right.end - left.end);
-  const dedupedMatches: TerminalPathMatch[] = [];
-  for (const match of matches) {
-    if (dedupedMatches.length > 0) {
-      const previousMatch = dedupedMatches[dedupedMatches.length - 1];
-      if (match.start < previousMatch.end) {
-        continue;
-      }
-    }
-
-    dedupedMatches.push(match);
-  }
-
-  return dedupedMatches;
-}
-
-function clampNumber(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function normalizeIdeZoomFactor(value: number) {
-  const clampedValue = clampNumber(value, IDE_ZOOM_FACTOR_MIN, IDE_ZOOM_FACTOR_MAX);
-  return Math.round(clampedValue * 100) / 100;
-}
-
-function normalizeTerminalFontSize(value: number) {
-  return Math.round(clampNumber(value, TERMINAL_FONT_SIZE_MIN, TERMINAL_FONT_SIZE_MAX));
-}
-
-function getTerminalPanelMaxHeight() {
-  const viewportLimitedHeight = Math.floor(window.innerHeight * TERMINAL_PANEL_MAX_VIEWPORT_RATIO);
-  return Math.max(TERMINAL_PANEL_MIN_HEIGHT, viewportLimitedHeight);
-}
-
-function normalizeTerminalPanelHeight(value: number) {
-  return Math.round(clampNumber(value, TERMINAL_PANEL_MIN_HEIGHT, getTerminalPanelMaxHeight()));
-}
-
-function loadInitialTerminalPanelHeight() {
-  return normalizeTerminalPanelHeight(DEFAULT_TERMINAL_PANEL_HEIGHT);
-}
-
-function persistTerminalPanelHeight(value: number) {
-  const normalizedHeight = normalizeTerminalPanelHeight(value);
-
-  if (projectPath.value) {
-    const updatedSettings: ProjectSettings = {
-      ...projectSettings.value,
-      terminal: {
-        ...projectSettings.value.terminal,
-        panelHeight: normalizedHeight
-      }
-    };
-    projectSettings.value = updatedSettings;
-    persistProjectSettings(updatedSettings);
-  }
-}
-
-function scheduleTerminalResizeForPanelHeight() {
-  if (pendingTerminalPanelResizeAnimationFrame !== null) {
-    return;
-  }
-
-  pendingTerminalPanelResizeAnimationFrame = window.requestAnimationFrame(() => {
-    pendingTerminalPanelResizeAnimationFrame = null;
-    void resizeTerminalBackend();
-  });
-}
-
-function stopTerminalPanelResize() {
-  removeWindowTerminalPanelResizeListeners?.();
-  removeWindowTerminalPanelResizeListeners = null;
-
-  if (!isTerminalPanelResizeActive.value) {
-    return;
-  }
-
-  isTerminalPanelResizeActive.value = false;
-  document.body.style.removeProperty("cursor");
-  document.body.style.removeProperty("user-select");
-  persistTerminalPanelHeight(terminalPanelHeight.value);
-}
-
-function handleTerminalPanelResizePointerMove(event: PointerEvent) {
-  if (!isTerminalPanelResizeActive.value) {
-    return;
-  }
-
-  event.preventDefault();
-  const deltaY = event.clientY - terminalPanelResizeStartY;
-  const nextHeight = normalizeTerminalPanelHeight(terminalPanelResizeStartHeight + deltaY);
-  if (nextHeight === terminalPanelHeight.value) {
-    return;
-  }
-
-  terminalPanelHeight.value = nextHeight;
-  scheduleTerminalResizeForPanelHeight();
-}
-
-function handleTerminalPanelResizePointerDown(event: PointerEvent) {
-  if (event.button !== 0) {
-    return;
-  }
-
-  event.preventDefault();
-  stopTerminalPanelResize();
-
-  terminalPanelResizeStartY = event.clientY;
-  terminalPanelResizeStartHeight = terminalPanelHeight.value;
-  isTerminalPanelResizeActive.value = true;
-  document.body.style.cursor = "ns-resize";
-  document.body.style.userSelect = "none";
-
-  const handlePointerMove = (moveEvent: PointerEvent) => {
-    handleTerminalPanelResizePointerMove(moveEvent);
-  };
-  const handlePointerUp = () => {
-    stopTerminalPanelResize();
-  };
-
-  window.addEventListener("pointermove", handlePointerMove, { passive: false });
-  window.addEventListener("pointerup", handlePointerUp, true);
-  window.addEventListener("pointercancel", handlePointerUp, true);
-  removeWindowTerminalPanelResizeListeners = () => {
-    window.removeEventListener("pointermove", handlePointerMove);
-    window.removeEventListener("pointerup", handlePointerUp, true);
-    window.removeEventListener("pointercancel", handlePointerUp, true);
-  };
-}
-
-function scheduleTerminalResizeAfterZoom() {
-  if (pendingZoomResizeAnimationFrame !== null) {
-    window.cancelAnimationFrame(pendingZoomResizeAnimationFrame);
-  }
-
-  pendingZoomResizeAnimationFrame = window.requestAnimationFrame(() => {
-    pendingZoomResizeAnimationFrame = null;
-    void resizeTerminalBackend();
-
-    window.requestAnimationFrame(() => {
-      void resizeTerminalBackend();
-    });
-  });
-}
-
-function isWheelEventInsideTerminal(event: WheelEvent) {
-  const container = terminalContainer.value;
-  const target = event.target;
-  if (!container || !(target instanceof Node)) {
-    return false;
-  }
-
-  return container.contains(target);
-}
-
-function isTerminalHoveredOrFocused() {
-  const container = terminalContainer.value;
-  if (!container) {
-    return false;
-  }
-
-  if (container.matches(":hover")) {
-    return true;
-  }
-
-  const activeElement = document.activeElement;
-  return activeElement instanceof Node && container.contains(activeElement);
-}
-
-function applyProjectZoomSettings(settings: ProjectSettings) {
-  const ideZoomFactor = normalizeIdeZoomFactor(settings.zoom.ideZoomFactor);
-  const terminalFontSize = normalizeTerminalFontSize(settings.zoom.terminalFontSize);
-  const didSetIdeZoom = window.projectApi.zoom.setFactor(ideZoomFactor);
-  let shouldResizeTerminal = false;
-
-  if (!didSetIdeZoom) {
-    reportUiError("Zoom", null, "Failed to apply IDE zoom factor.");
-  }
-
-  if (terminal && terminal.options.fontSize !== terminalFontSize) {
-    terminal.options.fontSize = terminalFontSize;
-    shouldResizeTerminal = true;
-  }
-
-  if (didSetIdeZoom || shouldResizeTerminal) {
-    scheduleTerminalResizeAfterZoom();
-  }
-}
-
-function applyProjectTerminalSettings(settings: ProjectSettings) {
-  const nextHeight = normalizeTerminalPanelHeight(settings.terminal.panelHeight);
-  if (nextHeight !== terminalPanelHeight.value) {
-    terminalPanelHeight.value = nextHeight;
-    scheduleTerminalResizeForPanelHeight();
-  }
-}
-
-function applyProjectSettings(settings: ProjectSettings) {
-  applyProjectZoomSettings(settings);
-  applyProjectTerminalSettings(settings);
 }
 
 function persistProjectSettings(settings: ProjectSettings) {
@@ -1108,1812 +470,55 @@ function persistProjectSettings(settings: ProjectSettings) {
   projectSettingsPersistQueue = projectSettingsPersistQueue.then(operation, operation);
 }
 
-function updateProjectZoomSettings(nextZoom: Partial<ProjectSettings["zoom"]>) {
-  const currentSettings = projectSettings.value;
-  const currentZoom = currentSettings.zoom;
-  const ideZoomFactor = normalizeIdeZoomFactor(nextZoom.ideZoomFactor ?? currentZoom.ideZoomFactor);
-  const terminalFontSize = normalizeTerminalFontSize(
-    nextZoom.terminalFontSize ?? currentZoom.terminalFontSize
-  );
-
-  if (
-    ideZoomFactor === currentZoom.ideZoomFactor &&
-    terminalFontSize === currentZoom.terminalFontSize
-  ) {
-    return;
-  }
-
-  const updatedSettings: ProjectSettings = {
-    ...currentSettings,
-    zoom: {
-      ideZoomFactor,
-      terminalFontSize
-    }
-  };
-  projectSettings.value = updatedSettings;
-  applyProjectZoomSettings(updatedSettings);
-  persistProjectSettings(updatedSettings);
-}
-
-function isTerminalZoomResetShortcut(event: KeyboardEvent) {
-  if (event.metaKey || event.altKey || event.shiftKey || !event.ctrlKey) {
-    return false;
-  }
-
-  return event.code === "Digit0" || event.code === "Numpad0";
-}
-
-function handleBrowserZoomKeyboardShortcut(event: KeyboardEvent) {
-  if (!isTerminalZoomResetShortcut(event)) {
-    return;
-  }
-
-  event.preventDefault();
-  if (isTerminalHoveredOrFocused()) {
-    updateProjectZoomSettings({
-      terminalFontSize: DEFAULT_TERMINAL_FONT_SIZE
-    });
-    return;
-  }
-
-  updateProjectZoomSettings({
-    ideZoomFactor: DEFAULT_IDE_ZOOM_FACTOR
-  });
-}
-
-function handleBrowserZoomCtrlWheel(event: WheelEvent) {
-  if (!event.ctrlKey || event.metaKey || event.deltaY === 0) {
-    return;
-  }
-
-  event.preventDefault();
-  if (isWheelEventInsideTerminal(event)) {
-    const terminalZoomDelta =
-      event.deltaY < 0 ? TERMINAL_FONT_SIZE_STEP : -TERMINAL_FONT_SIZE_STEP;
-    updateProjectZoomSettings({
-      terminalFontSize: projectSettings.value.zoom.terminalFontSize + terminalZoomDelta
-    });
-    return;
-  }
-
-  const ideZoomDelta = event.deltaY < 0 ? IDE_ZOOM_FACTOR_STEP : -IDE_ZOOM_FACTOR_STEP;
-  const currentIdeZoomFactor = normalizeIdeZoomFactor(window.projectApi.zoom.getFactor());
-  updateProjectZoomSettings({
-    ideZoomFactor: currentIdeZoomFactor + ideZoomDelta
-  });
-}
-
-function persistTodoPanelCollapsedState(isCollapsed: boolean) {
-  window.localStorage.setItem(TODO_PANEL_COLLAPSED_STORAGE_KEY, isCollapsed ? "1" : "0");
-}
-
-function toggleTodoPanelCollapse() {
-  isTodoPanelCollapsed.value = !isTodoPanelCollapsed.value;
-}
-
-function shouldKeepDropdownFocus(event: FocusEvent): boolean {
-  const currentDropdown = event.currentTarget;
-  if (!(currentDropdown instanceof HTMLElement)) {
-    return false;
-  }
-
-  const nextFocused = event.relatedTarget;
-  if (!(nextFocused instanceof Node)) {
-    return false;
-  }
-
-  return currentDropdown.contains(nextFocused);
-}
-
-const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
-
-function setProjectDropdownOpen(shouldOpen: boolean) {
-  isProjectDropdownOpen.value = shouldOpen;
-
-  if (shouldOpen) {
-    isHiddenPanelsDropdownOpen.value = false;
-  }
-}
-
-function setHiddenPanelsDropdownOpen(shouldOpen: boolean) {
-  isHiddenPanelsDropdownOpen.value = shouldOpen;
-
-  if (shouldOpen) {
-    isProjectDropdownOpen.value = false;
-  }
-}
-
-function focusFirstDropdownItem(triggerTarget: EventTarget | null) {
-  const trigger =
-    triggerTarget instanceof HTMLElement ? triggerTarget : null;
-  const dropdownRoot = trigger?.closest(".manual-dropdown");
-  const firstItem = dropdownRoot?.querySelector<HTMLButtonElement>(
-    ".dropdown-content button:not(:disabled)"
-  );
-  if (!firstItem) {
-    return;
-  }
-
-  void nextTick(() => {
-    firstItem.focus();
-  });
-}
-
-function toggleProjectDropdown() {
-  setProjectDropdownOpen(!isProjectDropdownOpen.value);
-}
-
-function toggleHiddenPanelsDropdown() {
-  setHiddenPanelsDropdownOpen(!isHiddenPanelsDropdownOpen.value);
-}
-
-function handleProjectDropdownTriggerKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape") {
-    setProjectDropdownOpen(false);
-    return;
-  }
-
-  if (!DROPDOWN_OPEN_KEYS.has(event.key)) {
-    return;
-  }
-
-  event.preventDefault();
-  setProjectDropdownOpen(true);
-  if (event.key === "ArrowDown") {
-    focusFirstDropdownItem(event.currentTarget);
-  }
-}
-
-function handleHiddenPanelsDropdownTriggerKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape") {
-    setHiddenPanelsDropdownOpen(false);
-    return;
-  }
-
-  if (!DROPDOWN_OPEN_KEYS.has(event.key)) {
-    return;
-  }
-
-  event.preventDefault();
-  setHiddenPanelsDropdownOpen(true);
-  if (event.key === "ArrowDown") {
-    focusFirstDropdownItem(event.currentTarget);
-  }
-}
-
-function handleProjectDropdownFocusOut(event: FocusEvent) {
-  if (shouldKeepDropdownFocus(event)) {
-    return;
-  }
-
-  setProjectDropdownOpen(false);
-}
-
-function handleHiddenPanelsDropdownFocusOut(event: FocusEvent) {
-  if (shouldKeepDropdownFocus(event)) {
-    return;
-  }
-
-  setHiddenPanelsDropdownOpen(false);
-}
-
-function handleProjectDropdownOpenFolderClick() {
-  setProjectDropdownOpen(false);
-  void openProjectFolder();
-}
-
-function handleProjectDropdownRecentClick(path: string) {
-  setProjectDropdownOpen(false);
-  void openProject(path);
-}
-
-function handleHiddenPanelOptionClick(panelId: HiddenPanelId) {
-  setHiddenPanelsDropdownOpen(false);
-  showHiddenPanel(panelId);
-}
-
-const showHiddenPanelHandlers: Record<HiddenPanelId, () => void> = {
-  todo: () => {
-    isTodoPanelCollapsed.value = false;
-  }
-};
-
-function showHiddenPanel(panelId: HiddenPanelId) {
-  showHiddenPanelHandlers[panelId]();
-}
-
-function clearTabNavigationHistory() {
-  tabBackHistory.length = 0;
-  tabForwardHistory.length = 0;
-}
-
-function setActiveTab(nextTab: AppTab, options?: { trackHistory?: boolean }) {
-  const currentTab = activeTab.value;
-  if (currentTab === nextTab) {
-    return;
-  }
-
-  if (options?.trackHistory ?? true) {
-    tabBackHistory.push(currentTab);
-    tabForwardHistory.length = 0;
-  }
-
-  activeTab.value = nextTab;
-
-  if (nextTab === "agent") {
-    void nextTick(() => {
-      void resizeTerminalBackend();
-    });
-  }
-}
-
-function navigateTabHistoryBack() {
-  const previousTab = tabBackHistory.pop();
-  if (!previousTab) {
-    return;
-  }
-
-  tabForwardHistory.push(activeTab.value);
-  setActiveTab(previousTab, { trackHistory: false });
-}
-
-function navigateTabHistoryForward() {
-  const nextTab = tabForwardHistory.pop();
-  if (!nextTab) {
-    return;
-  }
-
-  tabBackHistory.push(activeTab.value);
-  setActiveTab(nextTab, { trackHistory: false });
-}
-
-function handleHistoryNavigationMouseButton(event: MouseEvent) {
-  if (event.button === 3) {
-    event.preventDefault();
-    event.stopPropagation();
-    navigateTabHistoryBack();
-    return;
-  }
-
-  if (event.button === 4) {
-    event.preventDefault();
-    event.stopPropagation();
-    navigateTabHistoryForward();
-  }
-}
-
-async function loadTerminalInputHistoryForProject(
-  path: string,
-  source: "project-open" | "settings-watch"
-) {
-  const loadToken = terminalInputHistoryLoadToken + 1;
-  terminalInputHistoryLoadToken = loadToken;
-  const history = await loadTerminalInputHistoryFromProject(path, TERMINAL_INPUT_HISTORY_LIMIT);
-
-  if (projectPath.value !== path || terminalInputHistoryLoadToken !== loadToken) {
-    return;
-  }
-
-  if (source === "settings-watch") {
-    // Do not replace history while local updates are pending persistence.
-    if (terminalInputHistoryEditVersion > terminalInputHistoryPersistedVersion) {
-      terminalInputHistoryReloadPending = true;
-      return;
-    }
-
-    // Do not disrupt active Up/Down history navigation state.
-    if (terminalInputHistoryIndex.value !== null) {
-      terminalInputHistoryReloadPending = true;
-      return;
-    }
-  }
-
-  terminalInputHistoryReloadPending = false;
-
-  if (areStringArraysEqual(terminalInputHistory.value, history)) {
-    if (source === "project-open") {
-      resetTerminalInputHistoryNavigation();
-    }
-    return;
-  }
-
-  terminalInputHistory.value = history;
-  if (source === "project-open") {
-    resetTerminalInputHistoryNavigation();
-  }
-}
-
-async function flushPendingTerminalInputHistoryReload() {
-  if (
-    !terminalInputHistoryReloadPending ||
-    !projectPath.value ||
-    terminalInputHistoryIndex.value !== null ||
-    terminalInputHistoryEditVersion > terminalInputHistoryPersistedVersion
-  ) {
-    return;
-  }
-
-  terminalInputHistoryReloadPending = false;
-  await loadTerminalInputHistoryForProject(projectPath.value, "settings-watch");
-}
-
-interface NormalizeTodoDraftsOptions {
-  includePlaceholder?: boolean;
-}
-
-function getNormalizedTodoDrafts(
-  entries: string[],
-  options: NormalizeTodoDraftsOptions = {}
-) {
-  const includePlaceholder = options.includePlaceholder ?? true;
-  const nonEmptyEntries = entries.filter((entry) => entry.trim().length > 0);
-  if (nonEmptyEntries.length === 0) {
-    return [""];
-  }
-
-  if (!includePlaceholder) {
-    return nonEmptyEntries;
-  }
-
-  return [...nonEmptyEntries, ""];
-}
-
-function hasTodoDraftPlaceholder(entries: string[]) {
-  return entries.some((entry) => entry.trim().length === 0);
-}
-
-function getPersistedTodoEntries(entries: string[]) {
-  return entries.filter((entry) => entry.trim().length > 0);
-}
-
-function isTodoDraftIndexValid(index: number) {
-  return index >= 0 && index < todoDrafts.value.length;
-}
-
-function canDragTodoDraft(index: number) {
-  if (!isTodoDraftIndexValid(index)) {
-    return false;
-  }
-
-  return todoDrafts.value[index].trim().length > 0;
-}
-
-function shouldShowTodoDragHandle(index: number) {
-  if (!isTodoDraftIndexValid(index)) {
-    return false;
-  }
-
-  return todoDrafts.value[index].trim().length > 0;
-}
-
-function resetTodoDragState() {
-  todoDragSourceIndex.value = null;
-  todoDragOverIndex.value = null;
-}
-
-function getTodoDragSourceIndex(event: DragEvent) {
-  if (todoDragSourceIndex.value !== null) {
-    return todoDragSourceIndex.value;
-  }
-
-  const rawSourceIndex = event.dataTransfer?.getData("text/plain") ?? "";
-  const parsedSourceIndex = Number.parseInt(rawSourceIndex, 10);
-  return Number.isInteger(parsedSourceIndex) ? parsedSourceIndex : null;
-}
-
-function handleTodoDragStart(index: number, event: DragEvent) {
-  if (!canDragTodoDraft(index)) {
-    event.preventDefault();
-    return;
-  }
-
-  todoDragSourceIndex.value = index;
-  todoDragOverIndex.value = index;
-
-  if (!event.dataTransfer) {
-    return;
-  }
-
-  event.dataTransfer.effectAllowed = "move";
-  event.dataTransfer.setData("text/plain", String(index));
-}
-
-function handleTodoDragEnter(index: number, event: DragEvent) {
-  if (todoDragSourceIndex.value === null || !isTodoDraftIndexValid(index)) {
-    return;
-  }
-
-  event.preventDefault();
-  todoDragOverIndex.value = index;
-}
-
-function handleTodoDragOver(index: number, event: DragEvent) {
-  if (todoDragSourceIndex.value === null || !isTodoDraftIndexValid(index)) {
-    return;
-  }
-
-  event.preventDefault();
-  todoDragOverIndex.value = index;
-
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = "move";
-  }
-}
-
-function handleTodoDragEnd() {
-  resetTodoDragState();
-}
-
-function handleTodoDrop(index: number, event: DragEvent) {
-  if (!isTodoDraftIndexValid(index)) {
-    resetTodoDragState();
-    return;
-  }
-
-  const sourceIndex = getTodoDragSourceIndex(event);
-  if (sourceIndex === null || !canDragTodoDraft(sourceIndex) || sourceIndex === index) {
-    resetTodoDragState();
-    return;
-  }
-
-  const focusedTodoSnapshot = getFocusedTodoSnapshot();
-  const shouldIncludePlaceholder = hasTodoDraftPlaceholder(todoDrafts.value);
-  const reorderedDrafts = [...todoDrafts.value];
-  const [movedDraft] = reorderedDrafts.splice(sourceIndex, 1);
-  if (typeof movedDraft !== "string" || movedDraft.trim().length === 0) {
-    resetTodoDragState();
-    return;
-  }
-
-  reorderedDrafts.splice(index, 0, movedDraft);
-
-  todoDraftEditVersion += 1;
-  todoDrafts.value = getNormalizedTodoDrafts(
-    reorderedDrafts.filter((entry) => entry.trim().length > 0),
-    { includePlaceholder: shouldIncludePlaceholder }
-  );
-  resetTodoDragState();
-
-  const nextVersion = todoDraftEditVersion;
-  persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), nextVersion);
-
-  void nextTick(() => {
-    resizeTodoTextareas();
-    restoreTodoFocus(focusedTodoSnapshot);
-  });
-}
-
-function areStringArraysEqual(first: string[], second: string[]) {
-  if (first.length !== second.length) {
-    return false;
-  }
-
-  for (let index = 0; index < first.length; index += 1) {
-    if (first[index] !== second[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function resizeTerminalInputTextareaElement() {
-  const textarea = terminalInputTextarea.value;
-  if (!textarea) {
-    return;
-  }
-
-  textarea.style.removeProperty("height");
-}
-
-function resizeTodoTextareas() {
-  const textareas = document.querySelectorAll<HTMLTextAreaElement>(
-    'textarea[data-todo-textarea="true"]'
-  );
-  for (const textarea of textareas) {
-    textarea.style.removeProperty("height");
-  }
-}
-
-interface TodoFocusSnapshot {
-  index: number;
-  selectionStart: number;
-  selectionEnd: number;
-  scrollTop: number;
-}
-
-function getFocusedTodoSnapshot() {
-  const activeElement = document.activeElement;
-  if (!(activeElement instanceof HTMLTextAreaElement)) {
-    return null;
-  }
-
-  if (activeElement.dataset.todoTextarea !== "true") {
-    return null;
-  }
-
-  const index = Number.parseInt(activeElement.dataset.todoIndex ?? "", 10);
-  if (!Number.isInteger(index) || index < 0) {
-    return null;
-  }
-
-  return {
-    index,
-    selectionStart: activeElement.selectionStart,
-    selectionEnd: activeElement.selectionEnd,
-    scrollTop: activeElement.scrollTop
-  } satisfies TodoFocusSnapshot;
-}
-
-function restoreTodoFocus(snapshot: TodoFocusSnapshot | null) {
-  if (!snapshot) {
-    return;
-  }
-
-  const selector = `textarea[data-todo-textarea="true"][data-todo-index="${String(snapshot.index)}"]`;
-  const textarea = document.querySelector<HTMLTextAreaElement>(selector);
-  if (!textarea) {
-    return;
-  }
-
-  textarea.focus();
-
-  const maxSelectionIndex = textarea.value.length;
-  const selectionStart = Math.min(snapshot.selectionStart, maxSelectionIndex);
-  const selectionEnd = Math.min(snapshot.selectionEnd, maxSelectionIndex);
-  textarea.setSelectionRange(selectionStart, selectionEnd);
-  textarea.scrollTop = snapshot.scrollTop;
-}
-
-function focusTodoTextareaByIndex(index: number) {
-  const selector = `textarea[data-todo-textarea="true"][data-todo-index="${String(index)}"]`;
-  const textarea = document.querySelector<HTMLTextAreaElement>(selector);
-  if (!textarea) {
-    return;
-  }
-
-  textarea.focus();
-  const cursorPosition = textarea.value.length;
-  textarea.setSelectionRange(cursorPosition, cursorPosition);
-}
-
-function focusTodoComposerTextarea() {
-  const composerIndex = todoDrafts.value.length - 1;
-  if (composerIndex < 0) {
-    return;
-  }
-
-  focusTodoTextareaByIndex(composerIndex);
-}
-
-function finalizeTodoDraftEditing(options: { focusComposer?: boolean } = {}) {
-  const nextDrafts = getNormalizedTodoDrafts(todoDrafts.value, { includePlaceholder: true });
-  const didUpdateDrafts = !areStringArraysEqual(todoDrafts.value, nextDrafts);
-  if (didUpdateDrafts) {
-    todoDraftEditVersion += 1;
-    todoDrafts.value = nextDrafts;
-  }
-
-  if (todoDraftEditVersion > todoPersistedVersion) {
-    persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), todoDraftEditVersion);
-  }
-
-  if (!didUpdateDrafts && !options.focusComposer) {
-    return;
-  }
-
-  void nextTick(() => {
-    if (didUpdateDrafts) {
-      resizeTodoTextareas();
-    }
-    if (options.focusComposer) {
-      focusTodoComposerTextarea();
-    }
-  });
-}
-
-function persistTodoEntries(entries: string[], version: number) {
-  if (!projectPath.value) {
-    return;
-  }
-
-  const path = projectPath.value;
-  const operation = async () => {
-    try {
-      await saveTodoEntries(path, entries);
-    } catch (error) {
-      reportUiError("Todo entries", error, "Failed to persist todo entries.");
-      return;
-    }
-
-    if (projectPath.value === path && version > todoPersistedVersion) {
-      todoPersistedVersion = version;
-    }
-  };
-
-  todoPersistQueue = todoPersistQueue.then(operation, operation);
-}
-
-async function loadTodoEntriesForProject(path: string, source: "project-open" | "settings-watch") {
-  const loadToken = todoEntriesLoadToken + 1;
-  todoEntriesLoadToken = loadToken;
-  const entries = await loadTodoEntries(path);
-
-  if (projectPath.value !== path || todoEntriesLoadToken !== loadToken) {
-    return;
-  }
-
-  // Ignore watcher reloads while there are newer local edits in-flight.
-  if (source === "settings-watch" && todoDraftEditVersion > todoPersistedVersion) {
-    return;
-  }
-
-  const focusedTodoSnapshot = getFocusedTodoSnapshot();
-  const nextDrafts = getNormalizedTodoDrafts(entries);
-  if (areStringArraysEqual(todoDrafts.value, nextDrafts)) {
-    void nextTick(() => {
-      resizeTodoTextareas();
-      restoreTodoFocus(focusedTodoSnapshot);
-    });
-    return;
-  }
-
-  todoDrafts.value = nextDrafts;
-  void nextTick(() => {
-    resizeTodoTextareas();
-    restoreTodoFocus(focusedTodoSnapshot);
-  });
-}
-
-function handleTodoTextareaInput(index: number, event: Event) {
-  const textarea = event.target;
-  if (!(textarea instanceof HTMLTextAreaElement)) {
-    return;
-  }
-
-  if (!isTodoDraftIndexValid(index)) {
-    return;
-  }
-
-  const nextDrafts = [...todoDrafts.value];
-  const previousValue = nextDrafts[index] ?? "";
-  const hadPlaceholder = hasTodoDraftPlaceholder(todoDrafts.value);
-  nextDrafts[index] = textarea.value;
-  const isCompletedPlaceholder =
-    previousValue.trim().length === 0 && textarea.value.trim().length > 0;
-  const shouldIncludePlaceholder = hadPlaceholder && !isCompletedPlaceholder;
-  const normalizedDrafts = getNormalizedTodoDrafts(nextDrafts, {
-    includePlaceholder: shouldIncludePlaceholder
-  });
-  todoDraftEditVersion += 1;
-  todoDrafts.value = normalizedDrafts;
-}
-
-function handleTodoTextareaKeydown(event: KeyboardEvent) {
-  if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) {
-    return;
-  }
-
-  event.preventDefault();
-  finalizeTodoDraftEditing({ focusComposer: true });
-}
-
-function handleTodoTextareaBlur() {
-  finalizeTodoDraftEditing();
-}
-
-function persistTerminalInputHistory(entries: string[], version: number) {
-  if (!projectPath.value) {
-    return;
-  }
-
-  const path = projectPath.value;
-  const operation = async () => {
-    try {
-      await saveTerminalInputHistory(path, entries, TERMINAL_INPUT_HISTORY_LIMIT);
-    } catch (error) {
-      reportUiError(
-        "Terminal history",
-        error,
-        "Failed to persist terminal input history."
-      );
-      return;
-    }
-
-    if (projectPath.value === path && version > terminalInputHistoryPersistedVersion) {
-      terminalInputHistoryPersistedVersion = version;
-    }
-
-    if (projectPath.value === path) {
-      await flushPendingTerminalInputHistoryReload();
-    }
-  };
-
-  terminalInputHistoryPersistQueue = terminalInputHistoryPersistQueue.then(operation, operation);
-}
-
-function moveTextareaCursorToEnd() {
-  void nextTick(() => {
-    const textarea = terminalInputTextarea.value;
-    if (!textarea) {
-      return;
-    }
-
-    const cursorPosition = textarea.value.length;
-    textarea.focus();
-    textarea.setSelectionRange(cursorPosition, cursorPosition);
-  });
-}
-
-function setTerminalInputText(text: string) {
-  terminalInputText.value = text;
-  moveTextareaCursorToEnd();
-}
-
-function resetTerminalInputHistoryNavigation() {
-  terminalInputHistoryIndex.value = null;
-  terminalInputDraft.value = "";
-}
-
-function appendTerminalInputHistory(text: string) {
-  const lastEntry = terminalInputHistory.value[terminalInputHistory.value.length - 1];
-  if (lastEntry === text) {
-    resetTerminalInputHistoryNavigation();
-    return;
-  }
-
-  const nextHistory = [...terminalInputHistory.value, text].slice(
-    -TERMINAL_INPUT_HISTORY_LIMIT
-  );
-  terminalInputHistoryEditVersion += 1;
-  terminalInputHistory.value = nextHistory;
-  persistTerminalInputHistory(nextHistory, terminalInputHistoryEditVersion);
-  resetTerminalInputHistoryNavigation();
-}
-
-function isCursorOnFirstLine(textarea: HTMLTextAreaElement) {
-  return !textarea.value.slice(0, textarea.selectionStart).includes("\n");
-}
-
-function parseCssPixelValue(value: string) {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function getComputedLineHeightPixels(style: CSSStyleDeclaration) {
-  const parsedLineHeight = Number.parseFloat(style.lineHeight);
-  if (Number.isFinite(parsedLineHeight)) {
-    return parsedLineHeight;
-  }
-
-  const parsedFontSize = Number.parseFloat(style.fontSize);
-  if (Number.isFinite(parsedFontSize)) {
-    return parsedFontSize * 1.2;
-  }
-
-  return 16 * 1.2;
-}
-
-function isCursorOnFirstVisualLine(textarea: HTMLTextAreaElement) {
-  if (textarea.selectionStart === 0) {
-    return true;
-  }
-
-  const style = window.getComputedStyle(textarea);
-  const mirror = document.createElement("div");
-  mirror.setAttribute("aria-hidden", "true");
-  mirror.style.position = "absolute";
-  mirror.style.visibility = "hidden";
-  mirror.style.pointerEvents = "none";
-  mirror.style.top = "0";
-  mirror.style.left = "-9999px";
-  mirror.style.boxSizing = "border-box";
-  mirror.style.width = `${String(textarea.clientWidth)}px`;
-  mirror.style.padding = style.padding;
-  mirror.style.font = style.font;
-  mirror.style.lineHeight = style.lineHeight;
-  mirror.style.letterSpacing = style.letterSpacing;
-  mirror.style.wordSpacing = style.wordSpacing;
-  mirror.style.textTransform = style.textTransform;
-  mirror.style.textIndent = style.textIndent;
-  mirror.style.textAlign = style.textAlign;
-  mirror.style.tabSize = style.tabSize;
-  mirror.style.whiteSpace = "pre-wrap";
-  mirror.style.overflowWrap = "break-word";
-  mirror.style.wordBreak = "break-word";
-
-  mirror.textContent = textarea.value.slice(0, textarea.selectionStart);
-  const caretMarker = document.createElement("span");
-  caretMarker.textContent = "\u200b";
-  mirror.appendChild(caretMarker);
-
-  document.body.appendChild(mirror);
-  try {
-    const mirrorRect = mirror.getBoundingClientRect();
-    const caretRect = caretMarker.getBoundingClientRect();
-    const caretTop = caretRect.top - mirrorRect.top;
-    const paddingTop = parseCssPixelValue(style.paddingTop);
-    const lineHeightPixels = getComputedLineHeightPixels(style);
-    return caretTop <= paddingTop + lineHeightPixels * 0.5;
-  } finally {
-    mirror.remove();
-  }
-}
-
-function isCursorOnLastLine(textarea: HTMLTextAreaElement) {
-  return !textarea.value.slice(textarea.selectionEnd).includes("\n");
-}
-
-function isCursorOnLastVisualLine(textarea: HTMLTextAreaElement) {
-  const style = window.getComputedStyle(textarea);
-  const mirror = document.createElement("div");
-  mirror.setAttribute("aria-hidden", "true");
-  mirror.style.position = "absolute";
-  mirror.style.visibility = "hidden";
-  mirror.style.pointerEvents = "none";
-  mirror.style.top = "0";
-  mirror.style.left = "-9999px";
-  mirror.style.boxSizing = "border-box";
-  mirror.style.width = `${String(textarea.clientWidth)}px`;
-  mirror.style.padding = style.padding;
-  mirror.style.font = style.font;
-  mirror.style.lineHeight = style.lineHeight;
-  mirror.style.letterSpacing = style.letterSpacing;
-  mirror.style.wordSpacing = style.wordSpacing;
-  mirror.style.textTransform = style.textTransform;
-  mirror.style.textIndent = style.textIndent;
-  mirror.style.textAlign = style.textAlign;
-  mirror.style.tabSize = style.tabSize;
-  mirror.style.whiteSpace = "pre-wrap";
-  mirror.style.overflowWrap = "break-word";
-  mirror.style.wordBreak = "break-word";
-
-  mirror.appendChild(document.createTextNode(textarea.value.slice(0, textarea.selectionEnd)));
-  const caretMarker = document.createElement("span");
-  caretMarker.textContent = "\u200b";
-  mirror.appendChild(caretMarker);
-  mirror.appendChild(document.createTextNode(textarea.value.slice(textarea.selectionEnd)));
-
-  const endMarker = document.createElement("span");
-  endMarker.textContent = "\u200b";
-  mirror.appendChild(endMarker);
-
-  document.body.appendChild(mirror);
-  try {
-    const mirrorRect = mirror.getBoundingClientRect();
-    const caretRect = caretMarker.getBoundingClientRect();
-    const endRect = endMarker.getBoundingClientRect();
-    const caretTop = caretRect.top - mirrorRect.top;
-    const endTop = endRect.top - mirrorRect.top;
-    const lineHeightPixels = getComputedLineHeightPixels(style);
-    return endTop - caretTop <= lineHeightPixels * 0.5;
-  } finally {
-    mirror.remove();
-  }
-}
-
-function navigateTerminalInputHistory(direction: -1 | 1) {
-  if (terminalInputHistory.value.length === 0) {
-    return;
-  }
-
-  if (terminalInputHistoryIndex.value === null) {
-    if (direction === 1) {
-      return;
-    }
-
-    terminalInputDraft.value = terminalInputText.value;
-    terminalInputHistoryIndex.value = terminalInputHistory.value.length - 1;
-    setTerminalInputText(terminalInputHistory.value[terminalInputHistoryIndex.value]);
-    return;
-  }
-
-  const nextIndex = terminalInputHistoryIndex.value + direction;
-  if (nextIndex < 0) {
-    terminalInputHistoryIndex.value = 0;
-    setTerminalInputText(terminalInputHistory.value[0]);
-    return;
-  }
-
-  if (nextIndex >= terminalInputHistory.value.length) {
-    terminalInputHistoryIndex.value = null;
-    setTerminalInputText(terminalInputDraft.value);
-    return;
-  }
-
-  terminalInputHistoryIndex.value = nextIndex;
-  setTerminalInputText(terminalInputHistory.value[nextIndex]);
-}
-
-function getCsiModifierValue(event: KeyboardEvent) {
-  let modifier = 1;
-  if (event.shiftKey) {
-    modifier += 1;
-  }
-  if (event.altKey) {
-    modifier += 2;
-  }
-  if (event.ctrlKey) {
-    modifier += 4;
-  }
-  return modifier;
-}
-
-const nativeTextareaCtrlEditingCodes = new Set([
-  "KeyA",
-  "KeyC",
-  "KeyV",
-  "KeyX",
-  "KeyY",
-  "KeyZ",
-  "Insert",
-]);
-
-function getCtrlCharacterInput(event: KeyboardEvent) {
-  if (/^Key[A-Z]$/.test(event.code)) {
-    const code = event.code.charCodeAt(3) - 64;
-    return String.fromCharCode(code);
-  }
-
-  switch (event.code) {
-    case "Digit2":
-    case "Backquote":
-    case "Space":
-      return "\u0000";
-    case "Digit3":
-    case "BracketLeft":
-      return "\u001b";
-    case "Digit4":
-    case "Backslash":
-      return "\u001c";
-    case "Digit5":
-    case "BracketRight":
-      return "\u001d";
-    case "Digit6":
-      return "\u001e";
-    case "Digit7":
-    case "Minus":
-    case "Slash":
-      return "\u001f";
-    case "Digit8":
-      return "\u007f";
-    default:
-      return null;
-  }
-}
-
-function getCtrlSpecialKeyInput(event: KeyboardEvent) {
-  const modifier = getCsiModifierValue(event);
-  switch (event.key) {
-    case "ArrowUp":
-      return `\u001b[1;${String(modifier)}A`;
-    case "ArrowDown":
-      return `\u001b[1;${String(modifier)}B`;
-    case "ArrowRight":
-      return `\u001b[1;${String(modifier)}C`;
-    case "ArrowLeft":
-      return `\u001b[1;${String(modifier)}D`;
-    case "Home":
-      return `\u001b[1;${String(modifier)}H`;
-    case "End":
-      return `\u001b[1;${String(modifier)}F`;
-    case "Insert":
-      return `\u001b[2;${String(modifier)}~`;
-    case "Delete":
-      return `\u001b[3;${String(modifier)}~`;
-    case "PageUp":
-      return `\u001b[5;${String(modifier)}~`;
-    case "PageDown":
-      return `\u001b[6;${String(modifier)}~`;
-    case "F1":
-      return `\u001b[1;${String(modifier)}P`;
-    case "F2":
-      return `\u001b[1;${String(modifier)}Q`;
-    case "F3":
-      return `\u001b[1;${String(modifier)}R`;
-    case "F4":
-      return `\u001b[1;${String(modifier)}S`;
-    case "F5":
-      return `\u001b[15;${String(modifier)}~`;
-    case "F6":
-      return `\u001b[17;${String(modifier)}~`;
-    case "F7":
-      return `\u001b[18;${String(modifier)}~`;
-    case "F8":
-      return `\u001b[19;${String(modifier)}~`;
-    case "F9":
-      return `\u001b[20;${String(modifier)}~`;
-    case "F10":
-      return `\u001b[21;${String(modifier)}~`;
-    case "F11":
-      return `\u001b[23;${String(modifier)}~`;
-    case "F12":
-      return `\u001b[24;${String(modifier)}~`;
-    case "Enter":
-      return "\r";
-    case "Backspace":
-      return "\u007f";
-    case "Escape":
-    case "Esc":
-      return "\u001b";
-    default:
-      return null;
-  }
-}
-
-function getCtrlKeyInput(event: KeyboardEvent) {
-  const controlCharacter = getCtrlCharacterInput(event);
-  if (controlCharacter !== null) {
-    return event.altKey ? `\u001b${controlCharacter}` : controlCharacter;
-  }
-
-  return getCtrlSpecialKeyInput(event);
-}
-
-function isTextareaNativeEditingShortcut(event: KeyboardEvent) {
-  if (event.metaKey) {
-    return true;
-  }
-
-  if (event.altKey) {
-    return false;
-  }
-
-  if (event.ctrlKey) {
-    return nativeTextareaCtrlEditingCodes.has(event.code);
-  }
-
-  return (
-    event.shiftKey &&
-    (event.code === "Insert" || event.code === "Delete")
-  );
-}
-
-function getEmptyTextareaPassthroughInput(
-  event: KeyboardEvent,
-  textarea: HTMLTextAreaElement
-) {
-  if (textarea.value.trim().length > 0 || event.isComposing) {
-    return null;
-  }
-
-  if (isTextareaNativeEditingShortcut(event)) {
-    return null;
-  }
-
-  if (event.ctrlKey) {
-    return getCtrlKeyInput(event);
-  }
-
-  if (event.altKey || event.shiftKey) {
-    return null;
-  }
-
-  switch (event.key) {
-    case "Escape":
-    case "Esc":
-      return "\u001b";
-    case "Enter":
-      return "\r";
-    case "Backspace":
-      return "\u007f";
-    case "Delete":
-      return "\u001b[3~";
-    default:
-      return null;
-  }
-}
-
-function handleTextareaKeydown(event: KeyboardEvent) {
-  const textarea =
-    event.currentTarget instanceof HTMLTextAreaElement ? event.currentTarget : null;
-
-  if (textarea && !event.isComposing && (event.key === "Escape" || event.key === "Esc")) {
-    event.preventDefault();
-    void sendTerminalInput("\u001b", "Failed to send Esc to terminal.");
-    return;
-  }
-
-  if (
-    textarea &&
-    !event.isComposing &&
-    event.ctrlKey &&
-    !event.metaKey &&
-    !event.altKey &&
-    event.code === "KeyC" &&
-    textarea.selectionStart === textarea.selectionEnd
-  ) {
-    const ctrlCInput = getCtrlKeyInput(event) ?? "\u0003";
-    event.preventDefault();
-    void sendTerminalInput(ctrlCInput, "Failed to send Ctrl+C to terminal.");
-    return;
-  }
-
-  if (textarea) {
-    const passthroughInput = getEmptyTextareaPassthroughInput(event, textarea);
-    if (passthroughInput !== null) {
-      event.preventDefault();
-      void sendTerminalInput(passthroughInput, "Failed to send keyboard input to terminal.");
-      return;
-    }
-  }
-
-  if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-    event.preventDefault();
-    void sendTextareaToTerminal();
-    return;
-  }
-
-  if (
-    !textarea ||
-    event.isComposing ||
-    event.altKey ||
-    event.ctrlKey ||
-    event.metaKey ||
-    textarea.selectionStart !== textarea.selectionEnd
-  ) {
-    return;
-  }
-
-  if (
-    event.key === "ArrowUp" &&
-    (terminalInputHistoryIndex.value === null
-      ? isCursorOnFirstVisualLine(textarea)
-      : isCursorOnFirstLine(textarea))
-  ) {
-    event.preventDefault();
-    navigateTerminalInputHistory(-1);
-    return;
-  }
-
-  if (
-    event.key === "ArrowDown" &&
-    (terminalInputHistoryIndex.value === null
-      ? isCursorOnLastVisualLine(textarea)
-      : isCursorOnLastLine(textarea))
-  ) {
-    event.preventDefault();
-    navigateTerminalInputHistory(1);
-  }
-}
-
-function handleTextareaInput(event: Event) {
-  const textarea =
-    event.currentTarget instanceof HTMLTextAreaElement ? event.currentTarget : null;
-  if (textarea) {
-    textarea.style.removeProperty("height");
-  }
-
-  if (terminalInputHistoryIndex.value === null) {
-    return;
-  }
-
-  terminalInputHistoryIndex.value = null;
-  terminalInputDraft.value = terminalInputText.value;
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function getSlashCommandText(text: string) {
-  const withoutTrailingLineBreaks = text.replace(/[\r\n]+$/, "");
-  const trimmedStart = withoutTrailingLineBreaks.trimStart();
-  if (!trimmedStart.startsWith("/") || /[\r\n]/.test(trimmedStart)) {
-    return null;
-  }
-
-  return trimmedStart;
-}
-
-function appendPromptSuffixes(rawText: string) {
-  if (getSlashCommandText(rawText)) {
-    return rawText;
-  }
-
-  const currentItems = promptSuffixConfig.value.items;
-  const activeSuffixValues = currentItems
-    .filter((item) => item.mode !== "off")
-    .map((item) => item.value.trim())
-    .filter((value) => value.length > 0);
-
-  const hasOnceItems = currentItems.some((item) => item.mode === "once");
-  if (hasOnceItems) {
-    const resetItems = currentItems.map((item) =>
-      item.mode === "once" ? { ...item, mode: "off" as const } : item
-    );
-    applyPromptSuffixConfig({ items: resetItems });
-  }
-
-  if (activeSuffixValues.length === 0) {
-    return rawText;
-  }
-
-  const cleanedText = rawText.replace(/[\r\n]+$/, "");
-  const suffixLines = activeSuffixValues.map((value) => `- ${value}`).join("\n");
-  return `${cleanedText}\n\nДополнительные требования:\n${suffixLines}`;
-}
-
-function enqueueTerminalOperation<T>(operation: () => Promise<T>) {
-  const queuedOperation = terminalInputQueue.then(operation, operation);
-  terminalInputQueue = queuedOperation.then(
-    () => undefined,
-    () => undefined
-  );
-  return queuedOperation;
-}
-
-async function sendTerminalInput(data: string, fallbackErrorMessage: string) {
-  return enqueueTerminalOperation(async () => {
-    try {
-      const response = await window.projectApi.terminal.input(data);
-      if (!response.ok) {
-        errorMessage.value = response.error ?? fallbackErrorMessage;
-        return false;
-      }
-    } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : fallbackErrorMessage;
-      return false;
-    }
-
-    return true;
-  });
-}
-
-async function sendTextareaTextInput(text: string) {
-  const isMultiline = text.includes("\n");
-  const BRACKET_PASTE_START = "\x1b[200~";
-  const BRACKET_PASTE_END = "\x1b[201~";
-
-  if (isMultiline) {
-    const startOk = await sendTerminalInput(BRACKET_PASTE_START, "Failed to send bracket paste start.");
-    if (!startOk) {
-      return false;
-    }
-  }
-
-  for (let index = 0; index < text.length; index += TERMINAL_INPUT_CHUNK_SIZE) {
-    const chunk = text.slice(index, index + TERMINAL_INPUT_CHUNK_SIZE);
-    const ok = await sendTerminalInput(chunk, "Failed to send input to terminal.");
-    if (!ok) {
-      return false;
-    }
-  }
-
-  if (isMultiline) {
-    const endOk = await sendTerminalInput(BRACKET_PASTE_END, "Failed to send bracket paste end.");
-    if (!endOk) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-async function waitForTextareaSubmitReadiness(versionBeforeTextSend: number) {
-  const timings = projectSettings.value.slashCommand;
-  const activityTimeoutMs = Math.min(
-    timings.activityTimeoutMs,
-    TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS
-  );
-  const quietTimeoutMs = Math.min(
-    timings.quietTimeoutMs,
-    TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS
-  );
-
-  const sawActivity = await waitForTerminalDataAfter(versionBeforeTextSend, activityTimeoutMs);
-  if (!sawActivity) {
-    await delay(timings.enterDelayMs);
-    return;
-  }
-
-  await waitForTerminalQuiet(timings.enterDelayMs, quietTimeoutMs);
-}
-
-async function waitForTerminalDataAfter(version: number, timeoutMs: number) {
-  const startedAt = Date.now();
-  const pollIntervalMs = Math.max(projectSettings.value.slashCommand.dataPollIntervalMs, 1);
-  while (Date.now() - startedAt < timeoutMs) {
-    if (terminalDataVersion > version) {
-      return true;
-    }
-
-    await delay(pollIntervalMs);
-  }
-
-  return terminalDataVersion > version;
-}
-
-async function waitForTerminalQuiet(idleMs: number, timeoutMs: number) {
-  const startedAt = Date.now();
-  let observedVersion = terminalDataVersion;
-  while (Date.now() - startedAt < timeoutMs) {
-    await delay(idleMs);
-    if (terminalDataVersion === observedVersion) {
-      return;
-    }
-    observedVersion = terminalDataVersion;
-  }
-}
-
-async function waitForSlashCommandReadiness(versionBeforeSlashSend: number) {
-  const timings = projectSettings.value.slashCommand;
-  const readinessStartedAt = Date.now();
-  const sawActivity = await waitForTerminalDataAfter(
-    versionBeforeSlashSend,
-    timings.activityTimeoutMs
-  );
-  const elapsedMs = Date.now() - readinessStartedAt;
-  const remainingAfterSlashDelayMs = timings.afterSlashDelayMs - elapsedMs;
-  if (remainingAfterSlashDelayMs > 0) {
-    await delay(remainingAfterSlashDelayMs);
-  }
-
-  if (!sawActivity) {
-    return;
-  }
-
-  await waitForTerminalQuiet(timings.enterDelayMs, timings.quietTimeoutMs);
-}
-
-async function sendSlashCommand(slashCommandText: string) {
-  const timings = projectSettings.value.slashCommand;
-  for (let index = 0; index < slashCommandText.length; index += 1) {
-    const char = slashCommandText[index];
-    const versionBeforeSend = terminalDataVersion;
-    const ok = await sendTerminalInput(char, "Failed to send slash command character to terminal.");
-    if (!ok) {
-      return false;
-    }
-
-    if (char === "/") {
-      await waitForSlashCommandReadiness(versionBeforeSend);
-      continue;
-    }
-
-    await delay(timings.charDelayMs);
-  }
-
-  await waitForTerminalQuiet(timings.enterDelayMs, timings.quietTimeoutMs);
-  return sendTerminalInput("\r", "Failed to send Enter to terminal.");
-}
-
-type SubmitTerminalTextResult = "submitted" | "empty" | "failed";
-
-interface SubmitTerminalTextMessages {
-  sendSlash: string;
-  sendText: string;
-  submit: string;
-}
-
-interface SubmitTerminalTextAttemptOptions {
-  notReady: string;
-  messages: SubmitTerminalTextMessages;
-  inputType: "prompt" | "command";
-}
-
-async function submitTerminalText(
-  rawText: string,
-  messages: SubmitTerminalTextMessages
-): Promise<SubmitTerminalTextResult> {
-  const slashCommandText = getSlashCommandText(rawText);
-  if (slashCommandText) {
-    const ok = await sendSlashCommand(slashCommandText);
-    if (!ok) {
-      errorMessage.value ||= messages.sendSlash;
-      return "failed";
-    }
-
-    return "submitted";
-  }
-
-  const cleanedText = rawText.replace(/[\r\n]+$/, "");
-  if (!cleanedText.trim()) {
-    return "empty";
-  }
-
-  const versionBeforeTextSend = terminalDataVersion;
-  const inputOk = await sendTextareaTextInput(cleanedText);
-  if (!inputOk) {
-    errorMessage.value ||= messages.sendText;
-    return "failed";
-  }
-
-  await waitForTextareaSubmitReadiness(versionBeforeTextSend);
-
-  const enterOk = await sendTerminalInput("\r", messages.submit);
-  if (!enterOk) {
-    return "failed";
-  }
-
-  return "submitted";
-}
-
-async function attemptSubmitTerminalText(
-  rawText: string,
-  options: SubmitTerminalTextAttemptOptions
-): Promise<SubmitTerminalTextResult> {
-  if (!isTerminalReady.value) {
-    errorMessage.value = options.notReady;
-    return "failed";
-  }
-
-  if (!rawText.trim()) {
-    return "empty";
-  }
-
-  const textToSubmit =
-    options.inputType === "prompt" ? appendPromptSuffixes(rawText) : rawText;
-
-  errorMessage.value = "";
-  return submitTerminalText(textToSubmit, options.messages);
-}
-
-function requestFileTreeReveal(path: string) {
-  fileTreeRevealPath.value = path;
-  fileTreeRevealRequestToken.value += 1;
-}
-
-async function openTerminalPathInFiles(path: string, line: number | null, column: number | null) {
-  void column;
-  const currentProjectPath = projectPath.value;
-  if (!currentProjectPath) {
-    return;
-  }
-
-  if (!isPathInsideBase(currentProjectPath, path)) {
-    errorMessage.value = `Path is outside the current project: ${path}`;
-    return;
-  }
-
-  setActiveTab("files");
-  requestFileTreeReveal(path);
-  errorMessage.value = "";
-
-  try {
-    const directoryResponse = await window.projectApi.filesystem.readDirectory(path);
-    if (directoryResponse.ok) {
-      selectedFilePath.value = null;
-      filesDisplayPath.value = path;
-      selectedFileTargetLine.value = null;
-      selectedFileTargetRequestToken.value += 1;
-      return;
-    }
-  } catch {
-    // Not a directory or inaccessible directory; try opening as a file.
-  }
-
-  try {
-    const fileResponse = await window.projectApi.filesystem.readFile(currentProjectPath, path);
-    if (fileResponse.ok) {
-      selectedFilePath.value = path;
-      filesDisplayPath.value = path;
-      selectedFileTargetLine.value = line;
-      selectedFileTargetRequestToken.value += 1;
-      return;
-    }
-
-    reportUiError(
-      "Terminal path open",
-      fileResponse.error,
-      `Failed to open path from terminal: ${path}`
-    );
-  } catch (error) {
-    reportUiError(
-      "Terminal path open",
-      error,
-      `Failed to open path from terminal: ${path}`
-    );
-  }
-}
-
-function registerTerminalPathLinkProvider() {
-  if (!terminal) {
-    return;
-  }
-
-  terminalPathLinkProvider?.dispose();
-  terminalPathLinkProvider = terminal.registerLinkProvider({
-    provideLinks(bufferLineNumber, callback) {
-      const currentProjectPath = projectPath.value;
-      if (!currentProjectPath || !terminal) {
-        callback(undefined);
-        return;
-      }
-
-      const line = terminal.buffer.active.getLine(bufferLineNumber - 1);
-      const lineText = line?.translateToString(false) ?? "";
-      const pathMatches = collectTerminalPathMatches(lineText, currentProjectPath);
-      if (pathMatches.length === 0) {
-        callback(undefined);
-        return;
-      }
-
-      const links = pathMatches.map((pathMatch) => ({
-        range: {
-          start: {
-            x: pathMatch.start + 1,
-            y: bufferLineNumber
-          },
-          end: {
-            x: pathMatch.end,
-            y: bufferLineNumber
-          }
-        },
-        text: pathMatch.displayText,
-        activate: () => {
-          void openTerminalPathInFiles(pathMatch.resolvedPath, pathMatch.line, pathMatch.column);
-        },
-        decorations: {
-          underline: true,
-          pointerCursor: true
-        }
-      }));
-
-      callback(links);
-    }
-  });
-}
-
-function initializeTerminalView() {
-  if (terminal || !terminalContainer.value) {
-    return;
-  }
-
-  terminal = new Terminal({
-    convertEol: true,
-    cursorBlink: true,
-    cursorStyle: "bar",
-    cursorInactiveStyle: "none",
-    cursorWidth: 2,
-    fontFamily: "Cascadia Mono, Consolas, monospace",
-    fontSize: normalizeTerminalFontSize(projectSettings.value.zoom.terminalFontSize),
-    theme: {
-      background: "#05070d",
-      foreground: "#e5e7eb",
-      cursor: "#e5e7eb"
-    }
-  });
-
-  fitAddon = new FitAddon();
-  terminal.loadAddon(fitAddon);
-  terminal.open(terminalContainer.value);
-  registerTerminalPathLinkProvider();
-  fitAddon.fit();
-  terminal.writeln("Терминал готов. Выберите папку проекта.");
-
-  terminal.onData((data) => {
-    if (!isTerminalReady.value) {
-      return;
-    }
-
-    void sendTerminalInput(data, "Failed to send input to terminal.");
-  });
-}
-
-function focusTerminal() {
-  terminal?.focus();
-}
-
-async function copyTerminalSelection(clickType: "right" | "middle") {
-  if (!terminal) {
-    return;
-  }
-
-  const selectedText = terminal.getSelection();
-  if (selectedText.length === 0) {
-    return;
-  }
-
-  try {
-    const response = await window.projectApi.clipboard.writeText(selectedText);
-    if (!response.ok) {
-      reportUiError(
-        "Terminal copy",
-        response.error,
-        `Failed to copy terminal selection with ${clickType} click.`
-      );
-    }
-  } catch (error) {
-    reportUiError(
-      "Terminal copy",
-      error,
-      `Failed to copy terminal selection with ${clickType} click.`
-    );
-  }
-}
-
-function handleTerminalContextMenu(event: MouseEvent) {
-  event.preventDefault();
-  void copyTerminalSelection("right");
-}
-
-function handleTerminalAuxClick(event: MouseEvent) {
-  if (event.button !== 1) {
-    return;
-  }
-
-  event.preventDefault();
-  void copyTerminalSelection("middle");
-}
-
-function focusTerminalInput() {
-  void nextTick(() => {
-    terminalInputTextarea.value?.focus();
-  });
-}
-
-async function resizeTerminalBackend() {
-  if (!terminal || !fitAddon) {
-    return;
-  }
-
-  fitAddon.fit();
-
-  if (!isTerminalReady.value) {
-    return;
-  }
-
-  try {
-    const response = await window.projectApi.terminal.resize({
-      cols: terminal.cols,
-      rows: terminal.rows
-    });
-
-    if (!response.ok) {
-      reportUiError("Terminal resize", response.error, "Failed to resize terminal backend.");
-    console.error(response.error ?? "Не удалось изменить размер терминала.");
-  }
-  } catch (error) {
-    reportUiError("Terminal resize", error, "Failed to resize terminal backend.");
-  }
-}
-
-async function startTerminal(cwd: string) {
-  isTerminalReady.value = false;
-  initializeTerminalView();
-
-  if (!terminal || !fitAddon) {
-    throw new Error("Не удалось подготовить окно терминала.");
-  }
-
-  fitAddon.fit();
-  terminal.clear();
-  terminalDataVersion = 0;
-  terminalInputQueue = Promise.resolve();
-
-  const response = await window.projectApi.terminal.start(cwd, {
-    cols: terminal.cols,
-    rows: terminal.rows
-  });
-  if (!response.ok) {
-    throw new Error(response.error ?? "Не удалось запустить терминал.");
-  }
-
-  isTerminalReady.value = true;
-  focusTerminal();
-}
-
 function resetProjectRuntimeState() {
   clearTabNavigationHistory();
-  selectedFilePath.value = null;
-  filesDisplayPath.value = null;
-  changesSelectedFilePath.value = null;
-  selectedFileTargetLine.value = null;
-  selectedFileTargetRequestToken.value = 0;
-  fileTreeRevealPath.value = null;
-  fileTreeRevealRequestToken.value = 0;
-  terminalInputText.value = "";
-  terminalInputHistory.value = [];
-  terminalInputHistoryEditVersion = 0;
-  terminalInputHistoryPersistedVersion = 0;
-  terminalInputHistoryPersistQueue = Promise.resolve();
-  terminalInputHistoryReloadPending = false;
-  todoDrafts.value = [""];
-  resetTodoDragState();
-  todoDraftEditVersion = 0;
-  todoPersistedVersion = 0;
-  todoPersistQueue = Promise.resolve();
+  resetFileNavigationState();
+  resetTerminalInputRuntimeState();
+  resetTodoRuntimeState();
   promptSuffixConfigEditVersion = 0;
   promptSuffixConfigPersistedVersion = 0;
   promptSuffixConfigPersistQueue = Promise.resolve();
   projectSettingsPersistQueue = Promise.resolve();
-  resetTerminalInputHistoryNavigation();
 }
 
-async function loadPromptSuffixConfigForProject(path: string) {
-  try {
-    promptSuffixConfig.value = await loadPromptSuffixConfig(path);
-    return;
-  } catch (error) {
-    promptSuffixConfig.value = emptyPromptSuffixConfig;
-
-    reportUiError(
-      "Prompt suffix config",
-      error,
-      "Failed to load prompt suffix config. Fix .ide/prompt-suffixes.json or use Reset in Prompt Suffix Settings."
-    );
-  }
+function setTerminalContainerElement(
+  element: Element | ComponentPublicInstance | null
+) {
+  terminalContainer.value = element instanceof HTMLElement ? element : null;
 }
 
-async function openProject(path: string) {
-  projectPath.value = path;
-  addToRecentProjects(path);
-  resetProjectRuntimeState();
-  toolbarConfig.value = await loadToolbarConfig(path);
-  await loadPromptSuffixConfigForProject(path);
-  projectSettings.value = await loadProjectSettings(path);
-  applyProjectSettings(projectSettings.value);
-  await loadTerminalInputHistoryForProject(path, "project-open");
-  await loadTodoEntriesForProject(path, "project-open");
-  await startSettingsWatcher(path);
-  await nextTick();
-  await startTerminal(path);
-  setLastProjectPathInStorage(path);
+function setTerminalInputTextareaElement(
+  element: Element | ComponentPublicInstance | null
+) {
+  terminalInputTextarea.value = element instanceof HTMLTextAreaElement ? element : null;
 }
 
-async function openProjectFolder() {
-  isOpening.value = true;
-  errorMessage.value = "";
-
-  try {
-    const selectedPath = await window.projectApi.openFolder();
-    if (!selectedPath) {
-      return;
-    }
-
-    await openProject(selectedPath);
-  } catch (error) {
-    isTerminalReady.value = false;
-    errorMessage.value = "Не удалось открыть проект или запустить терминал.";
-    reportUiError("Project open", error, "Failed to open project or start terminal.");
-  } finally {
-    isOpening.value = false;
-  }
+function setTerminalInputText(value: string) {
+  terminalInputText.value = value;
 }
 
-async function openLastProjectOnStartup() {
-  const lastProjectPath = getLastProjectPathFromStorage();
-  if (!lastProjectPath) {
-    return;
-  }
+function openToolbarConfigEditor() {
+  isToolbarConfigEditorOpen.value = true;
+}
 
-  isOpening.value = true;
-  errorMessage.value = "";
+function closeToolbarConfigEditor() {
+  isToolbarConfigEditorOpen.value = false;
+}
 
-  try {
-    await openProject(lastProjectPath);
-  } catch (error) {
-    clearLastProjectPathInStorage();
-    projectPath.value = null;
-    resetProjectRuntimeState();
-    toolbarConfig.value = defaultToolbarConfig;
-    promptSuffixConfig.value = defaultPromptSuffixConfig;
-    projectSettings.value = defaultProjectSettings;
-    applyProjectSettings(defaultProjectSettings);
-    isTerminalReady.value = false;
-    try {
-      const unwatchResponse = await window.projectApi.settings.unwatch();
-      if (!unwatchResponse.ok) {
-        reportUiError(
-          "Settings watcher",
-          unwatchResponse.error,
-          "Failed to stop settings watcher."
-        );
-      }
-    } catch (unwatchError) {
-      reportUiError("Settings watcher", unwatchError, "Failed to stop settings watcher.");
-    }
-    reportUiError(
-      "Startup project restore",
-      error,
-      "Failed to open the last project. Pick a folder manually."
-    );
-  } finally {
-    isOpening.value = false;
-  }
+function openPromptSuffixConfigEditor() {
+  isPromptSuffixConfigEditorOpen.value = true;
+}
+
+function closePromptSuffixConfigEditor() {
+  isPromptSuffixConfigEditorOpen.value = false;
+}
+
+function openProjectSettingsEditor() {
+  isProjectSettingsEditorOpen.value = true;
+}
+
+function closeProjectSettingsEditor() {
+  isProjectSettingsEditorOpen.value = false;
 }
 
 async function runTerminalCommand(command: string) {
@@ -2966,24 +571,6 @@ function executeToolbarAction(action: ToolbarAction) {
   }
 
   void runTerminalCommand(action.value);
-}
-
-function handleFileSelect(path: string) {
-  const currentSelectedPath = selectedFilePath.value;
-  if (!currentSelectedPath || !isSamePath(currentSelectedPath, path)) {
-    selectedFileTargetLine.value = null;
-  }
-
-  selectedFilePath.value = path;
-  filesDisplayPath.value = path;
-}
-
-function handleChangesFileSelect(path: string) {
-  changesSelectedFilePath.value = path;
-}
-
-function handleChangesPathOpen(path: string) {
-  void openTerminalPathInFiles(path, null, null);
 }
 
 function sendQuickKey(data: string) {
@@ -3070,10 +657,7 @@ function handlePromptSuffixConfigSave(config: PromptSuffixConfig) {
 function handleProjectSettingsSave(settings: ProjectSettings) {
   const normalizedSettings: ProjectSettings = {
     ...settings,
-    zoom: {
-      ideZoomFactor: normalizeIdeZoomFactor(settings.zoom.ideZoomFactor),
-      terminalFontSize: normalizeTerminalFontSize(settings.zoom.terminalFontSize)
-    }
+    zoom: normalizeProjectZoomSettings(settings.zoom)
   };
   projectSettings.value = normalizedSettings;
   applyProjectSettings(normalizedSettings);
@@ -3081,123 +665,9 @@ function handleProjectSettingsSave(settings: ProjectSettings) {
   isProjectSettingsEditorOpen.value = false;
 }
 
-async function handleSettingsFileChanged(filename: string) {
-  if (!projectPath.value) {
-    return;
-  }
-
-  const normalizedFilename = filename.split(/[\\/]/).pop() ?? filename;
-  const normalizedFilenameLower = normalizedFilename.toLowerCase();
-  const isWildcardChange = normalizedFilename === SETTINGS_WATCH_ALL;
-  const isToolbarConfigChange =
-    isWildcardChange || normalizedFilenameLower === TOOLBAR_CONFIG_FILENAME.toLowerCase();
-  const isPromptSuffixConfigChange =
-    isWildcardChange ||
-    normalizedFilenameLower === PROMPT_SUFFIX_CONFIG_FILENAME.toLowerCase();
-  const isProjectSettingsChange =
-    isWildcardChange || normalizedFilenameLower === PROJECT_SETTINGS_FILENAME.toLowerCase();
-  const isTodoChange =
-    isWildcardChange || normalizedFilenameLower === TODO_FILENAME.toLowerCase();
-  const isTerminalHistoryChange =
-    isWildcardChange ||
-    normalizedFilenameLower === TERMINAL_INPUT_HISTORY_FILENAME.toLowerCase();
-
-  if (isToolbarConfigChange) {
-    toolbarConfig.value = await loadToolbarConfig(projectPath.value);
-  }
-
-  if (
-    isPromptSuffixConfigChange &&
-    promptSuffixConfigEditVersion <= promptSuffixConfigPersistedVersion
-  ) {
-    await loadPromptSuffixConfigForProject(projectPath.value);
-  }
-
-  if (isProjectSettingsChange) {
-    projectSettings.value = await loadProjectSettings(projectPath.value);
-    applyProjectSettings(projectSettings.value);
-  }
-
-  if (isTodoChange) {
-    await loadTodoEntriesForProject(projectPath.value, "settings-watch");
-  }
-
-  if (isTerminalHistoryChange) {
-    await loadTerminalInputHistoryForProject(projectPath.value, "settings-watch");
-  }
-}
-
-async function startSettingsWatcher(path: string) {
-  unsubscribeSettingsFileChanged?.();
-  const unwatchResponse = await window.projectApi.settings.unwatch();
-  if (!unwatchResponse.ok) {
-    throw new Error(
-      toErrorMessage(unwatchResponse.error, "Failed to stop previous settings watcher.")
-    );
-  }
-
-  unsubscribeSettingsFileChanged = window.projectApi.settings.onFileChanged(
-    (filename) => {
-      void handleSettingsFileChanged(filename).catch((error: unknown) => {
-        reportUiError(
-          "Settings watcher event",
-          error,
-          "Failed to reload settings after file change."
-        );
-      });
-    }
-  );
-
-  const watchResponse = await window.projectApi.settings.watch(path, SETTINGS_WATCH_ALL);
-  if (!watchResponse.ok) {
-    unsubscribeSettingsFileChanged();
-    unsubscribeSettingsFileChanged = null;
-    throw new Error(
-      toErrorMessage(watchResponse.error, "Failed to start settings watcher.")
-    );
-  }
-}
-
-async function sendAltVToTerminal(shouldFocusTerminal = true) {
-  if (!isTerminalReady.value) {
-    errorMessage.value = "Terminal is not ready.";
-    return;
-  }
-
-  errorMessage.value = "";
-  const ok = await sendTerminalInput("\u001bv", "Failed to send Alt+V to terminal.");
-  if (!ok) {
-    return;
-  }
-
-  if (shouldFocusTerminal) {
-    focusTerminal();
-  }
-}
-
-async function sendTextareaToTerminal() {
-  const text = terminalInputText.value;
-  const result = await attemptSubmitTerminalText(text, {
-    notReady: "Terminal is not ready to send input.",
-    messages: {
-      sendSlash: "Failed to send slash command to terminal.",
-      sendText: "Failed to send input to terminal.",
-      submit: "Failed to send Enter to terminal."
-    },
-    inputType: "prompt"
-  });
-  if (result !== "submitted") {
-    return;
-  }
-
-  appendTerminalInputHistory(text);
-  terminalInputText.value = "";
-  focusTerminalInput();
-}
-
 async function sendTodoEntryToTerminal(index: number) {
-  const text = todoDrafts.value[index];
-  if (typeof text !== "string") {
+  const text = getTodoEntry(index);
+  if (text === null) {
     return;
   }
 
@@ -3215,252 +685,10 @@ async function sendTodoEntryToTerminal(index: number) {
   }
 
   appendTerminalInputHistory(text);
-
-  if (!isTodoDraftIndexValid(index)) {
-    return;
-  }
-
-  const nextDrafts = [...todoDrafts.value];
-  nextDrafts.splice(index, 1);
-  todoDraftEditVersion += 1;
-  todoDrafts.value = getNormalizedTodoDrafts(nextDrafts);
-  resetTodoDragState();
-
-  const nextVersion = todoDraftEditVersion;
-  persistTodoEntries(getPersistedTodoEntries(todoDrafts.value), nextVersion);
-
-  void nextTick(() => {
-    resizeTodoTextareas();
-  });
+  removeTodoEntry(index);
 }
-
-async function handleTextareaPaste(event: ClipboardEvent) {
-  const textarea =
-    event.currentTarget instanceof HTMLTextAreaElement ? event.currentTarget : null;
-  const clipboardData = event.clipboardData;
-  if (!clipboardData) {
-    return;
-  }
-
-  const hasImageItem = Array.from(clipboardData.items).some((item) =>
-    item.type.startsWith("image/")
-  );
-  const hasImageFile = Array.from(clipboardData.files).some((file) =>
-    file.type.startsWith("image/")
-  );
-
-  if (!hasImageItem && !hasImageFile) {
-    return;
-  }
-
-  event.preventDefault();
-  try {
-    await sendAltVToTerminal(false);
-  } finally {
-    textarea?.focus();
-  }
-}
-
-onMounted(() => {
-  recentProjects.value = getRecentProjectsFromStorage();
-  void validateRecentProjects();
-
-  unsubscribeTerminalData = window.projectApi.terminal.onData((data) => {
-    terminalDataVersion += 1;
-    // Keep terminal stream untouched: PTY output must reach xterm as-is.
-    terminal?.write(data);
-  });
-
-  unsubscribeTerminalExit = window.projectApi.terminal.onExit((code) => {
-    isTerminalReady.value = false;
-    terminal?.writeln(`\r\n[terminal exited: ${String(code ?? "unknown")}]`);
-  });
-
-  const handleWindowResize = () => {
-    resizeTodoTextareas();
-    resizeTerminalInputTextareaElement();
-    const nextTerminalPanelHeight = normalizeTerminalPanelHeight(terminalPanelHeight.value);
-    if (nextTerminalPanelHeight !== terminalPanelHeight.value) {
-      terminalPanelHeight.value = nextTerminalPanelHeight;
-    }
-    void resizeTerminalBackend();
-  };
-
-  window.addEventListener("resize", handleWindowResize);
-  removeWindowResizeListener = () => {
-    window.removeEventListener("resize", handleWindowResize);
-  };
-
-  window.addEventListener("wheel", handleBrowserZoomCtrlWheel, { passive: false, capture: true });
-  removeWindowWheelListener = () => {
-    window.removeEventListener("wheel", handleBrowserZoomCtrlWheel, true);
-  };
-
-  window.addEventListener("keydown", handleBrowserZoomKeyboardShortcut, true);
-  removeWindowKeydownListener = () => {
-    window.removeEventListener("keydown", handleBrowserZoomKeyboardShortcut, true);
-  };
-
-  window.addEventListener("mouseup", handleHistoryNavigationMouseButton, true);
-  removeWindowHistoryMouseListener = () => {
-    window.removeEventListener("mouseup", handleHistoryNavigationMouseButton, true);
-  };
-
-  const handleWindowError = (event: ErrorEvent) => {
-    reportUiError(
-      "Unhandled runtime error",
-      event.error ?? event.message,
-      event.message || "Unhandled runtime error."
-    );
-  };
-  window.addEventListener("error", handleWindowError);
-  removeWindowErrorListener = () => {
-    window.removeEventListener("error", handleWindowError);
-  };
-
-  const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-    reportUiError(
-      "Unhandled promise rejection",
-      event.reason,
-      "Unhandled promise rejection."
-    );
-  };
-  window.addEventListener("unhandledrejection", handleUnhandledRejection);
-  removeWindowUnhandledRejectionListener = () => {
-    window.removeEventListener("unhandledrejection", handleUnhandledRejection);
-  };
-
-  unsubscribeGlobalQuickKey = window.projectApi.onGlobalQuickKey((input) => {
-    sendQuickKey(input);
-  });
-
-  void nextTick(() => {
-    resizeTerminalInputTextareaElement();
-  });
-
-  void openLastProjectOnStartup();
-});
-
-watch(terminalInputText, () => {
-  void nextTick(() => {
-    resizeTerminalInputTextareaElement();
-  });
-});
-
-watch(terminalInputHistoryIndex, (index) => {
-  if (index !== null) {
-    return;
-  }
-
-  void flushPendingTerminalInputHistoryReload();
-});
-
-watch(isTodoPanelCollapsed, (isCollapsed) => {
-  persistTodoPanelCollapsedState(isCollapsed);
-
-  if (!isCollapsed) {
-    void nextTick(() => {
-      resizeTodoTextareas();
-    });
-  }
-});
-
-onBeforeUnmount(() => {
-  unsubscribeTerminalData?.();
-  unsubscribeTerminalExit?.();
-  unsubscribeGlobalQuickKey?.();
-  unsubscribeSettingsFileChanged?.();
-  removeWindowResizeListener?.();
-  removeWindowWheelListener?.();
-  removeWindowKeydownListener?.();
-  removeWindowHistoryMouseListener?.();
-  removeWindowErrorListener?.();
-  removeWindowUnhandledRejectionListener?.();
-  stopTerminalPanelResize();
-  if (pendingZoomResizeAnimationFrame !== null) {
-    window.cancelAnimationFrame(pendingZoomResizeAnimationFrame);
-    pendingZoomResizeAnimationFrame = null;
-  }
-  if (pendingTerminalPanelResizeAnimationFrame !== null) {
-    window.cancelAnimationFrame(pendingTerminalPanelResizeAnimationFrame);
-    pendingTerminalPanelResizeAnimationFrame = null;
-  }
-  void window.projectApi.settings.unwatch()
-    .then((response) => {
-      if (!response.ok) {
-        reportUiError(
-          "Settings watcher teardown",
-          response.error,
-          "Failed to stop settings watcher."
-        );
-      }
-    })
-    .catch((error: unknown) => {
-      reportUiError("Settings watcher teardown", error, "Failed to stop settings watcher.");
-    });
-  void window.projectApi.terminal.stop()
-    .then((response) => {
-      if (!response.ok) {
-        reportUiError("Terminal teardown", response.error, "Failed to stop terminal.");
-      }
-    })
-    .catch((error: unknown) => {
-      reportUiError("Terminal teardown", error, "Failed to stop terminal.");
-    });
-  terminalPathLinkProvider?.dispose();
-  terminalPathLinkProvider = null;
-  terminal?.dispose();
-  terminal = null;
-  fitAddon = null;
-});
 
 </script>
 
 <style scoped>
-.manual-dropdown:not(.dropdown-open):focus-within .dropdown-content {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.terminal-host {
-  overflow: hidden;
-}
-
-.terminal-resize-handle {
-  touch-action: none;
-}
-
-.terminal-resize-handle:focus-visible {
-  outline: none;
-}
-
-.todo-list-scroll {
-  overflow-anchor: none;
-}
-
-.textarea-autosize-native {
-  field-sizing: content;
-}
-
-.terminal-host :deep(.xterm),
-.terminal-host :deep(.xterm-viewport),
-.terminal-host :deep(.xterm-screen) {
-  background-color: #05070d !important;
-}
-
-.terminal-host :deep(.xterm-viewport) {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.terminal-host :deep(.xterm-viewport::-webkit-scrollbar) {
-  display: none !important;
-}
-
-.terminal-host :deep(.xterm) {
-  height: 100%;
-  padding: 0.4rem;
-  border-radius: inherit;
-}
 </style>

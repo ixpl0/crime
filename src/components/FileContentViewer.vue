@@ -65,6 +65,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { toErrorMessage } from "../utils/fail-fast";
+import {
+  diffLinePrefix as linePrefix,
+  toContextDiffLines
+} from "./file-content-viewer-utils";
 
 const props = defineProps<{
   projectPath: string;
@@ -94,27 +98,6 @@ const fileName = computed(() => {
   return segments[segments.length - 1] ?? props.filePath;
 });
 
-function toContextLines(content: string): ViewerLine[] {
-  const lines = content.split(/\r?\n/);
-  if (lines.length > 0 && lines[lines.length - 1] === "") {
-    lines.pop();
-  }
-
-  return lines.map((line) => ({ type: "context", text: line }));
-}
-
-function linePrefix(type: ViewerLine["type"]) {
-  if (type === "added") {
-    return "+";
-  }
-
-  if (type === "removed") {
-    return "-";
-  }
-
-  return "";
-}
-
 function clearHighlightTimer() {
   if (clearHighlightTimeoutId === null) {
     return;
@@ -124,24 +107,25 @@ function clearHighlightTimer() {
   clearHighlightTimeoutId = null;
 }
 
-async function focusTargetLine() {
+function resolveHighlightedLine(): number | null {
   if (!props.isActive || !props.filePath) {
-    return;
+    return null;
   }
 
   const targetLine = props.targetLine ?? null;
   if (targetLine === null || targetLine <= 0) {
-    highlightedLine.value = null;
-    clearHighlightTimer();
-    return;
+    return null;
   }
 
   const lineCount = displayLines.value.length;
   if (lineCount === 0) {
-    return;
+    return null;
   }
 
-  const lineNumber = Math.min(targetLine, lineCount);
+  return Math.min(targetLine, lineCount);
+}
+
+function scheduleLineHighlightReset(lineNumber: number) {
   highlightedLine.value = lineNumber;
   clearHighlightTimer();
   clearHighlightTimeoutId = window.setTimeout(() => {
@@ -150,7 +134,9 @@ async function focusTargetLine() {
     }
     clearHighlightTimeoutId = null;
   }, 2500);
+}
 
+async function scrollLineIntoView(lineNumber: number) {
   await nextTick();
   const container = scrollContainer.value;
   if (!container) {
@@ -161,8 +147,16 @@ async function focusTargetLine() {
   row?.scrollIntoView({ block: "center", inline: "nearest" });
 }
 
-function isLineFocusRequested() {
-  return props.targetLine !== null && props.targetLine !== undefined && props.targetLine > 0;
+async function focusTargetLine() {
+  const lineNumber = resolveHighlightedLine();
+  if (lineNumber === null) {
+    highlightedLine.value = null;
+    clearHighlightTimer();
+    return;
+  }
+
+  scheduleLineHighlightReset(lineNumber);
+  await scrollLineIntoView(lineNumber);
 }
 
 function lineRowClasses(type: ViewerLine["type"], lineNumber: number) {
@@ -183,16 +177,131 @@ function lineRowClasses(type: ViewerLine["type"], lineNumber: number) {
     : "text-base-content";
 }
 
+function clearViewerContentState() {
+  isLoading.value = false;
+  loadError.value = "";
+  diffInfoMessage.value = "";
+  displayLines.value = [];
+  highlightedLine.value = null;
+  clearHighlightTimer();
+}
+
+function buildFallbackLines(fileResponse: FilesystemReadFileResponse): ViewerLine[] {
+  if (!fileResponse.ok || typeof fileResponse.content !== "string") {
+    return [];
+  }
+
+  return toContextDiffLines(fileResponse.content);
+}
+
+function applyFileReadError(fileResponse: FilesystemReadFileResponse) {
+  if (!fileResponse.ok) {
+    loadError.value = fileResponse.error ?? "Failed to read file.";
+  }
+}
+
+function applyUnavailableDiffState(
+  diffResponse: GitFileDiffResponse,
+  fileResponse: FilesystemReadFileResponse,
+  fallbackLines: ViewerLine[]
+) {
+  displayLines.value = fallbackLines;
+  diffInfoMessage.value = diffResponse.error
+    ? `Git diff unavailable: ${diffResponse.error}`
+    : "Git diff unavailable.";
+  applyFileReadError(fileResponse);
+}
+
+function applyUnavailableGitState(
+  diffResponse: GitFileDiffResponse,
+  fileResponse: FilesystemReadFileResponse,
+  fallbackLines: ViewerLine[]
+) {
+  displayLines.value = fallbackLines;
+  diffInfoMessage.value = diffResponse.reason === "git-not-installed"
+    ? "Git is not installed. Showing plain file content."
+    : "Selected folder is not a Git repository.";
+  applyFileReadError(fileResponse);
+}
+
+function applyLineFocusFallback(
+  fileResponse: FilesystemReadFileResponse,
+  fallbackLines: ViewerLine[]
+) {
+  displayLines.value = fallbackLines;
+  if (fileResponse.ok) {
+    diffInfoMessage.value = "Showing plain file content for line navigation.";
+    return;
+  }
+
+  applyFileReadError(fileResponse);
+}
+
+function applyDiffResultState(
+  diffResponse: GitFileDiffResponse,
+  fileResponse: FilesystemReadFileResponse,
+  fallbackLines: ViewerLine[]
+) {
+  if (!diffResponse.ok) {
+    applyUnavailableDiffState(diffResponse, fileResponse, fallbackLines);
+    return;
+  }
+
+  if (!diffResponse.available) {
+    applyUnavailableGitState(diffResponse, fileResponse, fallbackLines);
+    return;
+  }
+
+  const diffLines = diffResponse.lines ?? [];
+  if (diffLines.length === 0) {
+    displayLines.value = fallbackLines;
+    applyFileReadError(fileResponse);
+    return;
+  }
+
+  const shouldFocusLine =
+    props.targetLine !== null && props.targetLine !== undefined && props.targetLine > 0;
+  if (shouldFocusLine) {
+    applyLineFocusFallback(fileResponse, fallbackLines);
+    return;
+  }
+
+  displayLines.value = diffLines;
+}
+
+function prepareFilePreviewLoad() {
+  isLoading.value = true;
+  loadError.value = "";
+  diffInfoMessage.value = "";
+}
+
+async function requestFilePreviewResponses(
+  requestId: number,
+  filePath: string
+): Promise<{ fileResponse: FilesystemReadFileResponse; diffResponse: GitFileDiffResponse } | null> {
+  try {
+    const [fileResponse, diffResponse] = await Promise.all([
+      window.projectApi.filesystem.readFile(props.projectPath, filePath),
+      window.projectApi.git.getFileDiff(props.projectPath, filePath)
+    ]);
+    return requestId === loadRequestId ? { fileResponse, diffResponse } : null;
+  } catch (error) {
+    if (requestId === loadRequestId) {
+      isLoading.value = false;
+      loadError.value = toErrorMessage(error, "Failed to load file preview.");
+      diffInfoMessage.value = "";
+      displayLines.value = [];
+    }
+    return null;
+  }
+}
+
 async function loadFilePreview() {
   const requestId = ++loadRequestId;
 
-  if (!props.filePath) {
-    isLoading.value = false;
-    loadError.value = "";
-    diffInfoMessage.value = "";
-    displayLines.value = [];
-    highlightedLine.value = null;
-    clearHighlightTimer();
+  const filePath = props.filePath;
+  if (!filePath) {
+    clearViewerContentState();
     return;
   }
 
@@ -200,87 +309,15 @@ async function loadFilePreview() {
     return;
   }
 
-  isLoading.value = true;
-  loadError.value = "";
-  diffInfoMessage.value = "";
-
-  let fileResponse: FilesystemReadFileResponse;
-  let diffResponse: GitFileDiffResponse;
-  try {
-    [fileResponse, diffResponse] = await Promise.all([
-      window.projectApi.filesystem.readFile(props.projectPath, props.filePath),
-      window.projectApi.git.getFileDiff(props.projectPath, props.filePath)
-    ]);
-  } catch (error) {
-    if (requestId !== loadRequestId) {
-      return;
-    }
-
-    isLoading.value = false;
-    loadError.value = toErrorMessage(error, "Failed to load file preview.");
-    diffInfoMessage.value = "";
-    displayLines.value = [];
-    return;
-  }
-
-  if (requestId !== loadRequestId) {
+  prepareFilePreviewLoad();
+  const responses = await requestFilePreviewResponses(requestId, filePath);
+  if (!responses) {
     return;
   }
 
   isLoading.value = false;
-
-  const fallbackLines =
-    fileResponse.ok && typeof fileResponse.content === "string"
-      ? toContextLines(fileResponse.content)
-      : [];
-
-  if (!diffResponse.ok) {
-    displayLines.value = fallbackLines;
-    diffInfoMessage.value = diffResponse.error
-      ? `Git diff unavailable: ${diffResponse.error}`
-      : "Git diff unavailable.";
-
-    if (!fileResponse.ok) {
-      loadError.value = fileResponse.error ?? "Failed to read file.";
-    }
-    return;
-  }
-
-  if (!diffResponse.available) {
-    displayLines.value = fallbackLines;
-    if (diffResponse.reason === "git-not-installed") {
-      diffInfoMessage.value = "Git is not installed. Showing plain file content.";
-    } else {
-      diffInfoMessage.value = "Selected folder is not a Git repository.";
-    }
-
-    if (!fileResponse.ok) {
-      loadError.value = fileResponse.error ?? "Failed to read file.";
-    }
-    return;
-  }
-
-  const diffLines = diffResponse.lines ?? [];
-  if (diffLines.length > 0) {
-    if (isLineFocusRequested()) {
-      displayLines.value = fallbackLines;
-      if (fileResponse.ok) {
-        diffInfoMessage.value = "Showing plain file content for line navigation.";
-      } else {
-        loadError.value = fileResponse.error ?? "Failed to read file.";
-      }
-      return;
-    }
-
-    displayLines.value = diffLines;
-    return;
-  }
-
-  displayLines.value = fallbackLines;
-
-  if (!fileResponse.ok) {
-    loadError.value = fileResponse.error ?? "Failed to read file.";
-  }
+  const fallbackLines = buildFallbackLines(responses.fileResponse);
+  applyDiffResultState(responses.diffResponse, responses.fileResponse, fallbackLines);
 }
 
 watch(

@@ -58,6 +58,7 @@ import {
   mergeDirectoryEntries,
   type DeletedChildrenByParent
 } from "./file-tree-status-utils";
+import { isPathInsideBase, isSamePath } from "./file-tree-path-utils";
 import { toErrorMessage } from "../utils/fail-fast";
 
 const props = withDefaults(
@@ -91,36 +92,6 @@ const NODE_BASE_PADDING_REM = 0.5;
 const NODE_INDENT_REM = 1;
 let hasLoaded = false;
 let lastChildrenSnapshot = "";
-
-function normalizePathForComparison(path: string) {
-  const normalizedPath = path.replace(/[\\/]+/g, "/");
-  if (normalizedPath === "/") {
-    return normalizedPath;
-  }
-
-  const withoutTrailingSlash = normalizedPath.replace(/\/+$/, "");
-  const stablePath = withoutTrailingSlash.length > 0 ? withoutTrailingSlash : normalizedPath;
-  return /^[A-Za-z]:\//.test(stablePath) ? stablePath.toLowerCase() : stablePath;
-}
-
-function isPathInsideBase(basePath: string, targetPath: string) {
-  const normalizedBasePath = normalizePathForComparison(basePath);
-  const normalizedTargetPath = normalizePathForComparison(targetPath);
-
-  if (normalizedTargetPath === normalizedBasePath) {
-    return true;
-  }
-
-  if (normalizedBasePath === "/") {
-    return normalizedTargetPath.startsWith("/");
-  }
-
-  return normalizedTargetPath.startsWith(`${normalizedBasePath}/`);
-}
-
-function isSamePath(leftPath: string, rightPath: string) {
-  return normalizePathForComparison(leftPath) === normalizePathForComparison(rightPath);
-}
 
 const entryStatus = computed<GitFileStatus | null>(() => {
   if (props.entry.isVirtual) {
@@ -199,6 +170,56 @@ const fileIconClasses = computed(() => {
   return "text-base-content/50";
 });
 
+function setChildrenIfChanged(nextChildren: FileEntry[]) {
+  const nextSnapshot = buildEntryListSnapshot(nextChildren);
+  if (nextSnapshot !== lastChildrenSnapshot) {
+    lastChildrenSnapshot = nextSnapshot;
+    children.value = nextChildren;
+  }
+}
+
+function applyVirtualChildren(virtualChildren: FileEntry[]) {
+  const nextChildren = mergeDirectoryEntries([], virtualChildren);
+  setChildrenIfChanged(nextChildren);
+  hasLoaded = true;
+}
+
+async function readChildrenDirectory(
+  silent: boolean
+): Promise<FilesystemReadResponse | null> {
+  try {
+    return await window.projectApi.filesystem.readDirectory(props.entry.path);
+  } catch (error) {
+    const message = toErrorMessage(error, "Failed to read directory.");
+    if (!silent) {
+      isLoading.value = false;
+    }
+    loadError.value = message;
+    return null;
+  }
+}
+
+function applyChildrenFromResponse(
+  response: FilesystemReadResponse,
+  virtualChildren: FileEntry[],
+  silent: boolean
+) {
+  if (response.ok) {
+    setChildrenIfChanged(mergeDirectoryEntries(response.entries ?? [], virtualChildren));
+    hasLoaded = true;
+    return;
+  }
+
+  if (virtualChildren.length > 0) {
+    applyVirtualChildren(virtualChildren);
+    return;
+  }
+
+  if (!silent) {
+    loadError.value = response.error ?? "Failed to read directory.";
+  }
+}
+
 async function loadChildren(options: { forceReload?: boolean; silent?: boolean } = {}) {
   if (!props.entry.isDirectory) {
     return;
@@ -208,13 +229,7 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
   const virtualChildren = props.deletedChildrenByParent[props.entry.path] ?? [];
 
   if (props.entry.isVirtual) {
-    const nextChildren = mergeDirectoryEntries([], virtualChildren);
-    const nextSnapshot = buildEntryListSnapshot(nextChildren);
-    if (nextSnapshot !== lastChildrenSnapshot) {
-      lastChildrenSnapshot = nextSnapshot;
-      children.value = nextChildren;
-    }
-    hasLoaded = true;
+    applyVirtualChildren(virtualChildren);
     return;
   }
 
@@ -227,15 +242,8 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
     loadError.value = "";
   }
 
-  let response: FilesystemReadResponse;
-  try {
-    response = await window.projectApi.filesystem.readDirectory(props.entry.path);
-  } catch (error) {
-    const message = toErrorMessage(error, "Failed to read directory.");
-    if (!silent) {
-      isLoading.value = false;
-    }
-    loadError.value = message;
+  const response = await readChildrenDirectory(silent);
+  if (!response) {
     return;
   }
 
@@ -243,31 +251,7 @@ async function loadChildren(options: { forceReload?: boolean; silent?: boolean }
     isLoading.value = false;
   }
 
-  if (!response.ok) {
-    if (virtualChildren.length > 0) {
-      const nextChildren = mergeDirectoryEntries([], virtualChildren);
-      const nextSnapshot = buildEntryListSnapshot(nextChildren);
-      if (nextSnapshot !== lastChildrenSnapshot) {
-        lastChildrenSnapshot = nextSnapshot;
-        children.value = nextChildren;
-      }
-      hasLoaded = true;
-      return;
-    }
-
-    if (!silent) {
-      loadError.value = response.error ?? "Failed to read directory.";
-    }
-    return;
-  }
-
-  const nextChildren = mergeDirectoryEntries(response.entries ?? [], virtualChildren);
-  const nextSnapshot = buildEntryListSnapshot(nextChildren);
-  if (nextSnapshot !== lastChildrenSnapshot) {
-    lastChildrenSnapshot = nextSnapshot;
-    children.value = nextChildren;
-  }
-  hasLoaded = true;
+  applyChildrenFromResponse(response, virtualChildren, silent);
 }
 
 async function revealRequestedPath(revealPath: string | null) {

@@ -1,0 +1,97 @@
+const CONTEXT_MENU_WIDTH = 220;
+const CONTEXT_MENU_HEIGHT = 44;
+
+const STATUS_PRIORITY: Record<GitFileStatus, number> = {
+  modified: 0,
+  added: 1,
+  deleted: 2
+};
+
+function clampCoordinate(value: number, maxSize: number) {
+  const maxValue = Math.max(8, maxSize - 8);
+  return Math.min(Math.max(value, 8), maxValue);
+}
+
+export function clampContextMenuX(value: number) {
+  return clampCoordinate(value, window.innerWidth - CONTEXT_MENU_WIDTH);
+}
+
+export function clampContextMenuY(value: number) {
+  return clampCoordinate(value, window.innerHeight - CONTEXT_MENU_HEIGHT);
+}
+
+export function getGitUnavailableMessage(reason?: GitMutateResponse["reason"]) {
+  return reason === "git-not-installed"
+    ? "Git is not installed."
+    : "The selected folder is not a Git repository.";
+}
+
+export function buildSnapshot(entries: GitStatusEntry[], info: string, error: string) {
+  const sorted = entries.map((entry) => `${entry.path}:${entry.status}`).join("\n");
+  return `${info}\n${error}\n${sorted}`;
+}
+
+export function sortEntries(entries: GitStatusEntry[]) {
+  return [...entries].sort((a, b) => {
+    const priorityDiff = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    return a.path.localeCompare(b.path);
+  });
+}
+
+export function toRelativeEntryPath(projectPath: string, path: string) {
+  const normalizedProjectPath = projectPath.replace(/\\/g, "/").replace(/\/$/, "");
+  const normalizedPath = path.replace(/\\/g, "/");
+  return normalizedPath.startsWith(`${normalizedProjectPath}/`)
+    ? normalizedPath.slice(normalizedProjectPath.length + 1)
+    : normalizedPath;
+}
+
+export function entryPathDisplayForProject(projectPath: string, path: string) {
+  const relative = toRelativeEntryPath(projectPath, path);
+  return relative.startsWith("/") ? relative : `/${relative}`;
+}
+
+export function nameClasses(status: GitFileStatus) {
+  if (status === "added") {
+    return "text-green-600";
+  }
+
+  if (status === "modified") {
+    return "text-blue-600";
+  }
+
+  return "text-red-600";
+}
+
+export function statusLabel(status: GitFileStatus) {
+  if (status === "added") {
+    return "added";
+  }
+
+  if (status === "modified") {
+    return "modified";
+  }
+
+  return "deleted";
+}
+
+export function statusBadgeClasses(status: GitFileStatus) {
+  if (status === "added") {
+    return "bg-green-500/15 text-green-600";
+  }
+
+  if (status === "modified") {
+    return "bg-blue-500/15 text-blue-600";
+  }
+
+  return "bg-red-500/15 text-red-600";
+}
+
+export function entryDisplayName(path: string) {
+  const segments = path.replace(/\\/g, "/").split("/");
+  return segments[segments.length - 1] ?? path;
+}

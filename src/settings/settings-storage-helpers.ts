@@ -59,7 +59,89 @@ export const toVersionedStringEntriesPayload = (
   };
 };
 
-export const loadJsonProjectSetting = async <T>(
+type FailOrFallback<T> = (error: unknown, fallbackReason: string) => T;
+
+function createFailOrFallback<T>(settingLabel: string, fallbackValue: T): FailOrFallback<T> {
+  return (error: unknown, fallbackReason: string): T => {
+    const message = toContextualErrorMessage(`Failed to load ${settingLabel}`, error, fallbackReason);
+    if (isFailFastMode) {
+      throw new Error(message);
+    }
+
+    console.error(message, error);
+    return fallbackValue;
+  };
+}
+
+async function persistFallbackAndReturn<T>(
+  projectPath: string,
+  filename: string,
+  fallbackPersistValue: unknown,
+  fallbackValue: T,
+  settingLabel: string,
+  failOrFallback: FailOrFallback<T>
+): Promise<T> {
+  try {
+    await saveJsonProjectSetting(projectPath, filename, fallbackPersistValue, settingLabel);
+    return fallbackValue;
+  } catch (error) {
+    return failOrFallback(error, `Unable to persist fallback value for ${settingLabel}.`);
+  }
+}
+
+function parseLoadedSettingContent<T>(
+  content: string,
+  parser: (value: unknown) => T | null,
+  settingLabel: string,
+  failOrFallback: FailOrFallback<T>
+): T {
+  try {
+    const parsed: unknown = JSON.parse(content);
+    const parsedValue = parser(parsed);
+    if (parsedValue === null) {
+      return failOrFallback(null, `${settingLabel} has invalid structure.`);
+    }
+
+    return parsedValue;
+  } catch (error) {
+    return failOrFallback(error, `${settingLabel} has invalid JSON.`);
+  }
+}
+
+function createPersistFallbackHandler<T>(
+  projectPath: string,
+  filename: string,
+  fallbackPersistValue: unknown,
+  fallbackValue: T,
+  settingLabel: string,
+  failOrFallback: FailOrFallback<T>
+) {
+  return () =>
+    persistFallbackAndReturn(
+      projectPath,
+      filename,
+      fallbackPersistValue,
+      fallbackValue,
+      settingLabel,
+      failOrFallback
+    );
+}
+
+async function readProjectSettingResponse<T>(
+  projectPath: string,
+  filename: string,
+  settingLabel: string,
+  failOrFallback: FailOrFallback<T>
+): Promise<SettingsReadResponse | null> {
+  try {
+    return await window.projectApi.settings.read(projectPath, filename);
+  } catch (error) {
+    failOrFallback(error, `Unexpected error while loading ${settingLabel}.`);
+    return null;
+  }
+}
+
+export async function loadJsonProjectSetting<T>(
   projectPath: string,
   filename: string,
   parser: (value: unknown) => T | null,
@@ -68,66 +150,26 @@ export const loadJsonProjectSetting = async <T>(
     readonly settingLabel?: string;
     readonly persistFallbackValue?: unknown;
   }
-): Promise<T> => {
+): Promise<T> {
   const settingLabel = options?.settingLabel ?? filename;
   const fallbackPersistValue = options?.persistFallbackValue ?? fallbackValue;
-  const failOrFallback = (error: unknown, fallbackReason: string): T => {
-    const message = toContextualErrorMessage(
-      `Failed to load ${settingLabel}`,
-      error,
-      fallbackReason
-    );
-    if (isFailFastMode) {
-      throw new Error(message);
-    }
-
-    console.error(message, error);
+  const failOrFallback = createFailOrFallback(settingLabel, fallbackValue);
+  const persistFallback = createPersistFallbackHandler(projectPath, filename, fallbackPersistValue, fallbackValue, settingLabel, failOrFallback);
+  const response = await readProjectSettingResponse(projectPath, filename, settingLabel, failOrFallback);
+  if (response === null) {
     return fallbackValue;
-  };
-
-  const persistFallbackAndReturn = async (): Promise<T> => {
-    try {
-      await saveJsonProjectSetting(projectPath, filename, fallbackPersistValue, settingLabel);
-      return fallbackValue;
-    } catch (error) {
-      return failOrFallback(
-        error,
-        `Unable to persist fallback value for ${settingLabel}.`
-      );
-    }
-  };
-
-  try {
-    const response = await window.projectApi.settings.read(projectPath, filename);
-    if (!response.ok) {
-      return failOrFallback(response.error, `Unable to read ${settingLabel}.`);
-    }
-
-    if (!response.content) {
-      return await persistFallbackAndReturn();
-    }
-
-    try {
-      const parsed: unknown = JSON.parse(response.content);
-      const parsedValue = parser(parsed);
-      if (parsedValue === null) {
-        return failOrFallback(
-          null,
-          `${settingLabel} has invalid structure.`
-        );
-      }
-
-      return parsedValue;
-    } catch (error) {
-      return failOrFallback(
-        error,
-        `${settingLabel} has invalid JSON.`
-      );
-    }
-  } catch (error) {
-    return failOrFallback(error, `Unexpected error while loading ${settingLabel}.`);
   }
-};
+
+  if (!response.ok) {
+    return failOrFallback(response.error, `Unable to read ${settingLabel}.`);
+  }
+
+  if (!response.content) {
+    return persistFallback();
+  }
+
+  return parseLoadedSettingContent(response.content, parser, settingLabel, failOrFallback);
+}
 
 export const saveJsonProjectSetting = async (
   projectPath: string,

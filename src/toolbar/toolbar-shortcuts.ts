@@ -129,6 +129,66 @@ const formatShortcutCode = (code: string): string => {
   return codeToDisplayKey[code] ?? code;
 };
 
+interface ParsedShortcutModifiers {
+  alt: boolean;
+  ctrl: boolean;
+  shift: boolean;
+  meta: boolean;
+}
+
+function applyUniqueModifierFlag(
+  modifiers: ParsedShortcutModifiers,
+  key: keyof ParsedShortcutModifiers
+): boolean {
+  if (modifiers[key]) {
+    return false;
+  }
+
+  modifiers[key] = true;
+  return true;
+}
+
+function applyShortcutModifier(
+  modifiers: ParsedShortcutModifiers,
+  modifierToken: string
+): boolean {
+  const token = modifierToken.toLowerCase();
+  if (token === "alt") {
+    return applyUniqueModifierFlag(modifiers, "alt");
+  }
+
+  if (token === "ctrl" || token === "control") {
+    return applyUniqueModifierFlag(modifiers, "ctrl");
+  }
+
+  if (token === "shift") {
+    return applyUniqueModifierFlag(modifiers, "shift");
+  }
+
+  if (token === "meta" || token === "cmd" || token === "command") {
+    return applyUniqueModifierFlag(modifiers, "meta");
+  }
+
+  return false;
+}
+
+function parseShortcutModifiers(modifierTokens: readonly string[]): ParsedShortcutModifiers | null {
+  const modifiers: ParsedShortcutModifiers = {
+    alt: false,
+    ctrl: false,
+    shift: false,
+    meta: false
+  };
+
+  for (const modifierToken of modifierTokens) {
+    if (!applyShortcutModifier(modifiers, modifierToken)) {
+      return null;
+    }
+  }
+
+  return modifiers;
+}
+
 export const parseShortcut = (shortcut: string): ParsedShortcut | null => {
   const parts = shortcut.split("+").map((part) => part.trim());
   if (parts.length < 2 || parts.some((part) => part.length === 0)) {
@@ -140,51 +200,14 @@ export const parseShortcut = (shortcut: string): ParsedShortcut | null => {
     return null;
   }
 
-  let alt = false;
-  let ctrl = false;
-  let shift = false;
-  let meta = false;
-
-  for (const modifierToken of parts.slice(0, -1)) {
-    switch (modifierToken.toLowerCase()) {
-      case "alt":
-        if (alt) {
-          return null;
-        }
-        alt = true;
-        break;
-      case "ctrl":
-      case "control":
-        if (ctrl) {
-          return null;
-        }
-        ctrl = true;
-        break;
-      case "shift":
-        if (shift) {
-          return null;
-        }
-        shift = true;
-        break;
-      case "meta":
-      case "cmd":
-      case "command":
-        if (meta) {
-          return null;
-        }
-        meta = true;
-        break;
-      default:
-        return null;
-    }
+  const modifiers = parseShortcutModifiers(parts.slice(0, -1));
+  if (!modifiers) {
+    return null;
   }
 
   return {
-    alt,
-    ctrl,
-    shift,
-    meta,
-    code,
+    ...modifiers,
+    code
   };
 };
 
@@ -227,18 +250,36 @@ export interface ShortcutMapping {
 const toElementActions = (element: ToolbarConfig["elements"][number]): readonly ToolbarAction[] =>
   "items" in element ? element.items : [element];
 
-export const buildShortcutMap = (config: ToolbarConfig): readonly ShortcutMapping[] =>
-  config.elements.flatMap((element): readonly ShortcutMapping[] =>
-    toElementActions(element).flatMap((action): readonly ShortcutMapping[] => {
-      if (!action.shortcut) {
-        return [];
-      }
+function toActionShortcutMapping(action: ToolbarAction): ShortcutMapping | null {
+  if (!action.shortcut) {
+    return null;
+  }
 
-      const parsed = parseShortcut(action.shortcut);
-      if (!parsed) {
-        return [];
-      }
+  const parsed = parseShortcut(action.shortcut);
+  if (!parsed) {
+    return null;
+  }
 
-      return [{ parsed, action }];
-    })
-  );
+  return { parsed, action };
+}
+
+function appendElementShortcutMappings(
+  mappings: ShortcutMapping[],
+  element: ToolbarConfig["elements"][number]
+) {
+  for (const action of toElementActions(element)) {
+    const mapping = toActionShortcutMapping(action);
+    if (mapping) {
+      mappings.push(mapping);
+    }
+  }
+}
+
+export const buildShortcutMap = (config: ToolbarConfig): readonly ShortcutMapping[] => {
+  const mappings: ShortcutMapping[] = [];
+  for (const element of config.elements) {
+    appendElementShortcutMappings(mappings, element);
+  }
+
+  return mappings;
+};

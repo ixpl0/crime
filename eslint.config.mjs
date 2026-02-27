@@ -71,6 +71,23 @@ export default [
   {
     files: ["src/**/*.{ts,vue}", "vite.config.ts"],
     rules: {
+      "max-lines": [
+        "error",
+        {
+          max: 300,
+          skipBlankLines: true,
+          skipComments: true
+        }
+      ],
+      "max-lines-per-function": [
+        "error",
+        {
+          max: 30,
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true
+        }
+      ],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/consistent-type-imports": [
         "error",
@@ -78,6 +95,13 @@ export default [
           fixStyle: "inline-type-imports"
         }
       ]
+    }
+  },
+  {
+    files: ["src/App.vue"],
+    rules: {
+      "max-lines": "off",
+      "max-lines-per-function": "off"
     }
   },
   {
