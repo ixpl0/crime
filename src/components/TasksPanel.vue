@@ -9,7 +9,7 @@
           class="btn btn-ghost btn-xs"
           type="button"
           title="Hide todo panel"
-          @click="toggleCollapse"
+          @click="toggleTodoPanelCollapse"
         >
           <EyeOff :size="14" class="opacity-60" />
         </button>
@@ -67,33 +67,33 @@
 
 <script setup lang="ts">
 import { EyeOff, GripVertical } from "lucide-vue-next";
-import { type TodoDraftViewItem } from "../app/use-todo-panel";
+import { useAppTerminalStore } from "../app/terminal-store";
+import { useAppTodoStore } from "../app/todo-store";
 
-const props = defineProps<{
-  todoDraftViewItems: TodoDraftViewItem[];
-  todoDragSourceIndex: number | null;
-  todoDragOverIndex: number | null;
-  isTerminalReady: boolean;
-  lastPrompt: string | undefined;
-  toggleCollapse: () => void;
-  canDragTodoDraft: (index: number) => boolean;
-  shouldShowTodoDragHandle: (index: number) => boolean;
-  handleTodoDragStart: (index: number, event: DragEvent) => void;
-  handleTodoDragEnter: (index: number, event: DragEvent) => void;
-  handleTodoDragOver: (index: number, event: DragEvent) => void;
-  handleTodoDragEnd: () => void;
-  handleTodoDrop: (index: number, event: DragEvent) => void;
-  handleTodoTextareaInput: (index: number, event: Event) => void;
-  handleTodoTextareaKeydown: (event: KeyboardEvent) => void;
-  handleTodoTextareaBlur: () => void;
-  sendTodoEntryToTerminal: (index: number) => void;
-}>();
+const {
+  todoDraftViewItems,
+  todoDragSourceIndex,
+  todoDragOverIndex,
+  toggleTodoPanelCollapse,
+  canDragTodoDraft,
+  shouldShowTodoDragHandle,
+  handleTodoDragStart,
+  handleTodoDragEnter,
+  handleTodoDragOver,
+  handleTodoDragEnd,
+  handleTodoDrop,
+  handleTodoTextareaInput,
+  handleTodoTextareaKeydown,
+  handleTodoTextareaBlur,
+  sendTodoEntryToTerminal
+} = useAppTodoStore();
+const { isTerminalReady, lastPrompt } = useAppTerminalStore();
 
 function isActiveDropTarget(index: number) {
   return (
-    props.todoDragOverIndex === index &&
-    props.todoDragSourceIndex !== null &&
-    props.todoDragSourceIndex !== index
+    todoDragOverIndex.value === index &&
+    todoDragSourceIndex.value !== null &&
+    todoDragSourceIndex.value !== index
   );
 }
 </script>

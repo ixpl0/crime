@@ -91,7 +91,6 @@
 </template>
 
 <script setup lang="ts">
-import { type ComponentPublicInstance } from "vue";
 import {
   ArrowDown,
   ArrowLeft,
@@ -99,44 +98,46 @@ import {
   ArrowUp,
   CornerDownLeft
 } from "lucide-vue-next";
-import { type PromptSuffixConfig } from "../types/prompt-suffix";
-import { type ToolbarAction, type ToolbarConfig } from "../types/toolbar";
+import { useAppConfigStore } from "../app/config-store";
+import { useAppTerminalStore } from "../app/terminal-store";
 import PromptSuffixPanel from "./PromptSuffixPanel.vue";
 import ToolbarPanel from "./ToolbarPanel.vue";
 
-const props = defineProps<{
-  toolbarConfig: ToolbarConfig;
-  promptSuffixConfig: PromptSuffixConfig;
-  isTerminalReady: boolean;
-  terminalPanelHeight: number;
-  isTerminalPanelResizeActive: boolean;
-  terminalInputText: string;
-  quickKeyGridSlots: Array<QuickKeyBinding | null>;
-  lastPrompt: string | undefined;
-  setTerminalContainer: (element: Element | ComponentPublicInstance | null) => void;
-  setTerminalInputTextarea: (element: Element | ComponentPublicInstance | null) => void;
-  executeToolbarAction: (action: ToolbarAction) => void;
-  openToolbarConfigEditor: () => void;
-  focusTerminal: () => void;
-  handleTerminalContextMenu: (event: MouseEvent) => void;
-  handleTerminalAuxClick: (event: MouseEvent) => void;
-  handleTerminalPanelResizePointerDown: (event: PointerEvent) => void;
-  setTerminalInputText: (value: string) => void;
-  handleTextareaKeydown: (event: KeyboardEvent) => void;
-  handleTextareaInput: (event: Event) => void;
-  handleTextareaPaste: (event: ClipboardEvent) => void;
-  sendTextareaToTerminal: () => void;
-  handlePromptSuffixToggle: (index: number) => void;
-  openPromptSuffixConfigEditor: () => void;
-  sendQuickKey: (data: string) => void;
-}>();
+const {
+  toolbarConfig,
+  promptSuffixConfig,
+  openToolbarConfigEditor,
+  openPromptSuffixConfigEditor,
+  handlePromptSuffixToggle
+} = useAppConfigStore();
+const {
+  isTerminalReady,
+  terminalPanelHeight,
+  isTerminalPanelResizeActive,
+  terminalInputText,
+  quickKeyGridSlots,
+  lastPrompt,
+  setTerminalContainer,
+  setTerminalInputTextarea,
+  executeToolbarAction,
+  focusTerminal,
+  handleTerminalContextMenu,
+  handleTerminalAuxClick,
+  handleTerminalPanelResizePointerDown,
+  setTerminalInputText,
+  handleTextareaKeydown,
+  handleTextareaInput,
+  handleTextareaPaste,
+  sendTextareaToTerminal,
+  sendQuickKey
+} = useAppTerminalStore();
 
 function handleTerminalInput(event: Event) {
   const target = event.currentTarget;
   if (target instanceof HTMLTextAreaElement) {
-    props.setTerminalInputText(target.value);
+    setTerminalInputText(target.value);
   }
-  props.handleTextareaInput(event);
+  handleTextareaInput(event);
 }
 </script>
 

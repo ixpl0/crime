@@ -125,34 +125,31 @@
 
 <script setup lang="ts">
 import { ChevronDown, Eye, Settings } from "lucide-vue-next";
-import {
-  type AppTab,
-  type HiddenPanelId,
-  type HiddenPanelOption
-} from "../app/use-app-navigation";
+import { useAppConfigStore } from "../app/config-store";
+import { useAppNavigationStore } from "../app/navigation-store";
 
-defineProps<{
-  activeTab: AppTab;
-  isOpening: boolean;
-  isProjectDropdownOpen: boolean;
-  isHiddenPanelsDropdownOpen: boolean;
-  hiddenPanelOptions: HiddenPanelOption[];
-  recentProjects: string[];
-  getProjectNameFromPath: (path: string) => string;
-  setActiveTab: (tab: AppTab) => void;
-  toggleProjectDropdown: () => void;
-  handleProjectDropdownFocusOut: (event: FocusEvent) => void;
-  handleProjectDropdownTriggerKeydown: (event: KeyboardEvent) => void;
-  setProjectDropdownOpen: (shouldOpen: boolean) => void;
-  openProjectFolder: () => void;
-  openRecentProject: (path: string) => void;
-  toggleHiddenPanelsDropdown: () => void;
-  handleHiddenPanelsDropdownFocusOut: (event: FocusEvent) => void;
-  handleHiddenPanelsDropdownTriggerKeydown: (event: KeyboardEvent) => void;
-  setHiddenPanelsDropdownOpen: (shouldOpen: boolean) => void;
-  showHiddenPanel: (panelId: HiddenPanelId) => void;
-  openProjectSettings: () => void;
-}>();
+const {
+  activeTab,
+  isOpening,
+  isProjectDropdownOpen,
+  isHiddenPanelsDropdownOpen,
+  hiddenPanelOptions,
+  recentProjects,
+  getProjectNameFromPath,
+  setActiveTab,
+  toggleProjectDropdown,
+  handleProjectDropdownFocusOut,
+  handleProjectDropdownTriggerKeydown,
+  setProjectDropdownOpen,
+  openProjectFolder,
+  openRecentProject,
+  toggleHiddenPanelsDropdown,
+  handleHiddenPanelsDropdownFocusOut,
+  handleHiddenPanelsDropdownTriggerKeydown,
+  setHiddenPanelsDropdownOpen,
+  showHiddenPanel
+} = useAppNavigationStore();
+const { openProjectSettingsEditor: openProjectSettings } = useAppConfigStore();
 </script>
 
 <style scoped>
