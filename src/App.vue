@@ -344,11 +344,13 @@
               </div>
             </form>
           </div>
-          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-y-auto px-1">
-            <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1">
+            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
               <FileManagerPanel
                 v-if="projectPath"
+                class="h-full min-h-0"
                 :project-path="projectPath"
+                :selected-path="filesDisplayPath"
                 :reveal-path="fileTreeRevealPath"
                 :reveal-request-token="fileTreeRevealRequestToken"
                 @select-file="handleFileSelect"
@@ -356,6 +358,7 @@
 
               <FileContentViewer
                 v-if="projectPath"
+                class="h-full min-h-0"
                 :project-path="projectPath"
                 :file-path="selectedFilePath"
                 :target-line="selectedFileTargetLine"
@@ -364,17 +367,20 @@
               />
             </div>
           </div>
-          <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-y-auto px-1">
-            <div class="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+          <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1">
+            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
               <ChangesPanel
                 v-if="projectPath"
+                class="h-full min-h-0"
                 :project-path="projectPath"
                 :selected-path="changesSelectedFilePath"
                 @select-file="handleChangesFileSelect"
+                @open-path="handleChangesPathOpen"
               />
 
               <FileContentViewer
                 v-if="projectPath"
+                class="h-full min-h-0"
                 :project-path="projectPath"
                 :file-path="changesSelectedFilePath"
                 :is-active="activeTab === 'changes'"
@@ -574,6 +580,7 @@ const activeTab = ref<AppTab>("agent");
 const isProjectDropdownOpen = ref(false);
 const isHiddenPanelsDropdownOpen = ref(false);
 const selectedFilePath = ref<string | null>(null);
+const filesDisplayPath = ref<string | null>(null);
 const changesSelectedFilePath = ref<string | null>(null);
 const selectedFileTargetLine = ref<number | null>(null);
 const selectedFileTargetRequestToken = ref(0);
@@ -2569,6 +2576,7 @@ async function openTerminalPathInFiles(path: string, line: number | null, column
     const directoryResponse = await window.projectApi.filesystem.readDirectory(path);
     if (directoryResponse.ok) {
       selectedFilePath.value = null;
+      filesDisplayPath.value = path;
       selectedFileTargetLine.value = null;
       selectedFileTargetRequestToken.value += 1;
       return;
@@ -2581,6 +2589,7 @@ async function openTerminalPathInFiles(path: string, line: number | null, column
     const fileResponse = await window.projectApi.filesystem.readFile(currentProjectPath, path);
     if (fileResponse.ok) {
       selectedFilePath.value = path;
+      filesDisplayPath.value = path;
       selectedFileTargetLine.value = line;
       selectedFileTargetRequestToken.value += 1;
       return;
@@ -2790,6 +2799,7 @@ async function startTerminal(cwd: string) {
 function resetProjectRuntimeState() {
   clearTabNavigationHistory();
   selectedFilePath.value = null;
+  filesDisplayPath.value = null;
   changesSelectedFilePath.value = null;
   selectedFileTargetLine.value = null;
   selectedFileTargetRequestToken.value = 0;
@@ -2965,10 +2975,15 @@ function handleFileSelect(path: string) {
   }
 
   selectedFilePath.value = path;
+  filesDisplayPath.value = path;
 }
 
 function handleChangesFileSelect(path: string) {
   changesSelectedFilePath.value = path;
+}
+
+function handleChangesPathOpen(path: string) {
+  void openTerminalPathInFiles(path, null, null);
 }
 
 function sendQuickKey(data: string) {

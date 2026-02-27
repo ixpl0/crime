@@ -1,15 +1,20 @@
 <template>
-  <div class="flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
-    <div class="flex items-center gap-2 border-b border-base-300 px-3 py-2">
-      <span class="truncate text-sm font-medium">
-        {{ filePath ? fileName : "File preview" }}
-      </span>
-      <span v-if="filePath" class="ml-auto truncate text-xs text-base-content/60">
+  <div class="flex h-full min-h-0 flex-col rounded-box border border-base-300 bg-base-200/70 shadow-sm">
+    <div class="border-b border-base-300/80 bg-base-100/40 px-3 py-2">
+      <div class="flex items-center gap-2">
+        <span class="truncate text-sm font-semibold">
+          {{ filePath ? fileName : "File preview" }}
+        </span>
+        <span v-if="filePath && !isLoading" class="ml-auto text-[11px] text-base-content/45">
+          {{ `${String(displayLines.length)} lines` }}
+        </span>
+      </div>
+      <div v-if="filePath" class="truncate text-xs text-base-content/55">
         {{ filePath }}
-      </span>
+      </div>
     </div>
 
-    <div ref="scrollContainer" class="min-h-0 flex-1 overflow-auto">
+    <div ref="scrollContainer" class="min-h-0 flex-1 overflow-auto bg-base-100/35">
       <div v-if="!filePath" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
         Select a file in the tree to preview it.
       </div>
@@ -26,15 +31,15 @@
         File is empty.
       </div>
 
-      <div v-else class="font-mono text-sm">
+      <div v-else class="font-mono text-[13px] leading-6">
         <div
           v-for="(line, index) in displayLines"
           :key="`${line.type}:${String(index)}:${line.text}`"
-          class="flex transition-colors duration-500"
+          class="flex transition-colors duration-200 hover:bg-base-300/40"
           :data-line-number="index + 1"
           :class="lineRowClasses(line.type, index + 1)"
         >
-          <span class="w-12 shrink-0 select-none border-r border-base-300/50 px-2 py-0.5 text-right text-xs text-base-content/50">
+          <span class="w-14 shrink-0 select-none border-r border-base-300/50 px-2 py-0.5 text-right text-xs text-base-content/50">
             {{ index + 1 }}
           </span>
 
@@ -50,7 +55,7 @@
 
     <div
       v-if="diffInfoMessage"
-      class="border-t border-base-300 px-3 py-2 text-xs text-base-content/60"
+      class="border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60"
     >
       {{ diffInfoMessage }}
     </div>

@@ -1,7 +1,16 @@
 <template>
-  <div class="flex flex-col gap-2">
-    <div class="relative flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
-      <div class="min-h-0 flex-1 overflow-y-auto p-2">
+  <div class="flex h-full min-h-0 flex-col gap-3">
+    <div class="relative flex min-h-0 flex-1 flex-col rounded-box border border-base-300 bg-base-200/70 shadow-sm">
+      <div class="flex items-center gap-2 border-b border-base-300/80 px-3 py-2">
+        <span class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
+          Files
+        </span>
+        <span class="ml-auto text-[11px] text-base-content/45">
+          {{ headerSummary }}
+        </span>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <div v-if="isLoading" class="flex items-center justify-center py-8">
           <span class="loading loading-spinner loading-md" />
         </div>
@@ -14,13 +23,14 @@
           Empty directory
         </div>
 
-        <div v-else>
+        <div v-else class="space-y-0.5">
           <FileTreeNode
             v-for="entry in entries"
             :key="entry.path"
             :entry="entry"
             :depth="0"
             :refresh-token="refreshToken"
+            :selected-path="props.selectedPath"
             :reveal-path="props.revealPath"
             :reveal-request-token="props.revealRequestToken"
             :git-statuses="gitStatuses"
@@ -33,7 +43,7 @@
 
       <div
         v-if="gitInfoMessage"
-        class="border-t border-base-300 px-3 py-2 text-xs text-base-content/60"
+        class="border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60"
       >
         {{ gitInfoMessage }}
       </div>
@@ -57,7 +67,7 @@
       </div>
     </div>
 
-    <div class="flex justify-end">
+    <div class="flex items-center justify-end">
       <button
         type="button"
         class="btn btn-error btn-xs btn-outline"
@@ -87,10 +97,12 @@ import { toErrorMessage } from "../utils/fail-fast";
 const props = withDefaults(
   defineProps<{
     projectPath: string;
+    selectedPath?: string | null;
     revealPath?: string | null;
     revealRequestToken?: number;
   }>(),
   {
+    selectedPath: null,
     revealPath: null,
     revealRequestToken: 0
   }
@@ -133,7 +145,13 @@ let isAutoRefreshInFlight = false;
 let lastStateSnapshot = "";
 let lastStructureSnapshot = "";
 
-const hasChanges = computed(() => Object.keys(gitStatuses.value).length > 0);
+const changedFilesCount = computed(() => Object.keys(gitStatuses.value).length);
+const hasChanges = computed(() => changedFilesCount.value > 0);
+const headerSummary = computed(() =>
+  hasChanges.value
+    ? `${String(changedFilesCount.value)} changed`
+    : `${String(entries.value.length)} items`
+);
 const isActionInProgress = computed(() => isRevertingAll.value || revertingPath.value !== null);
 
 function getGitUnavailableMessage(reason?: GitMutateResponse["reason"]) {
