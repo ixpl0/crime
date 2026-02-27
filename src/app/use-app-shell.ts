@@ -1,41 +1,32 @@
 /* eslint-disable max-lines */
 import { ref, type ComponentPublicInstance } from "vue";
-import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { type ProjectSettings } from "../types/project-settings";
-import { type ToolbarAction, type ToolbarConfig } from "../types/toolbar";
-import { defaultPromptSuffixConfig } from "../prompt-suffix/default-prompt-suffix-config";
 import {
-  PROMPT_SUFFIX_CONFIG_FILENAME,
-  savePromptSuffixConfig
+  PROMPT_SUFFIX_CONFIG_FILENAME
 } from "../prompt-suffix/prompt-suffix-storage";
 import {
-  defaultProjectSettings,
-  PROJECT_SETTINGS_FILENAME,
-  saveProjectSettings
+  PROJECT_SETTINGS_FILENAME
 } from "../settings/project-settings-storage";
 import {
   loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
   saveTerminalInputHistory
 } from "../settings/terminal-input-history-storage";
-import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
 import {
-  saveToolbarConfig,
   TOOLBAR_CONFIG_FILENAME
 } from "../toolbar/toolbar-storage";
 import { toContextualErrorMessage } from "../utils/fail-fast";
 import { provideAppConfigStore } from "./config-store";
-import {
-  normalizeProjectZoomSettings,
-  normalizeTerminalFontSize
-} from "./project-layout-utils";
+import { normalizeProjectZoomSettings, normalizeTerminalFontSize } from "./project-layout-utils";
 import { provideAppNavigationStore } from "./navigation-store";
 import { useAppNavigation } from "./use-app-navigation";
 import { useAppRuntime } from "./use-app-runtime";
+import { useConfigManagement } from "./use-config-management";
 import { useFileNavigation } from "./use-file-navigation";
 import { useProjectLayout } from "./use-project-layout";
 import { useProjectSession } from "./use-project-session";
 import { useRecentProjects } from "./use-recent-projects";
 import { provideAppTerminalStore } from "./terminal-store";
+import { useTerminalActions } from "./use-terminal-actions";
 import { useTerminalInputHistory } from "./use-terminal-input-history";
 import { useTerminalSubmit } from "./use-terminal-submit";
 import { useTerminalView } from "./use-terminal-view";
@@ -43,7 +34,6 @@ import { provideAppTodoStore } from "./todo-store";
 import { useTodoPanel } from "./use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
 
-// Root composition layer for app bootstrap. Split further when domain boundaries settle.
 // eslint-disable-next-line max-lines-per-function
 export function useAppShell() {
   const settingsDirectoryName = window.projectApi.settings.directoryName;
@@ -71,6 +61,7 @@ export function useAppShell() {
   const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
   const RECENT_PROJECTS_STORAGE_KEY = "dream-ide:recent-projects";
   const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
+
   const {
     recentProjects,
     getProjectNameFromPath,
@@ -81,6 +72,7 @@ export function useAppShell() {
     RECENT_PROJECTS_STORAGE_KEY,
     (path) => window.projectApi.filesystem.readDirectory(path)
   );
+
   const {
     isTodoPanelCollapsed,
     todoDragSourceIndex,
@@ -108,12 +100,32 @@ export function useAppShell() {
     collapsedStorageKey: TODO_PANEL_COLLAPSED_STORAGE_KEY,
     reportUiError
   });
-  const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
-  const promptSuffixConfig = ref<PromptSuffixConfig>(defaultPromptSuffixConfig);
-  const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
-  const isToolbarConfigEditorOpen = ref(false);
-  const isPromptSuffixConfigEditorOpen = ref(false);
-  const isProjectSettingsEditorOpen = ref(false);
+
+  const {
+    toolbarConfig,
+    promptSuffixConfig,
+    projectSettings,
+    isToolbarConfigEditorOpen,
+    isPromptSuffixConfigEditorOpen,
+    isProjectSettingsEditorOpen,
+    openToolbarConfigEditor,
+    closeToolbarConfigEditor,
+    openPromptSuffixConfigEditor,
+    closePromptSuffixConfigEditor,
+    openProjectSettingsEditor,
+    closeProjectSettingsEditor,
+    handleToolbarConfigSave,
+    handlePromptSuffixConfigSave,
+    handlePromptSuffixToggle,
+    applyPromptSuffixConfig,
+    persistProjectSettings,
+    canReloadPromptSuffixConfig,
+    resetConfigPersistState
+  } = useConfigManagement({
+    projectPath,
+    reportUiError
+  });
+
   const {
     sendTerminalInput,
     attemptSubmitTerminalText,
@@ -131,6 +143,7 @@ export function useAppShell() {
     textareaSubmitQuietTimeoutCapMs: TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS,
     sendTerminalInputRequest: (data) => window.projectApi.terminal.input(data)
   });
+
   const {
     terminalInputText,
     terminalInputTextarea,
@@ -162,6 +175,7 @@ export function useAppShell() {
       }),
     sendAltVShortcut
   });
+
   const {
     activeTab,
     isProjectDropdownOpen,
@@ -193,6 +207,7 @@ export function useAppShell() {
       void resizeTerminalBackend();
     }
   });
+
   const {
     selectedFilePath,
     filesDisplayPath,
@@ -217,6 +232,7 @@ export function useAppShell() {
     readFile: (currentProjectPath, path) =>
       window.projectApi.filesystem.readFile(currentProjectPath, path)
   });
+
   const {
     startTerminal,
     resizeTerminalBackend,
@@ -242,6 +258,7 @@ export function useAppShell() {
       window.projectApi.terminal.start(cwd, size),
     resetTerminalSessionState
   });
+
   const {
     terminalPanelHeight,
     isTerminalPanelResizeActive,
@@ -260,6 +277,21 @@ export function useAppShell() {
     persistProjectSettings,
     reportUiError
   });
+
+  const {
+    executeToolbarAction,
+    sendQuickKey,
+    sendTodoEntryToTerminal
+  } = useTerminalActions({
+    isTerminalReady,
+    attemptSubmitTerminalText,
+    sendTerminalInput,
+    focusTerminal,
+    getTodoEntry,
+    removeTodoEntry,
+    appendTerminalInputHistory
+  });
+
   const {
     openProject,
     openProjectFolder,
@@ -276,18 +308,12 @@ export function useAppShell() {
     addRecentProject,
     resetProjectRuntimeState,
     applyProjectSettings,
-    canReloadPromptSuffixConfig: () =>
-      promptSuffixConfigEditVersion <= promptSuffixConfigPersistedVersion,
+    canReloadPromptSuffixConfig,
     loadTerminalInputHistoryForProject,
     loadTodoEntriesForProject,
     startTerminal,
     reportUiError
   });
-
-  let promptSuffixConfigEditVersion = 0;
-  let promptSuffixConfigPersistedVersion = 0;
-  let promptSuffixConfigPersistQueue: Promise<void> = Promise.resolve();
-  let projectSettingsPersistQueue: Promise<void> = Promise.resolve();
 
   useAppRuntime({
     isTodoPanelCollapsed,
@@ -429,39 +455,23 @@ export function useAppShell() {
     return message;
   }
 
-  function persistProjectSettings(settings: ProjectSettings) {
-    if (!projectPath.value) {
-      return;
-    }
-
-    const path = projectPath.value;
-    const operation = async () => {
-      try {
-        await saveProjectSettings(path, settings);
-      } catch (error) {
-        reportUiError(
-          "Project settings",
-          error,
-          "Failed to persist project settings."
-        );
-      }
-    };
-
-    projectSettingsPersistQueue = projectSettingsPersistQueue.then(
-      operation,
-      operation
-    );
-  }
-
   function resetProjectRuntimeState() {
     clearTabNavigationHistory();
     resetFileNavigationState();
     resetTerminalInputRuntimeState();
     resetTodoRuntimeState();
-    promptSuffixConfigEditVersion = 0;
-    promptSuffixConfigPersistedVersion = 0;
-    promptSuffixConfigPersistQueue = Promise.resolve();
-    projectSettingsPersistQueue = Promise.resolve();
+    resetConfigPersistState();
+  }
+
+  function handleProjectSettingsSave(settings: ProjectSettings) {
+    const normalizedSettings: ProjectSettings = {
+      ...settings,
+      zoom: normalizeProjectZoomSettings(settings.zoom)
+    };
+    projectSettings.value = normalizedSettings;
+    applyProjectSettings(normalizedSettings);
+    persistProjectSettings(normalizedSettings);
+    isProjectSettingsEditorOpen.value = false;
   }
 
   function setTerminalContainerElement(
@@ -479,205 +489,5 @@ export function useAppShell() {
 
   function setTerminalInputText(value: string) {
     terminalInputText.value = value;
-  }
-
-  function openToolbarConfigEditor() {
-    isToolbarConfigEditorOpen.value = true;
-  }
-
-  function closeToolbarConfigEditor() {
-    isToolbarConfigEditorOpen.value = false;
-  }
-
-  function openPromptSuffixConfigEditor() {
-    isPromptSuffixConfigEditorOpen.value = true;
-  }
-
-  function closePromptSuffixConfigEditor() {
-    isPromptSuffixConfigEditorOpen.value = false;
-  }
-
-  function openProjectSettingsEditor() {
-    isProjectSettingsEditorOpen.value = true;
-  }
-
-  function closeProjectSettingsEditor() {
-    isProjectSettingsEditorOpen.value = false;
-  }
-
-  async function runTerminalCommand(command: string) {
-    const result = await attemptSubmitTerminalText(command, {
-      notReady: "Terminal is not ready to run commands.",
-      messages: {
-        sendSlash: "Failed to send slash command to terminal.",
-        sendText: "Failed to send command text to terminal.",
-        submit: "Failed to submit command in terminal."
-      },
-      inputType: "command"
-    });
-    if (result !== "submitted") {
-      return;
-    }
-
-    focusTerminal();
-  }
-
-  async function runToolbarPrompt(promptText: string) {
-    const result = await attemptSubmitTerminalText(promptText, {
-      notReady: "Terminal is not ready to send prompt.",
-      messages: {
-        sendSlash: "Failed to send slash command from prompt.",
-        sendText: "Failed to send prompt text to terminal.",
-        submit: "Failed to submit prompt in terminal."
-      },
-      inputType: "prompt"
-    });
-    if (result !== "submitted") {
-      return;
-    }
-
-    focusTerminal();
-  }
-
-  function executeToolbarAction(action: ToolbarAction) {
-    if (!isTerminalReady.value) {
-      return;
-    }
-
-    if (action.type === "prompt") {
-      void runToolbarPrompt(action.value);
-      return;
-    }
-
-    if (action.type === "raw-input") {
-      void sendTerminalInput(
-        action.value,
-        "Failed to send raw input to terminal."
-      );
-      return;
-    }
-
-    void runTerminalCommand(action.value);
-  }
-
-  function sendQuickKey(data: string) {
-    if (!isTerminalReady.value) {
-      return;
-    }
-
-    void sendTerminalInput(data, "Failed to send quick key to terminal.");
-  }
-
-  function persistPromptSuffixSettings(
-    config: PromptSuffixConfig,
-    version: number
-  ) {
-    if (!projectPath.value) {
-      return;
-    }
-
-    const path = projectPath.value;
-    const operation = async () => {
-      try {
-        await savePromptSuffixConfig(path, config);
-      } catch (error) {
-        reportUiError(
-          "Prompt suffix config",
-          error,
-          "Failed to persist prompt suffix configuration."
-        );
-        return;
-      }
-
-      if (projectPath.value === path && version > promptSuffixConfigPersistedVersion) {
-        promptSuffixConfigPersistedVersion = version;
-      }
-    };
-
-    promptSuffixConfigPersistQueue = promptSuffixConfigPersistQueue.then(
-      operation,
-      operation
-    );
-  }
-
-  function applyPromptSuffixConfig(config: PromptSuffixConfig) {
-    promptSuffixConfigEditVersion += 1;
-    promptSuffixConfig.value = config;
-    persistPromptSuffixSettings(config, promptSuffixConfigEditVersion);
-  }
-
-  async function handleToolbarConfigSave(config: ToolbarConfig) {
-    toolbarConfig.value = config;
-    if (projectPath.value) {
-      try {
-        await saveToolbarConfig(projectPath.value, config);
-      } catch (error) {
-        reportUiError(
-          "Toolbar config",
-          error,
-          "Failed to save toolbar configuration."
-        );
-        return;
-      }
-    }
-    isToolbarConfigEditorOpen.value = false;
-  }
-
-  function handlePromptSuffixToggle(index: number) {
-    const currentItems = promptSuffixConfig.value.items;
-    if (index < 0 || index >= currentItems.length) {
-      return;
-    }
-
-    const cycleNext = { off: "once", once: "always", always: "off" } as const;
-    const nextItems = currentItems.map((item, itemIndex) =>
-      itemIndex === index
-        ? {
-            ...item,
-            mode: cycleNext[item.mode]
-          }
-        : item
-    );
-
-    applyPromptSuffixConfig({ items: nextItems });
-  }
-
-  function handlePromptSuffixConfigSave(config: PromptSuffixConfig) {
-    applyPromptSuffixConfig(config);
-    isPromptSuffixConfigEditorOpen.value = false;
-  }
-
-  function handleProjectSettingsSave(settings: ProjectSettings) {
-    const normalizedSettings: ProjectSettings = {
-      ...settings,
-      zoom: normalizeProjectZoomSettings(settings.zoom)
-    };
-    projectSettings.value = normalizedSettings;
-    applyProjectSettings(normalizedSettings);
-    persistProjectSettings(normalizedSettings);
-    isProjectSettingsEditorOpen.value = false;
-  }
-
-  async function sendTodoEntryToTerminal(index: number) {
-    const text = getTodoEntry(index);
-    if (text === null) {
-      return;
-    }
-
-    const result = await attemptSubmitTerminalText(text, {
-      notReady: "Terminal is not ready to send input.",
-      messages: {
-        sendSlash: "Failed to send slash command from todo to terminal.",
-        sendText: "Failed to send todo prompt to terminal.",
-        submit: "Failed to send Enter to terminal."
-      },
-      inputType: "prompt"
-    });
-    if (result !== "submitted") {
-      return;
-    }
-
-    appendTerminalInputHistory(text);
-    removeTodoEntry(index);
   }
 }
