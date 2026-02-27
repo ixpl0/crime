@@ -1,6 +1,69 @@
 <template>
-  <div class="relative flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
-    <div class="flex items-center justify-end border-b border-base-300 px-2 py-1.5">
+  <div class="flex flex-col gap-2">
+    <div class="relative flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
+      <div class="min-h-0 flex-1 overflow-y-auto p-2">
+        <div v-if="isLoading" class="flex items-center justify-center py-8">
+          <span class="loading loading-spinner loading-md" />
+        </div>
+
+        <div v-else-if="loadError" class="py-4 text-center text-sm text-error">
+          {{ loadError }}
+        </div>
+
+        <div v-else-if="changeEntries.length === 0" class="py-4 text-center text-sm text-base-content/50">
+          No changes detected
+        </div>
+
+        <div v-else>
+          <button
+            v-for="entry in changeEntries"
+            :key="entry.path"
+            class="flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left text-sm hover:bg-base-300"
+            :class="{
+              'bg-base-300': entry.path === selectedPath,
+              'opacity-70': isRevertingAll || isPathReverting(entry.path)
+            }"
+            :disabled="isRevertingAll || isPathReverting(entry.path)"
+            @click="emit('select-file', entry.path)"
+            @contextmenu="openContextMenu($event, entry)"
+          >
+            <FilePlus v-if="entry.status === 'added'" :size="16" class="shrink-0 text-green-500" />
+            <FilePen v-else-if="entry.status === 'modified'" :size="16" class="shrink-0 text-blue-500" />
+            <FileX v-else-if="entry.status === 'deleted'" :size="16" class="shrink-0 text-red-500" />
+            <File v-else :size="16" class="shrink-0 text-base-content/50" />
+            <span class="truncate" :class="nameClasses(entry.status)">{{ entryDisplayName(entry.path) }}</span>
+            <span class="ml-auto shrink-0 text-xs text-base-content/40">{{ entryDirectory(entry.path) }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="infoMessage"
+        class="border-t border-base-300 px-3 py-2 text-xs text-base-content/60"
+      >
+        {{ infoMessage }}
+      </div>
+
+      <div
+        v-if="contextMenu"
+        ref="contextMenuElement"
+        class="fixed z-50 min-w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
+        :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
+        @contextmenu.prevent
+      >
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start"
+          :disabled="isActionInProgress"
+          @click="handleContextMenuRevertClick"
+        >
+          <RotateCcw :size="14" />
+          Откатить изменения
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
       <button
         type="button"
         class="btn btn-error btn-xs btn-outline"
@@ -9,67 +72,6 @@
       >
         <span v-if="isRevertingAll" class="loading loading-spinner loading-xs" />
         Откатить ВСЕ изменения
-      </button>
-    </div>
-
-    <div class="min-h-0 flex-1 overflow-y-auto p-2">
-      <div v-if="isLoading" class="flex items-center justify-center py-8">
-        <span class="loading loading-spinner loading-md" />
-      </div>
-
-      <div v-else-if="loadError" class="py-4 text-center text-sm text-error">
-        {{ loadError }}
-      </div>
-
-      <div v-else-if="changeEntries.length === 0" class="py-4 text-center text-sm text-base-content/50">
-        No changes detected
-      </div>
-
-      <div v-else>
-        <button
-          v-for="entry in changeEntries"
-          :key="entry.path"
-          class="flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left text-sm hover:bg-base-300"
-          :class="{
-            'bg-base-300': entry.path === selectedPath,
-            'opacity-70': isRevertingAll || isPathReverting(entry.path)
-          }"
-          :disabled="isRevertingAll || isPathReverting(entry.path)"
-          @click="emit('select-file', entry.path)"
-          @contextmenu="openContextMenu($event, entry)"
-        >
-          <FilePlus v-if="entry.status === 'added'" :size="16" class="shrink-0 text-green-500" />
-          <FilePen v-else-if="entry.status === 'modified'" :size="16" class="shrink-0 text-blue-500" />
-          <FileX v-else-if="entry.status === 'deleted'" :size="16" class="shrink-0 text-red-500" />
-          <File v-else :size="16" class="shrink-0 text-base-content/50" />
-          <span class="truncate" :class="nameClasses(entry.status)">{{ entryDisplayName(entry.path) }}</span>
-          <span class="ml-auto shrink-0 text-xs text-base-content/40">{{ entryDirectory(entry.path) }}</span>
-        </button>
-      </div>
-    </div>
-
-    <div
-      v-if="infoMessage"
-      class="border-t border-base-300 px-3 py-2 text-xs text-base-content/60"
-    >
-      {{ infoMessage }}
-    </div>
-
-    <div
-      v-if="contextMenu"
-      ref="contextMenuElement"
-      class="fixed z-50 min-w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
-      :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
-      @contextmenu.prevent
-    >
-      <button
-        type="button"
-        class="btn btn-ghost btn-sm w-full justify-start"
-        :disabled="isActionInProgress"
-        @click="handleContextMenuRevertClick"
-      >
-        <RotateCcw :size="14" />
-        Откатить изменения
       </button>
     </div>
   </div>

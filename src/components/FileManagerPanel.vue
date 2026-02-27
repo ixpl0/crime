@@ -1,6 +1,63 @@
 <template>
-  <div class="relative flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
-    <div class="flex items-center justify-end border-b border-base-300 px-2 py-1.5">
+  <div class="flex flex-col gap-2">
+    <div class="relative flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
+      <div class="min-h-0 flex-1 overflow-y-auto p-2">
+        <div v-if="isLoading" class="flex items-center justify-center py-8">
+          <span class="loading loading-spinner loading-md" />
+        </div>
+
+        <div v-else-if="loadError" class="py-4 text-center text-sm text-error">
+          {{ loadError }}
+        </div>
+
+        <div v-else-if="entries.length === 0" class="py-4 text-center text-sm text-base-content/50">
+          Empty directory
+        </div>
+
+        <div v-else>
+          <FileTreeNode
+            v-for="entry in entries"
+            :key="entry.path"
+            :entry="entry"
+            :depth="0"
+            :refresh-token="refreshToken"
+            :reveal-path="props.revealPath"
+            :reveal-request-token="props.revealRequestToken"
+            :git-statuses="gitStatuses"
+            :deleted-children-by-parent="deletedChildrenByParent"
+            @select-file="(path) => emit('select-file', path)"
+            @context-menu="openContextMenu"
+          />
+        </div>
+      </div>
+
+      <div
+        v-if="gitInfoMessage"
+        class="border-t border-base-300 px-3 py-2 text-xs text-base-content/60"
+      >
+        {{ gitInfoMessage }}
+      </div>
+
+      <div
+        v-if="contextMenu"
+        ref="contextMenuElement"
+        class="fixed z-50 min-w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
+        :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
+        @contextmenu.prevent
+      >
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start"
+          :disabled="isActionInProgress"
+          @click="handleContextMenuRevertClick"
+        >
+          <RotateCcw :size="14" />
+          Откатить изменения
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-end">
       <button
         type="button"
         class="btn btn-error btn-xs btn-outline"
@@ -9,61 +66,6 @@
       >
         <span v-if="isRevertingAll" class="loading loading-spinner loading-xs" />
         Откатить ВСЕ изменения
-      </button>
-    </div>
-
-    <div class="min-h-0 flex-1 overflow-y-auto p-2">
-      <div v-if="isLoading" class="flex items-center justify-center py-8">
-        <span class="loading loading-spinner loading-md" />
-      </div>
-
-      <div v-else-if="loadError" class="py-4 text-center text-sm text-error">
-        {{ loadError }}
-      </div>
-
-      <div v-else-if="entries.length === 0" class="py-4 text-center text-sm text-base-content/50">
-        Empty directory
-      </div>
-
-      <div v-else>
-        <FileTreeNode
-          v-for="entry in entries"
-          :key="entry.path"
-          :entry="entry"
-          :depth="0"
-          :refresh-token="refreshToken"
-          :reveal-path="props.revealPath"
-          :reveal-request-token="props.revealRequestToken"
-          :git-statuses="gitStatuses"
-          :deleted-children-by-parent="deletedChildrenByParent"
-          @select-file="(path) => emit('select-file', path)"
-          @context-menu="openContextMenu"
-        />
-      </div>
-    </div>
-
-    <div
-      v-if="gitInfoMessage"
-      class="border-t border-base-300 px-3 py-2 text-xs text-base-content/60"
-    >
-      {{ gitInfoMessage }}
-    </div>
-
-    <div
-      v-if="contextMenu"
-      ref="contextMenuElement"
-      class="fixed z-50 min-w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
-      :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
-      @contextmenu.prevent
-    >
-      <button
-        type="button"
-        class="btn btn-ghost btn-sm w-full justify-start"
-        :disabled="isActionInProgress"
-        @click="handleContextMenuRevertClick"
-      >
-        <RotateCcw :size="14" />
-        Откатить изменения
       </button>
     </div>
   </div>
