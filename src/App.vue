@@ -142,17 +142,32 @@
             >
               Git
             </button>
-              <div class="dropdown dropdown-bottom">
-                <div tabindex="0" role="tab" class="tab">
+              <div
+                class="dropdown dropdown-bottom manual-dropdown"
+                :class="{ 'dropdown-open': isProjectDropdownOpen }"
+                @focusout="handleProjectDropdownFocusOut"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  class="tab"
+                  :aria-expanded="isProjectDropdownOpen"
+                  @click="toggleProjectDropdown"
+                  @keydown="handleProjectDropdownTriggerKeydown"
+                >
                   &#1055;&#1088;&#1086;&#1077;&#1082;&#1090;
                   <ChevronDown :size="14" class="ml-1" />
-                </div>
+                </button>
                 <ul
-                  tabindex="0"
                   class="dropdown-content menu bg-base-100 rounded-box z-10 w-72 p-0 shadow"
+                  @keydown.esc.stop.prevent="setProjectDropdownOpen(false)"
                 >
                   <li>
-                    <button :disabled="isOpening" @click="openProjectFolder">
+                    <button
+                      :disabled="isOpening"
+                      :tabindex="isProjectDropdownOpen ? 0 : -1"
+                      @click="handleProjectDropdownOpenFolderClick"
+                    >
                       &#1054;&#1090;&#1082;&#1088;&#1099;&#1090;&#1100;...
                     </button>
                   </li>
@@ -161,8 +176,9 @@
                     <li v-for="recent in recentProjects" :key="recent">
                       <button
                         :disabled="isOpening"
+                        :tabindex="isProjectDropdownOpen ? 0 : -1"
                         class="flex flex-col items-start gap-0 py-2"
-                        @click="openProject(recent)"
+                        @click="handleProjectDropdownRecentClick(recent)"
                       >
                         <span class="font-medium text-base-content">{{ getProjectNameFromPath(recent) }}</span>
                         <span class="text-[10px] opacity-50 truncate w-full" :title="recent">{{ recent }}</span>
@@ -173,22 +189,33 @@
               </div>
             </div>
 
-            <div v-if="hiddenPanelOptions.length > 0" class="dropdown dropdown-end">
+            <div
+              v-if="hiddenPanelOptions.length > 0"
+              class="dropdown dropdown-end manual-dropdown"
+              :class="{ 'dropdown-open': isHiddenPanelsDropdownOpen }"
+              @focusout="handleHiddenPanelsDropdownFocusOut"
+            >
               <button
-                tabindex="0"
                 type="button"
                 class="btn btn-sm btn-ghost"
+                :aria-expanded="isHiddenPanelsDropdownOpen"
+                @click="toggleHiddenPanelsDropdown"
+                @keydown="handleHiddenPanelsDropdownTriggerKeydown"
                 title="Показать скрытые панели"
               >
                 <Eye :size="16" />
                 <ChevronDown :size="14" />
               </button>
               <ul
-                tabindex="0"
                 class="dropdown-content menu bg-base-100 rounded-box z-10 mt-1 w-56 p-1 shadow"
+                @keydown.esc.stop.prevent="setHiddenPanelsDropdownOpen(false)"
               >
                 <li v-for="panelOption in hiddenPanelOptions" :key="panelOption.id">
-                  <button type="button" @click="showHiddenPanel(panelOption.id)">
+                  <button
+                    type="button"
+                    :tabindex="isHiddenPanelsDropdownOpen ? 0 : -1"
+                    @click="handleHiddenPanelOptionClick(panelOption.id)"
+                  >
                     {{ panelOption.title }}
                   </button>
                 </li>
@@ -544,6 +571,8 @@ const isToolbarConfigEditorOpen = ref(false);
 const isPromptSuffixConfigEditorOpen = ref(false);
 const isProjectSettingsEditorOpen = ref(false);
 const activeTab = ref<AppTab>("agent");
+const isProjectDropdownOpen = ref(false);
+const isHiddenPanelsDropdownOpen = ref(false);
 const selectedFilePath = ref<string | null>(null);
 const changesSelectedFilePath = ref<string | null>(null);
 const selectedFileTargetLine = ref<number | null>(null);
@@ -1153,6 +1182,127 @@ function persistTodoPanelCollapsedState(isCollapsed: boolean) {
 
 function toggleTodoPanelCollapse() {
   isTodoPanelCollapsed.value = !isTodoPanelCollapsed.value;
+}
+
+function shouldKeepDropdownFocus(event: FocusEvent): boolean {
+  const currentDropdown = event.currentTarget;
+  if (!(currentDropdown instanceof HTMLElement)) {
+    return false;
+  }
+
+  const nextFocused = event.relatedTarget;
+  if (!(nextFocused instanceof Node)) {
+    return false;
+  }
+
+  return currentDropdown.contains(nextFocused);
+}
+
+const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
+
+function setProjectDropdownOpen(shouldOpen: boolean) {
+  isProjectDropdownOpen.value = shouldOpen;
+
+  if (shouldOpen) {
+    isHiddenPanelsDropdownOpen.value = false;
+  }
+}
+
+function setHiddenPanelsDropdownOpen(shouldOpen: boolean) {
+  isHiddenPanelsDropdownOpen.value = shouldOpen;
+
+  if (shouldOpen) {
+    isProjectDropdownOpen.value = false;
+  }
+}
+
+function focusFirstDropdownItem(triggerTarget: EventTarget | null) {
+  const trigger =
+    triggerTarget instanceof HTMLElement ? triggerTarget : null;
+  const dropdownRoot = trigger?.closest(".manual-dropdown");
+  const firstItem = dropdownRoot?.querySelector<HTMLButtonElement>(
+    ".dropdown-content button:not(:disabled)"
+  );
+  if (!firstItem) {
+    return;
+  }
+
+  void nextTick(() => {
+    firstItem.focus();
+  });
+}
+
+function toggleProjectDropdown() {
+  setProjectDropdownOpen(!isProjectDropdownOpen.value);
+}
+
+function toggleHiddenPanelsDropdown() {
+  setHiddenPanelsDropdownOpen(!isHiddenPanelsDropdownOpen.value);
+}
+
+function handleProjectDropdownTriggerKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    setProjectDropdownOpen(false);
+    return;
+  }
+
+  if (!DROPDOWN_OPEN_KEYS.has(event.key)) {
+    return;
+  }
+
+  event.preventDefault();
+  setProjectDropdownOpen(true);
+  if (event.key === "ArrowDown") {
+    focusFirstDropdownItem(event.currentTarget);
+  }
+}
+
+function handleHiddenPanelsDropdownTriggerKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    setHiddenPanelsDropdownOpen(false);
+    return;
+  }
+
+  if (!DROPDOWN_OPEN_KEYS.has(event.key)) {
+    return;
+  }
+
+  event.preventDefault();
+  setHiddenPanelsDropdownOpen(true);
+  if (event.key === "ArrowDown") {
+    focusFirstDropdownItem(event.currentTarget);
+  }
+}
+
+function handleProjectDropdownFocusOut(event: FocusEvent) {
+  if (shouldKeepDropdownFocus(event)) {
+    return;
+  }
+
+  setProjectDropdownOpen(false);
+}
+
+function handleHiddenPanelsDropdownFocusOut(event: FocusEvent) {
+  if (shouldKeepDropdownFocus(event)) {
+    return;
+  }
+
+  setHiddenPanelsDropdownOpen(false);
+}
+
+function handleProjectDropdownOpenFolderClick() {
+  setProjectDropdownOpen(false);
+  void openProjectFolder();
+}
+
+function handleProjectDropdownRecentClick(path: string) {
+  setProjectDropdownOpen(false);
+  void openProject(path);
+}
+
+function handleHiddenPanelOptionClick(panelId: HiddenPanelId) {
+  setHiddenPanelsDropdownOpen(false);
+  showHiddenPanel(panelId);
 }
 
 const showHiddenPanelHandlers: Record<HiddenPanelId, () => void> = {
@@ -3252,6 +3402,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.manual-dropdown:not(.dropdown-open):focus-within .dropdown-content {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .terminal-host {
   overflow: hidden;
 }
