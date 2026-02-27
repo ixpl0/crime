@@ -1,5 +1,17 @@
 <template>
-  <div class="flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
+  <div class="relative flex h-96 flex-col rounded-box border border-base-300 bg-base-200">
+    <div class="flex items-center justify-end border-b border-base-300 px-2 py-1.5">
+      <button
+        type="button"
+        class="btn btn-error btn-xs btn-outline"
+        :disabled="!hasChanges || isLoading || isActionInProgress"
+        @click="handleRevertAllClick"
+      >
+        <span v-if="isRevertingAll" class="loading loading-spinner loading-xs" />
+        Откатить ВСЕ изменения
+      </button>
+    </div>
+
     <div class="min-h-0 flex-1 overflow-y-auto p-2">
       <div v-if="isLoading" class="flex items-center justify-center py-8">
         <span class="loading loading-spinner loading-md" />
@@ -18,8 +30,13 @@
           v-for="entry in changeEntries"
           :key="entry.path"
           class="flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left text-sm hover:bg-base-300"
-          :class="entry.path === selectedPath ? 'bg-base-300' : ''"
+          :class="{
+            'bg-base-300': entry.path === selectedPath,
+            'opacity-70': isRevertingAll || isPathReverting(entry.path)
+          }"
+          :disabled="isRevertingAll || isPathReverting(entry.path)"
           @click="emit('select-file', entry.path)"
+          @contextmenu="openContextMenu($event, entry)"
         >
           <FilePlus v-if="entry.status === 'added'" :size="16" class="shrink-0 text-green-500" />
           <FilePen v-else-if="entry.status === 'modified'" :size="16" class="shrink-0 text-blue-500" />
@@ -37,12 +54,30 @@
     >
       {{ infoMessage }}
     </div>
+
+    <div
+      v-if="contextMenu"
+      ref="contextMenuElement"
+      class="fixed z-50 min-w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
+      :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
+      @contextmenu.prevent
+    >
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm w-full justify-start"
+        :disabled="isActionInProgress"
+        @click="handleContextMenuRevertClick"
+      >
+        <RotateCcw :size="14" />
+        Откатить изменения
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { File, FilePen, FilePlus, FileX } from "lucide-vue-next";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { File, FilePen, FilePlus, FileX, RotateCcw } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
 
 const props = defineProps<{
@@ -54,11 +89,24 @@ const emit = defineEmits<{
   "select-file": [path: string];
 }>();
 
+interface ContextMenuState {
+  x: number;
+  y: number;
+  path: string;
+  status: GitFileStatus;
+}
+
 const isLoading = ref(false);
 const loadError = ref("");
 const changeEntries = ref<GitStatusEntry[]>([]);
 const infoMessage = ref("");
+const contextMenu = ref<ContextMenuState | null>(null);
+const contextMenuElement = ref<HTMLElement | null>(null);
+const isRevertingAll = ref(false);
+const revertingPath = ref<string | null>(null);
 const REFRESH_INTERVAL_MS = 3000;
+const CONTEXT_MENU_WIDTH = 220;
+const CONTEXT_MENU_HEIGHT = 44;
 let loadRequestId = 0;
 let refreshIntervalId: ReturnType<typeof setInterval> | null = null;
 let isAutoRefreshInFlight = false;
@@ -69,6 +117,15 @@ const STATUS_PRIORITY: Record<GitFileStatus, number> = {
   added: 1,
   deleted: 2
 };
+
+const hasChanges = computed(() => changeEntries.value.length > 0);
+const isActionInProgress = computed(() => isRevertingAll.value || revertingPath.value !== null);
+
+function getGitUnavailableMessage(reason?: GitMutateResponse["reason"]) {
+  return reason === "git-not-installed"
+    ? "Git is not installed."
+    : "The selected folder is not a Git repository.";
+}
 
 function buildSnapshot(entries: GitStatusEntry[], info: string, error: string) {
   const sorted = entries.map((entry) => `${entry.path}:${entry.status}`).join("\n");
@@ -118,6 +175,150 @@ function sortEntries(entries: GitStatusEntry[]) {
   });
 }
 
+function clampContextMenuX(value: number) {
+  const maxX = Math.max(8, window.innerWidth - CONTEXT_MENU_WIDTH - 8);
+  return Math.min(Math.max(value, 8), maxX);
+}
+
+function clampContextMenuY(value: number) {
+  const maxY = Math.max(8, window.innerHeight - CONTEXT_MENU_HEIGHT - 8);
+  return Math.min(Math.max(value, 8), maxY);
+}
+
+function closeContextMenu() {
+  contextMenu.value = null;
+}
+
+function isPathReverting(path: string) {
+  return revertingPath.value === path;
+}
+
+function openContextMenu(event: MouseEvent, entry: GitStatusEntry) {
+  if (isActionInProgress.value) {
+    return;
+  }
+
+  event.preventDefault();
+  contextMenu.value = {
+    x: clampContextMenuX(event.clientX),
+    y: clampContextMenuY(event.clientY),
+    path: entry.path,
+    status: entry.status
+  };
+  void nextTick(() => {
+    contextMenuElement.value?.focus();
+  });
+}
+
+function handleGlobalPointerDown(event: PointerEvent) {
+  if (!contextMenu.value) {
+    return;
+  }
+
+  const target = event.target;
+  if (
+    contextMenuElement.value &&
+    target instanceof Node &&
+    contextMenuElement.value.contains(target)
+  ) {
+    return;
+  }
+
+  closeContextMenu();
+}
+
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if (event.key === "Escape") {
+    closeContextMenu();
+  }
+}
+
+function handleGlobalScroll() {
+  closeContextMenu();
+}
+
+async function revertPath(path: string) {
+  if (isActionInProgress.value) {
+    return;
+  }
+
+  const isConfirmed = window.confirm(`Откатить изменения файла?\n${path}`);
+  if (!isConfirmed) {
+    return;
+  }
+
+  closeContextMenu();
+  revertingPath.value = path;
+  loadError.value = "";
+
+  try {
+    const response = await window.projectApi.git.revertFile(props.projectPath, path);
+    if (!response.ok) {
+      loadError.value = response.error ?? "Failed to revert file changes.";
+      return;
+    }
+
+    if (!response.available) {
+      loadError.value = getGitUnavailableMessage(response.reason);
+      return;
+    }
+
+    await loadChanges();
+  } catch (error) {
+    loadError.value = toErrorMessage(error, "Failed to revert file changes.");
+  } finally {
+    revertingPath.value = null;
+  }
+}
+
+async function revertAllChanges() {
+  if (isActionInProgress.value || !hasChanges.value) {
+    return;
+  }
+
+  const isConfirmed = window.confirm(
+    "Откатить ВСЕ изменения в текущем проекте? Это удалит все незакоммиченные правки."
+  );
+  if (!isConfirmed) {
+    return;
+  }
+
+  closeContextMenu();
+  isRevertingAll.value = true;
+  loadError.value = "";
+
+  try {
+    const response = await window.projectApi.git.revertAll(props.projectPath);
+    if (!response.ok) {
+      loadError.value = response.error ?? "Failed to revert all changes.";
+      return;
+    }
+
+    if (!response.available) {
+      loadError.value = getGitUnavailableMessage(response.reason);
+      return;
+    }
+
+    await loadChanges();
+  } catch (error) {
+    loadError.value = toErrorMessage(error, "Failed to revert all changes.");
+  } finally {
+    isRevertingAll.value = false;
+  }
+}
+
+function handleContextMenuRevertClick() {
+  if (!contextMenu.value) {
+    return;
+  }
+
+  void revertPath(contextMenu.value.path);
+}
+
+function handleRevertAllClick() {
+  void revertAllChanges();
+}
+
 const loadChanges = async (isBackgroundRefresh = false) => {
   const requestId = ++loadRequestId;
   if (!isBackgroundRefresh) {
@@ -161,6 +362,7 @@ const loadChanges = async (isBackgroundRefresh = false) => {
       infoMessage.value = nextInfo;
       changeEntries.value = [];
     }
+    closeContextMenu();
     return;
   }
 
@@ -175,6 +377,7 @@ const loadChanges = async (isBackgroundRefresh = false) => {
       infoMessage.value = nextInfo;
       changeEntries.value = [];
     }
+    closeContextMenu();
     return;
   }
 
@@ -186,6 +389,10 @@ const loadChanges = async (isBackgroundRefresh = false) => {
     loadError.value = "";
     infoMessage.value = nextInfo;
     changeEntries.value = nextEntries;
+  }
+
+  if (contextMenu.value && !nextEntries.some((entry) => entry.path === contextMenu.value?.path)) {
+    closeContextMenu();
   }
 };
 
@@ -201,7 +408,7 @@ const stopAutoRefresh = () => {
 const startAutoRefresh = () => {
   stopAutoRefresh();
   refreshIntervalId = setInterval(() => {
-    if (isLoading.value || isAutoRefreshInFlight) {
+    if (isLoading.value || isAutoRefreshInFlight || isActionInProgress.value) {
       return;
     }
 
@@ -219,14 +426,21 @@ const startAutoRefresh = () => {
 onMounted(() => {
   void loadChanges();
   startAutoRefresh();
+  window.addEventListener("pointerdown", handleGlobalPointerDown, true);
+  window.addEventListener("keydown", handleGlobalKeydown, true);
+  window.addEventListener("scroll", handleGlobalScroll, true);
 });
 
 onBeforeUnmount(() => {
   stopAutoRefresh();
+  window.removeEventListener("pointerdown", handleGlobalPointerDown, true);
+  window.removeEventListener("keydown", handleGlobalKeydown, true);
+  window.removeEventListener("scroll", handleGlobalScroll, true);
 });
 
 watch(() => props.projectPath, () => {
   lastSnapshot = "";
+  closeContextMenu();
   void loadChanges();
   startAutoRefresh();
 });

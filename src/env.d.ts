@@ -99,6 +99,13 @@ interface GitStatusResponse {
   error?: string;
 }
 
+interface GitMutateResponse {
+  ok: boolean;
+  available?: boolean;
+  reason?: "git-not-installed" | "not-a-repository";
+  error?: string;
+}
+
 type GitDiffLineType = "context" | "added" | "removed";
 
 interface GitDiffLine {
@@ -164,6 +171,8 @@ interface GitCommitDetailsResponse {
 interface GitApi {
   getStatus: (projectPath: string) => Promise<GitStatusResponse>;
   getFileDiff: (projectPath: string, filePath: string) => Promise<GitFileDiffResponse>;
+  revertFile: (projectPath: string, filePath: string) => Promise<GitMutateResponse>;
+  revertAll: (projectPath: string) => Promise<GitMutateResponse>;
   getLog: (projectPath: string, maxCount?: number) => Promise<GitLogResponse>;
   getCommitDetails: (projectPath: string, hash: string) => Promise<GitCommitDetailsResponse>;
 }

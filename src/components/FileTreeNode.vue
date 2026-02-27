@@ -5,6 +5,7 @@
       :class="buttonClasses"
       :style="{ paddingLeft: `${depth * 1}rem` }"
       @click="handleClick"
+      @contextmenu="handleContextMenu"
     >
       <template v-if="entry.isDirectory">
         <FolderOpen v-if="isExpanded" :size="16" class="shrink-0" :class="folderIconClasses" />
@@ -26,6 +27,7 @@
         :git-statuses="gitStatuses"
         :deleted-children-by-parent="deletedChildrenByParent"
         @select-file="(path) => emit('select-file', path)"
+        @context-menu="(payload) => emit('context-menu', payload)"
       />
     </div>
 
@@ -75,6 +77,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   "select-file": [path: string];
+  "context-menu": [payload: { event: MouseEvent; path: string; status: GitFileStatus }];
 }>();
 
 const isExpanded = ref(false);
@@ -286,6 +289,19 @@ const handleClick = async () => {
 
   await loadChildren();
 };
+
+function handleContextMenu(event: MouseEvent) {
+  if (props.entry.isDirectory || entryStatus.value === null) {
+    return;
+  }
+
+  event.preventDefault();
+  emit("context-menu", {
+    event,
+    path: props.entry.path,
+    status: entryStatus.value
+  });
+}
 
 watch(
   () => [props.revealPath, props.revealRequestToken] as const,

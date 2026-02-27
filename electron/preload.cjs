@@ -21,6 +21,8 @@ const IPC_CHANNELS = Object.freeze({
   "filesystemReadFile": "filesystem:read-file",
   "gitStatus": "git:status",
   "gitFileDiff": "git:file-diff",
+  "gitRevertFile": "git:revert-file",
+  "gitRevertAll": "git:revert-all",
   "gitLog": "git:log",
   "gitCommitDetails": "git:commit-details",
   "globalQuickKey": "global:quick-key"
@@ -176,6 +178,9 @@ contextBridge.exposeInMainWorld("projectApi", {
     getStatus: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, projectPath),
     getFileDiff: (projectPath, filePath) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitFileDiff, projectPath, filePath),
+    revertFile: (projectPath, filePath) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitRevertFile, projectPath, filePath),
+    revertAll: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitRevertAll, projectPath),
     getLog: (projectPath, maxCount) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitLog, projectPath, maxCount),
     getCommitDetails: (projectPath, hash) =>

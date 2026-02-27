@@ -621,6 +621,106 @@ async function getGitStatusForProject(projectPath) {
   };
 }
 
+function isCommandNotFoundError(error) {
+  return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
+}
+
+function isGitPathspecMissingError(stderr) {
+  return /did not match any file\(s\) known to git/i.test(stderr);
+}
+
+function isGitHeadResolutionError(stderr) {
+  return /could not resolve head|ambiguous argument 'head'|unknown revision or path not in the working tree/i.test(stderr);
+}
+
+function getGitCommandError(result, fallbackMessage) {
+  const stderr = result.stderr.toString("utf-8").trim();
+  return stderr.length > 0 ? stderr : fallbackMessage;
+}
+
+async function runGitCommandSafe(projectPath, args, fallbackMessage) {
+  let result;
+  try {
+    result = await runCommand("git", args, projectPath);
+  } catch (error) {
+    if (isCommandNotFoundError(error)) {
+      return { ok: true, available: false, reason: "git-not-installed" };
+    }
+
+    return {
+      ok: false,
+      error: toErrorMessage(error, fallbackMessage)
+    };
+  }
+
+  return {
+    ok: true,
+    available: true,
+    result
+  };
+}
+
+async function restoreAndCleanPath(projectPath, pathspec) {
+  const restoreResponse = await runGitCommandSafe(
+    projectPath,
+    ["restore", "--source=HEAD", "--staged", "--worktree", "--", pathspec],
+    "Failed to revert git changes."
+  );
+  if (!restoreResponse.ok || !restoreResponse.available) {
+    return restoreResponse;
+  }
+
+  const restoreResult = restoreResponse.result;
+  if (restoreResult.code !== 0) {
+    const restoreError = getGitCommandError(restoreResult, "Failed to revert git changes.");
+    const shouldTryRmCached = isGitHeadResolutionError(restoreError);
+    const canContinueAfterRestoreFailure = shouldTryRmCached || isGitPathspecMissingError(restoreError);
+
+    if (!canContinueAfterRestoreFailure) {
+      return { ok: false, error: restoreError };
+    }
+
+    if (shouldTryRmCached) {
+      const rmCachedResponse = await runGitCommandSafe(
+        projectPath,
+        ["rm", "-rf", "--cached", "--", pathspec],
+        "Failed to revert git index changes."
+      );
+      if (!rmCachedResponse.ok || !rmCachedResponse.available) {
+        return rmCachedResponse;
+      }
+
+      if (rmCachedResponse.result.code !== 0) {
+        const rmCachedError = getGitCommandError(
+          rmCachedResponse.result,
+          "Failed to revert git index changes."
+        );
+        if (!isGitPathspecMissingError(rmCachedError)) {
+          return { ok: false, error: rmCachedError };
+        }
+      }
+    }
+  }
+
+  const cleanResponse = await runGitCommandSafe(
+    projectPath,
+    ["clean", "-fd", "--", pathspec],
+    "Failed to clean untracked files."
+  );
+  if (!cleanResponse.ok || !cleanResponse.available) {
+    return cleanResponse;
+  }
+
+  if (cleanResponse.result.code !== 0) {
+    return {
+      ok: false,
+      error: getGitCommandError(cleanResponse.result, "Failed to clean untracked files.")
+    };
+  }
+
+  return { ok: true, available: true };
+}
+
 function stopSettingsWatcher(webContentsId) {
   const watcher = settingsWatchers.get(webContentsId);
   if (!watcher) {
@@ -790,6 +890,8 @@ function registerIpcHandlers() {
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadFile);
   ipcMain.removeHandler(IPC_CHANNELS.gitStatus);
   ipcMain.removeHandler(IPC_CHANNELS.gitFileDiff);
+  ipcMain.removeHandler(IPC_CHANNELS.gitRevertFile);
+  ipcMain.removeHandler(IPC_CHANNELS.gitRevertAll);
   ipcMain.removeHandler(IPC_CHANNELS.gitLog);
   ipcMain.removeHandler(IPC_CHANNELS.gitCommitDetails);
 
@@ -1265,6 +1367,57 @@ function registerIpcHandlers() {
     }
 
     return getGitStatusForProject(projectPath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitRevertFile, async (_event, projectPath, filePath) => {
+    if (typeof projectPath !== "string" || typeof filePath !== "string") {
+      return { ok: false, error: "Project path and file path are required." };
+    }
+
+    const resolvedProjectPath = resolve(projectPath);
+    const resolvedFilePath = resolve(filePath);
+    if (!isPathInsideBase(resolvedProjectPath, resolvedFilePath)) {
+      return { ok: false, error: "Invalid file path." };
+    }
+
+    const relativePath = relative(resolvedProjectPath, resolvedFilePath).split("\\").join("/");
+    if (
+      relativePath.length === 0 ||
+      relativePath === "." ||
+      relativePath === ".." ||
+      relativePath.startsWith("../")
+    ) {
+      return { ok: false, error: "Invalid file path." };
+    }
+
+    const repositoryState = await getGitRepositoryState(resolvedProjectPath);
+    if (!repositoryState.ok) {
+      return repositoryState;
+    }
+
+    if (!repositoryState.available) {
+      return repositoryState;
+    }
+
+    return restoreAndCleanPath(resolvedProjectPath, relativePath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitRevertAll, async (_event, projectPath) => {
+    if (typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    const resolvedProjectPath = resolve(projectPath);
+    const repositoryState = await getGitRepositoryState(resolvedProjectPath);
+    if (!repositoryState.ok) {
+      return repositoryState;
+    }
+
+    if (!repositoryState.available) {
+      return repositoryState;
+    }
+
+    return restoreAndCleanPath(resolvedProjectPath, ".");
   });
 
   ipcMain.handle(IPC_CHANNELS.gitLog, async (_event, projectPath, maxCount) => {
