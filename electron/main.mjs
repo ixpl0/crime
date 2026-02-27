@@ -9,9 +9,9 @@ import {
   screen
 } from "electron";
 import { fileURLToPath } from "node:url";
-import { dirname, join, resolve, normalize, relative, isAbsolute } from "node:path";
+import { dirname, join, resolve, normalize, relative, isAbsolute, delimiter } from "node:path";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { watch, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { watch, mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { spawn } from "node:child_process";
 import * as pty from "node-pty";
 import ipcChannelsModule from "./ipc-channels.cjs";
@@ -20,6 +20,8 @@ import quickKeyBindingsModule from "./quick-key-bindings.cjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const IDE_ROOT_PATH = resolve(__dirname, "..");
+const IDE_NODE_MODULES_BIN_PATH = join(IDE_ROOT_PATH, "node_modules", ".bin");
 const terminalSessions = new Map();
 const settingsWatchers = new Map();
 const { IPC_CHANNELS } = ipcChannelsModule;
@@ -188,10 +190,89 @@ function saveWindowState(snapshot) {
   }
 }
 
+function stripWrappingQuotes(value) {
+  if (value.length >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function normalizePathEntry(value) {
+  const sanitized = normalize(stripWrappingQuotes(value));
+  return process.platform === "win32" ? sanitized.toLowerCase() : sanitized;
+}
+
+function getPathKey(env) {
+  const keys = Object.keys(env).filter((key) => key.toLowerCase() === "path");
+  if (keys.length === 0) {
+    return "PATH";
+  }
+
+  const preferred = keys.find((key) => key === "Path");
+  return preferred ?? keys[0];
+}
+
+function collectWorkspaceNodeBinPaths(cwd) {
+  const collected = [];
+  let currentPath = resolve(cwd);
+
+  while (true) {
+    const nodeBinPath = join(currentPath, "node_modules", ".bin");
+    if (existsSync(nodeBinPath)) {
+      collected.push(nodeBinPath);
+    }
+
+    const parentPath = dirname(currentPath);
+    if (parentPath === currentPath) {
+      break;
+    }
+    currentPath = parentPath;
+  }
+
+  return collected;
+}
+
+function buildChildProcessEnv(cwd) {
+  const env = { ...process.env };
+  const pathKey = getPathKey(env);
+  const rawPathValue = env[pathKey];
+  const basePathEntries =
+    typeof rawPathValue === "string" && rawPathValue.length > 0
+      ? rawPathValue.split(delimiter).filter((entry) => entry.length > 0)
+      : [];
+  const blockedPathEntry = normalizePathEntry(IDE_NODE_MODULES_BIN_PATH);
+  const workspaceNodeBinPaths = collectWorkspaceNodeBinPaths(cwd);
+  const orderedPathEntries = [...workspaceNodeBinPaths, ...basePathEntries];
+  const seen = new Set();
+  const nextPathEntries = [];
+
+  for (const entry of orderedPathEntries) {
+    const normalizedEntry = normalizePathEntry(entry);
+    if (normalizedEntry === blockedPathEntry || seen.has(normalizedEntry)) {
+      continue;
+    }
+
+    seen.add(normalizedEntry);
+    nextPathEntries.push(entry);
+  }
+
+  env[pathKey] = nextPathEntries.join(delimiter);
+  if (pathKey !== "PATH" && !Object.prototype.hasOwnProperty.call(env, "PATH")) {
+    env.PATH = env[pathKey];
+  }
+  if (pathKey !== "Path" && process.platform === "win32" && !Object.prototype.hasOwnProperty.call(env, "Path")) {
+    env.Path = env[pathKey];
+  }
+
+  return env;
+}
+
 function runCommand(command, args, cwd) {
   return new Promise((resolvePromise, rejectPromise) => {
+    const env = buildChildProcessEnv(cwd);
     const child = spawn(command, args, {
       cwd,
+      env,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"]
     });
@@ -885,12 +966,13 @@ function registerIpcHandlers() {
     let shellProcess;
 
     try {
+      const env = buildChildProcessEnv(cwd);
       shellProcess = pty.spawn(shell.command, shell.args, {
         name: "xterm-256color",
         cols,
         rows,
         cwd,
-        env: process.env
+        env
       });
     } catch (error) {
       return {
