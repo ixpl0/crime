@@ -1,9 +1,9 @@
 <template>
   <div>
     <button
-      class="flex w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-left text-sm hover:bg-base-300"
+      class="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm hover:border-base-300 hover:bg-base-300/65"
       :class="buttonClasses"
-      :style="{ paddingLeft: `${depth * 1}rem` }"
+      :style="{ paddingLeft: `${NODE_BASE_PADDING_REM + depth * NODE_INDENT_REM}rem` }"
       @click="handleClick"
       @contextmenu="handleContextMenu"
     >
@@ -22,6 +22,7 @@
         :entry="child"
         :depth="depth + 1"
         :refresh-token="refreshToken"
+        :selected-path="selectedPath"
         :reveal-path="revealPath"
         :reveal-request-token="revealRequestToken"
         :git-statuses="gitStatuses"
@@ -34,7 +35,7 @@
     <div
       v-if="isExpanded && isLoading"
       class="flex items-center gap-1.5 py-0.5 text-sm text-base-content/50"
-      :style="{ paddingLeft: `${(depth + 1) * 1}rem` }"
+      :style="{ paddingLeft: `${NODE_BASE_PADDING_REM + (depth + 1) * NODE_INDENT_REM}rem` }"
     >
       <span class="loading loading-spinner loading-xs" />
     </div>
@@ -42,7 +43,7 @@
     <div
       v-if="isExpanded && loadError"
       class="py-0.5 text-sm text-error"
-      :style="{ paddingLeft: `${(depth + 1) * 1}rem` }"
+      :style="{ paddingLeft: `${NODE_BASE_PADDING_REM + (depth + 1) * NODE_INDENT_REM}rem` }"
     >
       {{ loadError }}
     </div>
@@ -64,12 +65,14 @@ const props = withDefaults(
     entry: FileEntry;
     depth: number;
     refreshToken: number;
+    selectedPath?: string | null;
     revealPath?: string | null;
     revealRequestToken?: number;
     gitStatuses: Record<string, GitFileStatus>;
     deletedChildrenByParent: DeletedChildrenByParent;
   }>(),
   {
+    selectedPath: null,
     revealPath: null,
     revealRequestToken: 0
   }
@@ -84,6 +87,8 @@ const isExpanded = ref(false);
 const isLoading = ref(false);
 const loadError = ref("");
 const children = ref<FileEntry[]>([]);
+const NODE_BASE_PADDING_REM = 0.5;
+const NODE_INDENT_REM = 1;
 let hasLoaded = false;
 let lastChildrenSnapshot = "";
 
@@ -127,13 +132,31 @@ const entryStatus = computed<GitFileStatus | null>(() => {
 
 const isDeletedEntry = computed(() => entryStatus.value === "deleted");
 const isIgnoredEntry = computed(() => props.entry.isIgnored === true);
-
-const buttonClasses = computed(() => {
-  if (isIgnoredEntry.value) {
-    return "opacity-[0.55]";
+const isSelectedEntry = computed(() => {
+  if (!props.selectedPath) {
+    return false;
   }
 
-  return isDeletedEntry.value ? "opacity-90" : "";
+  return isSamePath(props.entry.path, props.selectedPath);
+});
+
+const buttonClasses = computed(() => {
+  const classes: string[] = [];
+
+  if (isSelectedEntry.value) {
+    classes.push("border-primary/40 bg-primary/10");
+  }
+
+  if (isIgnoredEntry.value) {
+    classes.push("opacity-[0.55]");
+    return classes.join(" ");
+  }
+
+  if (isDeletedEntry.value) {
+    classes.push("opacity-90");
+  }
+
+  return classes.join(" ");
 });
 
 const nameClasses = computed(() => {
