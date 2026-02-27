@@ -32,7 +32,7 @@ const SETTINGS_DIRNAME = ".ide";
 const quickKeyBindings = Object.freeze([
   {
     "id": "quick-1",
-    "accelerator": "CommandOrControl+Alt+Shift+1",
+    "accelerator": "Ctrl+Alt+Shift+1",
     "input": "1",
     "label": "1",
     "icon": null,
@@ -40,7 +40,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-2",
-    "accelerator": "CommandOrControl+Alt+Shift+2",
+    "accelerator": "Ctrl+Alt+Shift+2",
     "input": "2",
     "label": "2",
     "icon": null,
@@ -48,7 +48,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-3",
-    "accelerator": "CommandOrControl+Alt+Shift+3",
+    "accelerator": "Ctrl+Alt+Shift+3",
     "input": "3",
     "label": "3",
     "icon": null,
@@ -56,7 +56,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-4",
-    "accelerator": "CommandOrControl+Alt+Shift+4",
+    "accelerator": "Ctrl+Alt+Shift+4",
     "input": "4",
     "label": "4",
     "icon": null,
@@ -64,7 +64,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-up",
-    "accelerator": "CommandOrControl+Alt+Shift+Up",
+    "accelerator": "Ctrl+Alt+Shift+Up",
     "input": "\u001b[A",
     "label": "Up",
     "icon": "arrow-up",
@@ -72,7 +72,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-esc",
-    "accelerator": "CommandOrControl+Alt+Shift+E",
+    "accelerator": "Ctrl+Alt+Shift+E",
     "input": "\u001b",
     "label": "Esc",
     "icon": null,
@@ -80,7 +80,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-left",
-    "accelerator": "CommandOrControl+Alt+Shift+Left",
+    "accelerator": "Ctrl+Alt+Shift+Left",
     "input": "\u001b[D",
     "label": "Left",
     "icon": "arrow-left",
@@ -88,7 +88,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-down",
-    "accelerator": "CommandOrControl+Alt+Shift+Down",
+    "accelerator": "Ctrl+Alt+Shift+Down",
     "input": "\u001b[B",
     "label": "Down",
     "icon": "arrow-down",
@@ -96,7 +96,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-right",
-    "accelerator": "CommandOrControl+Alt+Shift+Right",
+    "accelerator": "Ctrl+Alt+Shift+Right",
     "input": "\u001b[C",
     "label": "Right",
     "icon": "arrow-right",
@@ -104,7 +104,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     "id": "quick-enter",
-    "accelerator": "CommandOrControl+Alt+Shift+Enter",
+    "accelerator": "Ctrl+Alt+Shift+Enter",
     "input": "\r",
     "label": "Enter",
     "icon": "enter",

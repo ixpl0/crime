@@ -1,7 +1,10 @@
+const PRIMARY_ACCELERATOR_MODIFIER = process.platform === "darwin" ? "Cmd" : "Ctrl";
+const withPrimaryModifier = (chord) => `${PRIMARY_ACCELERATOR_MODIFIER}+${chord}`;
+
 const quickKeyBindings = Object.freeze([
   {
     id: "quick-1",
-    accelerator: "CommandOrControl+Alt+Shift+1",
+    accelerator: withPrimaryModifier("Alt+Shift+1"),
     input: "1",
     label: "1",
     icon: null,
@@ -9,7 +12,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-2",
-    accelerator: "CommandOrControl+Alt+Shift+2",
+    accelerator: withPrimaryModifier("Alt+Shift+2"),
     input: "2",
     label: "2",
     icon: null,
@@ -17,7 +20,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-3",
-    accelerator: "CommandOrControl+Alt+Shift+3",
+    accelerator: withPrimaryModifier("Alt+Shift+3"),
     input: "3",
     label: "3",
     icon: null,
@@ -25,7 +28,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-4",
-    accelerator: "CommandOrControl+Alt+Shift+4",
+    accelerator: withPrimaryModifier("Alt+Shift+4"),
     input: "4",
     label: "4",
     icon: null,
@@ -33,7 +36,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-up",
-    accelerator: "CommandOrControl+Alt+Shift+Up",
+    accelerator: withPrimaryModifier("Alt+Shift+Up"),
     input: "\x1b[A",
     label: "Up",
     icon: "arrow-up",
@@ -41,7 +44,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-esc",
-    accelerator: "CommandOrControl+Alt+Shift+E",
+    accelerator: withPrimaryModifier("Alt+Shift+E"),
     input: "\x1b",
     label: "Esc",
     icon: null,
@@ -49,7 +52,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-left",
-    accelerator: "CommandOrControl+Alt+Shift+Left",
+    accelerator: withPrimaryModifier("Alt+Shift+Left"),
     input: "\x1b[D",
     label: "Left",
     icon: "arrow-left",
@@ -57,7 +60,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-down",
-    accelerator: "CommandOrControl+Alt+Shift+Down",
+    accelerator: withPrimaryModifier("Alt+Shift+Down"),
     input: "\x1b[B",
     label: "Down",
     icon: "arrow-down",
@@ -65,7 +68,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-right",
-    accelerator: "CommandOrControl+Alt+Shift+Right",
+    accelerator: withPrimaryModifier("Alt+Shift+Right"),
     input: "\x1b[C",
     label: "Right",
     icon: "arrow-right",
@@ -73,7 +76,7 @@ const quickKeyBindings = Object.freeze([
   },
   {
     id: "quick-enter",
-    accelerator: "CommandOrControl+Alt+Shift+Enter",
+    accelerator: withPrimaryModifier("Alt+Shift+Enter"),
     input: "\r",
     label: "Enter",
     icon: "enter",
