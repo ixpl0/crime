@@ -83,13 +83,13 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useAppConfigStore } from "../app/config-store";
-import { useAppNavigationStore } from "../app/navigation-store";
+import { useAppConfigStore } from "../config/config-store";
+import { useAppNavigationStore } from "../navigation/navigation-store";
 import AgentPanel from "./AgentPanel.vue";
-import ChangesPanel from "./ChangesPanel.vue";
+import ChangesPanel from "./changes/ChangesPanel.vue";
 import FileContentViewer from "./FileContentViewer.vue";
-import FileManagerPanel from "./FileManagerPanel.vue";
-import GitGraphPanel from "./GitGraphPanel.vue";
+import FileManagerPanel from "./file-manager/FileManagerPanel.vue";
+import GitGraphPanel from "./git-graph/GitGraphPanel.vue";
 import MainPanelHeader from "./MainPanelHeader.vue";
 import ProjectSettingsEditor from "./ProjectSettingsEditor.vue";
 import PromptSuffixConfigEditor from "./PromptSuffixConfigEditor.vue";

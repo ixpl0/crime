@@ -3,7 +3,7 @@ import { ref, type Ref } from "vue";
 import {
   isPathInsideBase,
   isSamePath
-} from "./terminal-path-utils";
+} from "../terminal/terminal-path-utils";
 
 interface UseFileNavigationOptions {
   projectPath: Ref<string | null>;

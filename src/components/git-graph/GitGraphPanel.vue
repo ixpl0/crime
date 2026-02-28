@@ -214,7 +214,7 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 import { X } from "lucide-vue-next";
-import { useGitGraphPanel } from "../composables/use-git-graph-panel";
+import { useGitGraphPanel } from "./use-git-graph-panel";
 
 const props = defineProps<{
   projectPath: string;

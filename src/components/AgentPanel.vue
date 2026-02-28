@@ -98,8 +98,8 @@ import {
   ArrowUp,
   CornerDownLeft
 } from "lucide-vue-next";
-import { useAppConfigStore } from "../app/config-store";
-import { useAppTerminalStore } from "../app/terminal-store";
+import { useAppConfigStore } from "../config/config-store";
+import { useAppTerminalStore } from "../terminal/terminal-store";
 import PromptSuffixPanel from "./PromptSuffixPanel.vue";
 import ToolbarPanel from "./ToolbarPanel.vue";
 

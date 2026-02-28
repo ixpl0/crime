@@ -59,7 +59,7 @@ import {
   type DeletedChildrenByParent
 } from "./file-tree-status-utils";
 import { isPathInsideBase, isSamePath } from "./file-tree-path-utils";
-import { toErrorMessage } from "../utils/fail-fast";
+import { toErrorMessage } from "../../utils/fail-fast";
 
 const props = withDefaults(
   defineProps<{

@@ -125,8 +125,8 @@
 
 <script setup lang="ts">
 import { ChevronDown, Eye, Settings } from "lucide-vue-next";
-import { useAppConfigStore } from "../app/config-store";
-import { useAppNavigationStore } from "../app/navigation-store";
+import { useAppConfigStore } from "../config/config-store";
+import { useAppNavigationStore } from "../navigation/navigation-store";
 
 const {
   activeTab,

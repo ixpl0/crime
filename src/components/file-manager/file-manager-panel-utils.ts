@@ -4,7 +4,7 @@ import {
   mergeDirectoryEntries,
   toGitStatusMap,
   type DeletedChildrenByParent
-} from "../components/file-tree-status-utils";
+} from "./file-tree-status-utils";
 
 const CONTEXT_MENU_WIDTH = 220;
 const CONTEXT_MENU_HEIGHT = 44;

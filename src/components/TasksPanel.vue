@@ -67,8 +67,8 @@
 
 <script setup lang="ts">
 import { EyeOff, GripVertical } from "lucide-vue-next";
-import { useAppTerminalStore } from "../app/terminal-store";
-import { useAppTodoStore } from "../app/todo-store";
+import { useAppTerminalStore } from "../terminal/terminal-store";
+import { useAppTodoStore } from "../todo/todo-store";
 
 const {
   todoDraftViewItems,

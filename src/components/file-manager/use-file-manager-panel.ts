@@ -1,21 +1,23 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
-import { toErrorMessage } from "../utils/fail-fast";
+﻿import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
+import { type DeletedChildrenByParent } from "./file-tree-status-utils";
+import { toErrorMessage } from "../../utils/fail-fast";
 import {
-  buildSnapshot,
+  buildNextTreeState,
   clampContextMenuX,
   clampContextMenuY,
-  entryDisplayName,
-  entryPathDisplayForProject,
   getGitUnavailableMessage,
-  nameClasses,
-  sortEntries,
-  statusBadgeClasses,
-  statusLabel
-} from "./changes-panel-utils";
+  type NextTreeState
+} from "./file-manager-panel-utils";
 
 const REFRESH_INTERVAL_MS = 3000;
 
-export interface ChangesContextMenuState {
+export interface FileManagerContextMenuPayload {
+  event: MouseEvent;
+  path: string;
+  status: GitFileStatus;
+}
+
+export interface FileManagerContextMenuState {
   x: number;
   y: number;
   path: string;
@@ -23,69 +25,52 @@ export interface ChangesContextMenuState {
 }
 
 // eslint-disable-next-line max-lines-per-function
-export function useChangesPanel(projectPath: Ref<string>) {
+export function useFileManagerPanel(projectPath: Ref<string>) {
   const isLoading = ref(false);
   const loadError = ref("");
-  const changeEntries = ref<GitStatusEntry[]>([]);
-  const infoMessage = ref("");
-  const contextMenu = ref<ChangesContextMenuState | null>(null);
+  const entries = ref<FileEntry[]>([]);
+  const gitStatuses = ref<Record<string, GitFileStatus>>({});
+  const deletedChildrenByParent = ref<DeletedChildrenByParent>({});
+  const gitInfoMessage = ref("");
+  const contextMenu = ref<FileManagerContextMenuState | null>(null);
   const contextMenuElement = ref<HTMLElement | null>(null);
   const isRevertingAll = ref(false);
   const revertingPath = ref<string | null>(null);
-  const hasChanges = computed(() => changeEntries.value.length > 0);
+  const refreshToken = ref(0);
+  const changedFilesCount = computed(() => Object.keys(gitStatuses.value).length);
+  const hasChanges = computed(() => changedFilesCount.value > 0);
+  const headerSummary = computed(() =>
+    hasChanges.value
+      ? `${String(changedFilesCount.value)} changed`
+      : `${String(entries.value.length)} items`
+  );
   const isActionInProgress = computed(() => isRevertingAll.value || revertingPath.value !== null);
-  const statusCounts = computed<Record<GitFileStatus, number>>(() => {
-    const counts: Record<GitFileStatus, number> = { modified: 0, added: 0, deleted: 0 };
-    for (const entry of changeEntries.value) {
-      counts[entry.status] += 1;
-    }
-    return counts;
-  });
 
   let loadRequestId = 0;
   let refreshIntervalId: ReturnType<typeof setInterval> | null = null;
   let isAutoRefreshInFlight = false;
-  let lastSnapshot = "";
+  let lastStateSnapshot = "";
+  let lastStructureSnapshot = "";
 
   function closeContextMenu() {
     contextMenu.value = null;
   }
 
-  function entryPathDisplay(path: string) {
-    return entryPathDisplayForProject(projectPath.value, path);
-  }
-
-  function isPathReverting(path: string) {
-    return revertingPath.value === path;
-  }
-
-  function openContextMenu(event: MouseEvent, entry: GitStatusEntry) {
+  function openContextMenu(payload: FileManagerContextMenuPayload) {
     if (isActionInProgress.value) {
       return;
     }
 
-    event.preventDefault();
+    payload.event.preventDefault();
     contextMenu.value = {
-      x: clampContextMenuX(event.clientX),
-      y: clampContextMenuY(event.clientY),
-      path: entry.path,
-      status: entry.status
+      x: clampContextMenuX(payload.event.clientX),
+      y: clampContextMenuY(payload.event.clientY),
+      path: payload.path,
+      status: payload.status
     };
     void nextTick(() => {
       contextMenuElement.value?.focus();
     });
-  }
-
-  function updateSnapshot(entries: GitStatusEntry[], info: string, error: string) {
-    const nextSnapshot = buildSnapshot(entries, info, error);
-    if (nextSnapshot === lastSnapshot) {
-      return;
-    }
-
-    lastSnapshot = nextSnapshot;
-    changeEntries.value = entries;
-    infoMessage.value = info;
-    loadError.value = error;
   }
 
   function beginLoad(isBackgroundRefresh: boolean) {
@@ -103,63 +88,69 @@ export function useChangesPanel(projectPath: Ref<string>) {
     }
   }
 
-  async function requestGitStatus(
+  async function requestDirectoryState(
     requestId: number,
     isBackgroundRefresh: boolean
-  ): Promise<GitStatusResponse | null> {
+  ): Promise<[FilesystemReadResponse, GitStatusResponse] | null> {
     try {
-      const response = await window.projectApi.git.getStatus(projectPath.value);
-      return requestId === loadRequestId ? response : null;
+      const responses = await Promise.all([
+        window.projectApi.filesystem.readDirectory(projectPath.value),
+        window.projectApi.git.getStatus(projectPath.value)
+      ]);
+      return requestId === loadRequestId ? responses : null;
     } catch (error) {
       if (requestId !== loadRequestId) {
         return null;
       }
 
-      const message = toErrorMessage(error, "Failed to load git status.");
+      const message = toErrorMessage(error, "Failed to load project directory.");
       if (!isBackgroundRefresh) {
         isLoading.value = false;
         loadError.value = message;
       } else {
-        infoMessage.value = `Auto-refresh failed: ${message}`;
+        gitInfoMessage.value = `Auto-refresh failed: ${message}`;
       }
       return null;
     }
   }
 
-  function applyGitStatusResponse(response: GitStatusResponse) {
-    if (!response.ok) {
-      updateSnapshot([], "", response.error ?? "Git status unavailable.");
-      closeContextMenu();
+  function applyTreeState(nextState: NextTreeState) {
+    if (nextState.stateSnapshot === lastStateSnapshot) {
       return;
     }
 
-    if (!response.available) {
-      updateSnapshot([], getGitUnavailableMessage(response.reason), "");
-      closeContextMenu();
-      return;
+    const hasStructureChanged = nextState.structureSnapshot !== lastStructureSnapshot;
+    lastStateSnapshot = nextState.stateSnapshot;
+    lastStructureSnapshot = nextState.structureSnapshot;
+    loadError.value = nextState.loadError;
+    gitStatuses.value = nextState.statuses;
+    deletedChildrenByParent.value = nextState.deletedChildren;
+    gitInfoMessage.value = nextState.infoMessage;
+    entries.value = nextState.entries;
+    if (hasStructureChanged) {
+      refreshToken.value += 1;
     }
 
-    const nextEntries = sortEntries(response.entries ?? []);
-    const nextInfo = nextEntries.length > 0 ? `${String(nextEntries.length)} changed` : "";
-    updateSnapshot(nextEntries, nextInfo, "");
-    if (contextMenu.value && !nextEntries.some((entry) => entry.path === contextMenu.value?.path)) {
+    if (contextMenu.value && !(contextMenu.value.path in nextState.statuses)) {
       closeContextMenu();
     }
   }
 
-  const loadChanges = async (isBackgroundRefresh = false) => {
+  const loadRootDirectory = async (isBackgroundRefresh = false) => {
     const requestId = beginLoad(isBackgroundRefresh);
-    const response = await requestGitStatus(requestId, isBackgroundRefresh);
-    if (!response) {
+    const responses = await requestDirectoryState(requestId, isBackgroundRefresh);
+    if (!responses) {
       return;
     }
 
     finishLoad(isBackgroundRefresh);
-    applyGitStatusResponse(response);
+    const [directoryResponse, gitResponse] = responses;
+    const nextState = buildNextTreeState(projectPath.value, directoryResponse, gitResponse);
+    applyTreeState(nextState);
   };
 
   async function revertPath(path: string) {
-    if (isActionInProgress.value || !window.confirm(`ÐžÑ‚ÐºÐ°Ñ‚Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð°?\n${path}`)) {
+    if (isActionInProgress.value || !window.confirm(`ÃÅ¾Ã‘â€šÃÂºÃÂ°Ã‘â€šÃÂ¸Ã‘â€šÃ‘Å’ ÃÂ¸ÃÂ·ÃÂ¼ÃÂµÃÂ½ÃÂµÃÂ½ÃÂ¸Ã‘Â Ã‘â€žÃÂ°ÃÂ¹ÃÂ»ÃÂ°?\n${path}`)) {
       return;
     }
 
@@ -173,7 +164,7 @@ export function useChangesPanel(projectPath: Ref<string>) {
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
-        await loadChanges();
+        await loadRootDirectory();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert file changes.");
@@ -184,7 +175,7 @@ export function useChangesPanel(projectPath: Ref<string>) {
 
   async function revertAllChanges() {
     const confirmationText =
-      "ÐžÑ‚ÐºÐ°Ñ‚Ð¸Ñ‚ÑŒ Ð’Ð¡Ð• Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð² Ñ‚ÐµÐºÑƒÑ‰ÐµÐ¼ Ð¿Ñ€Ð¾ÐµÐºÑ‚Ðµ? Ð­Ñ‚Ð¾ ÑƒÐ´Ð°Ð»Ð¸Ñ‚ Ð²ÑÐµ Ð½ÐµÐ·Ð°ÐºÐ¾Ð¼Ð¼Ð¸Ñ‡ÐµÐ½Ð½Ñ‹Ðµ Ð¿Ñ€Ð°Ð²ÐºÐ¸.";
+      "ÃÅ¾Ã‘â€šÃÂºÃÂ°Ã‘â€šÃÂ¸Ã‘â€šÃ‘Å’ Ãâ€™ÃÂ¡Ãâ€¢ ÃÂ¸ÃÂ·ÃÂ¼ÃÂµÃÂ½ÃÂµÃÂ½ÃÂ¸Ã‘Â ÃÂ² Ã‘â€šÃÂµÃÂºÃ‘Æ’Ã‘â€°ÃÂµÃÂ¼ ÃÂ¿Ã‘â‚¬ÃÂ¾ÃÂµÃÂºÃ‘â€šÃÂµ? ÃÂ­Ã‘â€šÃÂ¾ Ã‘Æ’ÃÂ´ÃÂ°ÃÂ»ÃÂ¸Ã‘â€š ÃÂ²Ã‘ÂÃÂµ ÃÂ½ÃÂµÃÂ·ÃÂ°ÃÂºÃÂ¾ÃÂ¼ÃÂ¼ÃÂ¸Ã‘â€¡ÃÂµÃÂ½ÃÂ½Ã‘â€¹ÃÂµ ÃÂ¿Ã‘â‚¬ÃÂ°ÃÂ²ÃÂºÃÂ¸.";
     if (isActionInProgress.value || !hasChanges.value || !window.confirm(confirmationText)) {
       return;
     }
@@ -199,7 +190,7 @@ export function useChangesPanel(projectPath: Ref<string>) {
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
-        await loadChanges();
+        await loadRootDirectory();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert all changes.");
@@ -255,14 +246,14 @@ export function useChangesPanel(projectPath: Ref<string>) {
       }
 
       isAutoRefreshInFlight = true;
-      void loadChanges(true).finally(() => {
+      void loadRootDirectory(true).finally(() => {
         isAutoRefreshInFlight = false;
       });
     }, REFRESH_INTERVAL_MS);
   }
 
   onMounted(() => {
-    void loadChanges();
+    void loadRootDirectory();
     startAutoRefresh();
     window.addEventListener("pointerdown", handleGlobalPointerDown, true);
     window.addEventListener("keydown", handleGlobalKeydown, true);
@@ -277,31 +268,30 @@ export function useChangesPanel(projectPath: Ref<string>) {
   });
 
   watch(projectPath, () => {
-    lastSnapshot = "";
+    lastStateSnapshot = "";
+    lastStructureSnapshot = "";
     closeContextMenu();
-    void loadChanges();
+    void loadRootDirectory();
     startAutoRefresh();
   });
 
   return {
     isLoading,
     loadError,
-    changeEntries,
-    infoMessage,
+    entries,
+    gitStatuses,
+    deletedChildrenByParent,
+    gitInfoMessage,
     contextMenu,
     contextMenuElement,
     isRevertingAll,
+    refreshToken,
     hasChanges,
-    statusCounts,
+    headerSummary,
     isActionInProgress,
-    nameClasses,
-    statusLabel,
-    statusBadgeClasses,
-    entryDisplayName,
-    entryPathDisplay,
     openContextMenu,
-    isPathReverting,
     handleContextMenuRevertClick,
     handleRevertAllClick
   };
 }
+

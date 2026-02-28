@@ -124,7 +124,7 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 import { File, FilePen, FilePlus, FileX, RotateCcw } from "lucide-vue-next";
-import { useChangesPanel } from "../composables/use-changes-panel";
+import { useChangesPanel } from "./use-changes-panel";
 
 const props = defineProps<{
   projectPath: string;

@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { normalizePathForComparison } from "./terminal-path-utils";
+import { normalizePathForComparison } from "../terminal/terminal-path-utils";
 
 const RECENT_PROJECTS_LIMIT = 10;
 

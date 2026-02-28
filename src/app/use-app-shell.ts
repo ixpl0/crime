@@ -15,23 +15,23 @@ import {
   TOOLBAR_CONFIG_FILENAME
 } from "../toolbar/toolbar-storage";
 import { toContextualErrorMessage } from "../utils/fail-fast";
-import { provideAppConfigStore } from "./config-store";
-import { normalizeProjectZoomSettings, normalizeTerminalFontSize } from "./project-layout-utils";
-import { provideAppNavigationStore } from "./navigation-store";
-import { useAppNavigation } from "./use-app-navigation";
-import { useAppRuntime } from "./use-app-runtime";
-import { useConfigManagement } from "./use-config-management";
-import { useFileNavigation } from "./use-file-navigation";
-import { useProjectLayout } from "./use-project-layout";
-import { useProjectSession } from "./use-project-session";
-import { useRecentProjects } from "./use-recent-projects";
-import { provideAppTerminalStore } from "./terminal-store";
-import { useTerminalActions } from "./use-terminal-actions";
-import { useTerminalInputHistory } from "./use-terminal-input-history";
-import { useTerminalSubmit } from "./use-terminal-submit";
-import { useTerminalView } from "./use-terminal-view";
-import { provideAppTodoStore } from "./todo-store";
-import { useTodoPanel } from "./use-todo-panel";
+import { provideAppConfigStore } from "../config/config-store";
+import { normalizeProjectZoomSettings, normalizeTerminalFontSize } from "../layout/project-layout-utils";
+import { provideAppNavigationStore } from "../navigation/navigation-store";
+import { useAppNavigation } from "../navigation/use-app-navigation";
+import { useAppRuntime } from "../session/use-app-runtime";
+import { useConfigManagement } from "../config/use-config-management";
+import { useFileNavigation } from "../navigation/use-file-navigation";
+import { useProjectLayout } from "../layout/use-project-layout";
+import { useProjectSession } from "../session/use-project-session";
+import { useRecentProjects } from "../session/use-recent-projects";
+import { provideAppTerminalStore } from "../terminal/terminal-store";
+import { useTerminalActions } from "../terminal/use-terminal-actions";
+import { useTerminalInputHistory } from "../terminal/use-terminal-input-history";
+import { useTerminalSubmit } from "../terminal/use-terminal-submit";
+import { useTerminalView } from "../terminal/use-terminal-view";
+import { provideAppTodoStore } from "../todo/todo-store";
+import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
 
 // eslint-disable-next-line max-lines-per-function

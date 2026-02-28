@@ -17,8 +17,8 @@ import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { type ProjectSettings } from "../types/project-settings";
 import { type ToolbarConfig } from "../types/toolbar";
 import { toErrorMessage } from "../utils/fail-fast";
-import type { TerminalInputHistoryLoadSource } from "./use-terminal-input-history";
-import type { TodoEntriesLoadSource } from "./use-todo-panel";
+import type { TerminalInputHistoryLoadSource } from "../terminal/use-terminal-input-history";
+import type { TodoEntriesLoadSource } from "../todo/use-todo-panel";
 
 const EMPTY_PROMPT_SUFFIX_CONFIG: PromptSuffixConfig = { items: [] };
 const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";

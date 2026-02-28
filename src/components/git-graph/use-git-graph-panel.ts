@@ -1,13 +1,13 @@
 ﻿import { computed, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
-import { buildGitGraphRows, type GraphRow } from "../components/git-graph-layout";
+import { buildGitGraphRows, type GraphRow } from "./git-graph-layout";
 import {
   formatFullDate,
   formatRef,
   formatRelativeDate,
   formatShortHash,
   refClasses
-} from "../components/git-graph-format";
-import { toErrorMessage } from "../utils/fail-fast";
+} from "./git-graph-format";
+import { toErrorMessage } from "../../utils/fail-fast";
 
 const ROW_HEIGHT = 28;
 const LANE_WIDTH = 14;

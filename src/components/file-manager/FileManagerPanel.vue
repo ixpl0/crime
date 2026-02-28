@@ -85,7 +85,7 @@
 import { toRef } from "vue";
 import { RotateCcw } from "lucide-vue-next";
 import FileTreeNode from "./FileTreeNode.vue";
-import { useFileManagerPanel } from "../composables/use-file-manager-panel";
+import { useFileManagerPanel } from "./use-file-manager-panel";
 
 const props = withDefaults(
   defineProps<{
