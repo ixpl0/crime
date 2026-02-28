@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { watch } from "node:fs";
+import { existsSync, watch } from "node:fs";
 import { join } from "node:path";
 
 const GIT_WATCH_DEBOUNCE_MS = 300;
@@ -42,6 +42,10 @@ export function registerGitWatcherIpcHandlers({
     const gitDirPath = join(projectPath, ".git");
     const webContentsId = event.sender.id;
     stopGitWatcher(webContentsId);
+
+    if (!existsSync(gitDirPath)) {
+      return { ok: true };
+    }
 
     let debounceTimer = null;
 
