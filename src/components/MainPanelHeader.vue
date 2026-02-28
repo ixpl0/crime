@@ -78,6 +78,16 @@
           </template>
         </ul>
       </div>
+
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        title="Секреты проекта (.env)"
+        @click="openSecretsEditor"
+      >
+        Секреты
+      </button>
     </div>
 
     <div
@@ -149,7 +159,10 @@ const {
   setHiddenPanelsDropdownOpen,
   showHiddenPanel
 } = useAppNavigationStore();
-const { openProjectSettingsEditor: openProjectSettings } = useAppConfigStore();
+const {
+  openProjectSettingsEditor: openProjectSettings,
+  openSecretsEditor
+} = useAppConfigStore();
 </script>
 
 <style scoped>

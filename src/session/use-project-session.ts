@@ -9,6 +9,7 @@ import {
   loadProjectSettings,
   PROJECT_SETTINGS_FILENAME
 } from "../settings/project-settings-storage";
+import { defaultSecretsContent, loadSecrets, SECRETS_FILENAME } from "../settings/secrets-storage";
 import { TERMINAL_INPUT_HISTORY_FILENAME } from "../settings/terminal-input-history-storage";
 import { TODO_FILENAME } from "../settings/todo-storage";
 import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
@@ -32,6 +33,7 @@ export interface UseProjectSessionOptions {
   toolbarConfig: Ref<ToolbarConfig>;
   promptSuffixConfig: Ref<PromptSuffixConfig>;
   projectSettings: Ref<ProjectSettings>;
+  secretsConfig: Ref<string>;
   addRecentProject: (path: string) => void;
   resetProjectRuntimeState: () => void;
   applyProjectSettings: (settings: ProjectSettings) => void;
@@ -107,6 +109,7 @@ function resetProjectSessionToDefaults(state: ProjectSessionState) {
   state.options.resetProjectRuntimeState();
   state.options.toolbarConfig.value = defaultToolbarConfig;
   state.options.promptSuffixConfig.value = defaultPromptSuffixConfig;
+  state.options.secretsConfig.value = defaultSecretsContent;
   assignProjectSettings(state, defaultProjectSettings);
   state.options.isTerminalReady.value = false;
 }
@@ -166,6 +169,7 @@ async function loadProjectSettingsForProject(state: ProjectSessionState, path: s
 
 async function loadProjectResources(state: ProjectSessionState, path: string) {
   state.options.toolbarConfig.value = await loadToolbarConfig(path);
+  state.options.secretsConfig.value = await loadSecrets(path);
   await loadPromptSuffixConfigForProject(state, path);
   await loadProjectSettingsForProject(state, path);
   await state.options.loadTerminalInputHistoryForProject(path, "project-open");
@@ -181,6 +185,9 @@ async function handleSettingsFileChanged(state: ProjectSessionState, filename: s
   const change = createSettingsFileChange(filename);
   if (matchesWatchedSettingsFile(change, TOOLBAR_CONFIG_FILENAME)) {
     state.options.toolbarConfig.value = await loadToolbarConfig(path);
+  }
+  if (matchesWatchedSettingsFile(change, SECRETS_FILENAME)) {
+    state.options.secretsConfig.value = await loadSecrets(path);
   }
   if (
     matchesWatchedSettingsFile(change, PROMPT_SUFFIX_CONFIG_FILENAME) &&

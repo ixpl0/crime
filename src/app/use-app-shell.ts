@@ -8,6 +8,9 @@ import {
   PROJECT_SETTINGS_FILENAME
 } from "../settings/project-settings-storage";
 import {
+  SECRETS_FILENAME
+} from "../settings/secrets-storage";
+import {
   loadTerminalInputHistory as loadTerminalInputHistoryFromProject,
   saveTerminalInputHistory
 } from "../settings/terminal-input-history-storage";
@@ -105,18 +108,23 @@ export function useAppShell() {
     toolbarConfig,
     promptSuffixConfig,
     projectSettings,
+    secretsConfig,
     isToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
+    isSecretsEditorOpen,
     openToolbarConfigEditor,
     closeToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     closePromptSuffixConfigEditor,
     openProjectSettingsEditor,
     closeProjectSettingsEditor,
+    openSecretsEditor,
+    closeSecretsEditor,
     handleToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handlePromptSuffixToggle,
+    handleSecretsSave,
     applyPromptSuffixConfig,
     persistProjectSettings,
     canReloadPromptSuffixConfig,
@@ -305,6 +313,7 @@ export function useAppShell() {
     toolbarConfig,
     promptSuffixConfig,
     projectSettings,
+    secretsConfig,
     addRecentProject,
     resetProjectRuntimeState,
     applyProjectSettings,
@@ -378,22 +387,28 @@ export function useAppShell() {
     toolbarConfigFilename: TOOLBAR_CONFIG_FILENAME,
     promptSuffixConfigFilename: PROMPT_SUFFIX_CONFIG_FILENAME,
     projectSettingsFilename: PROJECT_SETTINGS_FILENAME,
+    secretsFilename: SECRETS_FILENAME,
     errorMessage,
     toolbarConfig,
     promptSuffixConfig,
     projectSettings,
+    secretsConfig,
     isToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
+    isSecretsEditorOpen,
     handleToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handleProjectSettingsSave,
+    handleSecretsSave,
     openToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     openProjectSettingsEditor,
+    openSecretsEditor,
     closeToolbarConfigEditor,
     closePromptSuffixConfigEditor,
     closeProjectSettingsEditor,
+    closeSecretsEditor,
     handlePromptSuffixToggle
   });
   provideAppTerminalStore({

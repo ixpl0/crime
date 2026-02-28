@@ -57,6 +57,11 @@ export const defaultToolbarConfig: ToolbarConfig = {
           label: "Gemini CLI",
           value: "gemini",
           type: "command"
+        },
+        {
+          label: "GLM-5",
+          value: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=(Get-Content .ide/.env | ConvertFrom-StringData).GLM_API_KEY; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5'; claude /resume\"",
+          type: "command"
         }
       ]
     },

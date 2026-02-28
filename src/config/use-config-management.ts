@@ -9,6 +9,10 @@ import {
   defaultProjectSettings,
   saveProjectSettings
 } from "../settings/project-settings-storage";
+import {
+  defaultSecretsContent,
+  saveSecrets
+} from "../settings/secrets-storage";
 import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
 import { saveToolbarConfig } from "../toolbar/toolbar-storage";
 
@@ -28,9 +32,11 @@ export function useConfigManagement({
   const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
   const promptSuffixConfig = ref<PromptSuffixConfig>(defaultPromptSuffixConfig);
   const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
+  const secretsConfig = ref<string>(defaultSecretsContent);
   const isToolbarConfigEditorOpen = ref(false);
   const isPromptSuffixConfigEditorOpen = ref(false);
   const isProjectSettingsEditorOpen = ref(false);
+  const isSecretsEditorOpen = ref(false);
 
   let promptSuffixConfigEditVersion = 0;
   let promptSuffixConfigPersistedVersion = 0;
@@ -41,18 +47,23 @@ export function useConfigManagement({
     toolbarConfig,
     promptSuffixConfig,
     projectSettings,
+    secretsConfig,
     isToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
+    isSecretsEditorOpen,
     openToolbarConfigEditor,
     closeToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     closePromptSuffixConfigEditor,
     openProjectSettingsEditor,
     closeProjectSettingsEditor,
+    openSecretsEditor,
+    closeSecretsEditor,
     handleToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handlePromptSuffixToggle,
+    handleSecretsSave,
     applyPromptSuffixConfig,
     persistProjectSettings,
     canReloadPromptSuffixConfig,
@@ -81,6 +92,14 @@ export function useConfigManagement({
 
   function closeProjectSettingsEditor() {
     isProjectSettingsEditorOpen.value = false;
+  }
+
+  function openSecretsEditor() {
+    isSecretsEditorOpen.value = true;
+  }
+
+  function closeSecretsEditor() {
+    isSecretsEditorOpen.value = false;
   }
 
   function persistPromptSuffixSettings(
@@ -163,6 +182,23 @@ export function useConfigManagement({
   function handlePromptSuffixConfigSave(config: PromptSuffixConfig) {
     applyPromptSuffixConfig(config);
     isPromptSuffixConfigEditorOpen.value = false;
+  }
+
+  async function handleSecretsSave(content: string) {
+    secretsConfig.value = content;
+    if (projectPath.value) {
+      try {
+        await saveSecrets(projectPath.value, content);
+      } catch (error) {
+        reportUiError(
+          "Secrets config",
+          error,
+          "Failed to save secrets configuration."
+        );
+        return;
+      }
+    }
+    isSecretsEditorOpen.value = false;
   }
 
   function persistProjectSettings(settings: ProjectSettings) {

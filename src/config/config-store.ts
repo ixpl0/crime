@@ -11,22 +11,28 @@ export interface AppConfigStore {
   toolbarConfigFilename: string;
   promptSuffixConfigFilename: string;
   projectSettingsFilename: string;
+  secretsFilename: string;
   errorMessage: ReadableRef<string>;
   toolbarConfig: ReadableRef<ToolbarConfig>;
   promptSuffixConfig: ReadableRef<PromptSuffixConfig>;
   projectSettings: ReadableRef<ProjectSettings>;
+  secretsConfig: ReadableRef<string>;
   isToolbarConfigEditorOpen: ReadableRef<boolean>;
   isPromptSuffixConfigEditorOpen: ReadableRef<boolean>;
   isProjectSettingsEditorOpen: ReadableRef<boolean>;
+  isSecretsEditorOpen: ReadableRef<boolean>;
   handleToolbarConfigSave: (config: ToolbarConfig) => MaybePromise;
   handlePromptSuffixConfigSave: (config: PromptSuffixConfig) => MaybePromise;
   handleProjectSettingsSave: (settings: ProjectSettings) => MaybePromise;
+  handleSecretsSave: (secrets: string) => MaybePromise;
   openToolbarConfigEditor: () => void;
   openPromptSuffixConfigEditor: () => void;
   openProjectSettingsEditor: () => void;
+  openSecretsEditor: () => void;
   closeToolbarConfigEditor: () => void;
   closePromptSuffixConfigEditor: () => void;
   closeProjectSettingsEditor: () => void;
+  closeSecretsEditor: () => void;
   handlePromptSuffixToggle: (index: number) => void;
 }
 

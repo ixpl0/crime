@@ -31,6 +31,16 @@
         @close="closeProjectSettingsEditor"
       />
 
+      <SecretsEditor
+        title="Секреты проекта"
+        :file-path="secretsConfigFilePath"
+        :current-value="secretsConfig"
+        :default-value="defaultSecretsContent"
+        :open="isSecretsEditorOpen"
+        @save="handleSecretsSave"
+        @close="closeSecretsEditor"
+      />
+
       <AgentPanel v-show="activeTab === 'agent'" />
 
       <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1">
@@ -100,6 +110,7 @@ import GitGraphPanel from "./git-graph/GitGraphPanel.vue";
 import MainPanelHeader from "./MainPanelHeader.vue";
 import ProjectSettingsEditor from "./ProjectSettingsEditor.vue";
 import PromptSuffixConfigEditor from "./PromptSuffixConfigEditor.vue";
+import SecretsEditor from "./SecretsEditor.vue";
 import ToolbarConfigEditor from "./ToolbarConfigEditor.vue";
 
 const {
@@ -107,20 +118,27 @@ const {
   toolbarConfigFilename,
   promptSuffixConfigFilename,
   projectSettingsFilename,
+  secretsFilename,
   errorMessage,
   isToolbarConfigEditorOpen,
   isPromptSuffixConfigEditorOpen,
   isProjectSettingsEditorOpen,
+  isSecretsEditorOpen,
   toolbarConfig,
   promptSuffixConfig,
   projectSettings,
+  secretsConfig,
   handleToolbarConfigSave,
   handlePromptSuffixConfigSave,
   handleProjectSettingsSave,
+  handleSecretsSave,
   closeToolbarConfigEditor,
   closePromptSuffixConfigEditor,
-  closeProjectSettingsEditor
+  closeProjectSettingsEditor,
+  closeSecretsEditor
 } = useAppConfigStore();
+
+const defaultSecretsContent = "GLM_API_KEY=";
 const navigationStore = useAppNavigationStore();
 const {
   activeTab,
@@ -159,5 +177,8 @@ const promptSuffixConfigFilePath = computed(
 );
 const projectSettingsFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${projectSettingsFilename}`
+);
+const secretsConfigFilePath = computed(
+  () => `${projectPath.value}/${settingsDirectoryName}/${secretsFilename}`
 );
 </script>
