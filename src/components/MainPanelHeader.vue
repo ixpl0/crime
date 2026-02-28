@@ -90,6 +90,15 @@
       </button>
     </div>
 
+    <button
+      class="btn btn-sm btn-ghost"
+      :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
+      @click="toggleTheme"
+    >
+      <Sun v-if="currentTheme === 'dark'" :size="16" />
+      <Moon v-else :size="16" />
+    </button>
+
     <div
       v-if="hiddenPanelOptions.length > 0"
       class="dropdown dropdown-end manual-dropdown"
@@ -134,9 +143,12 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, Eye, Settings } from "lucide-vue-next";
+import { ChevronDown, Eye, Moon, Settings, Sun } from "lucide-vue-next";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
+import { useTheme } from "../composables/use-theme";
+
+const { currentTheme, toggleTheme } = useTheme();
 
 const {
   activeTab,
