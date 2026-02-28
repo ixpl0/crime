@@ -1,4 +1,4 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch, type ComputedRef } from "vue";
 import { toErrorMessage } from "../../utils/fail-fast";
 import {
   buildSnapshot,
@@ -34,7 +34,10 @@ export function useChangesPanel({
   gitRefreshToken,
   refreshGitStatus
 }: UseChangesPanelOptions) {
-  const isLoading = ref(true);
+  const hasRefreshed = ref(false);
+  const isLoading: ComputedRef<boolean> = computed(
+    () => gitStatusResponse.value === null && !hasRefreshed.value
+  );
   const loadError = ref("");
   const changeEntries = ref<GitStatusEntry[]>([]);
   const infoMessage = ref("");
@@ -100,7 +103,7 @@ export function useChangesPanel({
       return;
     }
 
-    isLoading.value = false;
+    hasRefreshed.value = true;
 
     if (!response.ok) {
       updateSnapshot([], "", response.error ?? "Git status unavailable.");
@@ -207,7 +210,7 @@ export function useChangesPanel({
 
   watch(projectPath, () => {
     lastSnapshot = "";
-    isLoading.value = true;
+    hasRefreshed.value = false;
     closeContextMenu();
   });
 
