@@ -227,6 +227,7 @@ export function useAppShell() {
     openTerminalPathInFiles,
     handleFileSelect,
     handleChangesFileSelect,
+    resetChangesSelectedFile,
     handleChangesPathOpen,
     resetFileNavigationState
   } = useFileNavigation({
@@ -380,6 +381,7 @@ export function useAppShell() {
     selectedFileTargetRequestToken,
     changesSelectedFilePath,
     handleChangesFileSelect,
+    resetChangesSelectedFile,
     handleChangesPathOpen
   });
   provideAppConfigStore({

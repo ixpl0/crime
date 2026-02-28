@@ -86,6 +86,7 @@
             :project-path="projectPath"
             :file-path="changesSelectedFilePath"
             :is-active="activeTab === 'changes'"
+            @file-not-found="resetChangesSelectedFile"
           />
         </div>
       </div>
@@ -151,6 +152,7 @@ const {
   selectedFileTargetRequestToken,
   changesSelectedFilePath,
   handleChangesFileSelect,
+  resetChangesSelectedFile,
   handleChangesPathOpen
 } = navigationStore;
 

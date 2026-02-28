@@ -159,6 +159,10 @@ function handleFileSelect(path: string, state: FileNavigationState) {
   state.filesDisplayPath.value = path;
 }
 
+function resetChangesSelectedFile(state: FileNavigationState) {
+  state.changesSelectedFilePath.value = null;
+}
+
 function resetFileNavigationState(state: FileNavigationState) {
   state.selectedFilePath.value = null;
   state.filesDisplayPath.value = null;
@@ -191,6 +195,7 @@ export function useFileNavigation(options: UseFileNavigationOptions) {
     handleChangesFileSelect: (path: string) => {
       state.changesSelectedFilePath.value = path;
     },
+    resetChangesSelectedFile: () => { resetChangesSelectedFile(state); },
     handleChangesPathOpen: (path: string) => {
       void openTerminalPathInFiles(path, null, null, options, state);
     },
