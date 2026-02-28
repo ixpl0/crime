@@ -159,7 +159,7 @@ export function useChangesPanel(projectPath: Ref<string>) {
   };
 
   async function revertPath(path: string) {
-    if (isActionInProgress.value || !window.confirm(`ÐžÑ‚ÐºÐ°Ñ‚Ð¸Ñ‚ÑŒ Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ñ„Ð°Ð¹Ð»Ð°?\n${path}`)) {
+    if (isActionInProgress.value || !window.confirm(`Откатить изменения файла?\n${path}`)) {
       return;
     }
 
@@ -184,7 +184,7 @@ export function useChangesPanel(projectPath: Ref<string>) {
 
   async function revertAllChanges() {
     const confirmationText =
-      "ÐžÑ‚ÐºÐ°Ñ‚Ð¸Ñ‚ÑŒ Ð’Ð¡Ð• Ð¸Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ñ Ð² Ñ‚ÐµÐºÑƒÑ‰ÐµÐ¼ Ð¿Ñ€Ð¾ÐµÐºÑ‚Ðµ? Ð­Ñ‚Ð¾ ÑƒÐ´Ð°Ð»Ð¸Ñ‚ Ð²ÑÐµ Ð½ÐµÐ·Ð°ÐºÐ¾Ð¼Ð¼Ð¸Ñ‡ÐµÐ½Ð½Ñ‹Ðµ Ð¿Ñ€Ð°Ð²ÐºÐ¸.";
+      "Откатить ВСЕ изменения в текущем проекте? Это удалит все незакоммиченные правки.";
     if (isActionInProgress.value || !hasChanges.value || !window.confirm(confirmationText)) {
       return;
     }

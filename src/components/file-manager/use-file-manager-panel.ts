@@ -150,7 +150,7 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
   };
 
   async function revertPath(path: string) {
-    if (isActionInProgress.value || !window.confirm(`ÃÅ¾Ã‘â€šÃÂºÃÂ°Ã‘â€šÃÂ¸Ã‘â€šÃ‘Å’ ÃÂ¸ÃÂ·ÃÂ¼ÃÂµÃÂ½ÃÂµÃÂ½ÃÂ¸Ã‘Â Ã‘â€žÃÂ°ÃÂ¹ÃÂ»ÃÂ°?\n${path}`)) {
+    if (isActionInProgress.value || !window.confirm(`Откатить изменения файла?\n${path}`)) {
       return;
     }
 
@@ -175,7 +175,7 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
 
   async function revertAllChanges() {
     const confirmationText =
-      "ÃÅ¾Ã‘â€šÃÂºÃÂ°Ã‘â€šÃÂ¸Ã‘â€šÃ‘Å’ Ãâ€™ÃÂ¡Ãâ€¢ ÃÂ¸ÃÂ·ÃÂ¼ÃÂµÃÂ½ÃÂµÃÂ½ÃÂ¸Ã‘Â ÃÂ² Ã‘â€šÃÂµÃÂºÃ‘Æ’Ã‘â€°ÃÂµÃÂ¼ ÃÂ¿Ã‘â‚¬ÃÂ¾ÃÂµÃÂºÃ‘â€šÃÂµ? ÃÂ­Ã‘â€šÃÂ¾ Ã‘Æ’ÃÂ´ÃÂ°ÃÂ»ÃÂ¸Ã‘â€š ÃÂ²Ã‘ÂÃÂµ ÃÂ½ÃÂµÃÂ·ÃÂ°ÃÂºÃÂ¾ÃÂ¼ÃÂ¼ÃÂ¸Ã‘â€¡ÃÂµÃÂ½ÃÂ½Ã‘â€¹ÃÂµ ÃÂ¿Ã‘â‚¬ÃÂ°ÃÂ²ÃÂºÃÂ¸.";
+      "Откатить ВСЕ изменения в текущем проекте? Это удалит все незакоммиченные правки.";
     if (isActionInProgress.value || !hasChanges.value || !window.confirm(confirmationText)) {
       return;
     }

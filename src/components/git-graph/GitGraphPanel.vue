@@ -62,7 +62,7 @@
             <span class="min-w-0 truncate text-sm">{{ row.commit.subject }}</span>
             <button
               class="ml-auto shrink-0 cursor-pointer rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
-              :title="copiedHash === row.commit.hash ? 'Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾!' : 'Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ñ…ÐµÑˆ'"
+              :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
               @click.stop="copyHash(row.commit.hash)"
             >
               {{ copiedHash === row.commit.hash ? "copied" : formatShortHash(row.commit.hash) }}
@@ -85,8 +85,8 @@
       <div class="flex items-center gap-2 border-b border-base-300 px-3 py-1.5">
         <span class="text-xs font-semibold text-base-content/70">Commit details</span>
         <button
-          class="btn btn-ghost btn-xs btn-square ml-auto"
-          title="Ð—Ð°ÐºÑ€Ñ‹Ñ‚ÑŒ"
+          class="btn btn-ghost btn-sm btn-square ml-auto"
+          title="Закрыть"
           @click="closeDetails"
         >
           <X :size="14" />
@@ -107,7 +107,7 @@
             <span class="shrink-0 text-xs text-base-content/50 w-16">Hash</span>
             <button
               class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-xs text-base-content/80 transition-colors hover:bg-base-content/10"
-              :title="copiedHash === selectedCommitDetails.hash ? 'Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾!' : 'Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¿Ð¾Ð»Ð½Ñ‹Ð¹ Ñ…ÐµÑˆ'"
+              :title="copiedHash === selectedCommitDetails.hash ? 'Скопировано!' : 'Скопировать полный хеш'"
               @click="copyHash(selectedCommitDetails.hash)"
             >
               {{ copiedHash === selectedCommitDetails.hash ? "copied!" : selectedCommitDetails.hash }}
@@ -123,7 +123,7 @@
                 v-for="parentHash in selectedCommitDetails.parentHashes"
                 :key="parentHash"
                 class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-xs text-base-content/60 transition-colors hover:bg-base-content/10"
-                :title="copiedHash === parentHash ? 'Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ð½Ð¾!' : 'Ð¡ÐºÐ¾Ð¿Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ñ…ÐµÑˆ'"
+                :title="copiedHash === parentHash ? 'Скопировано!' : 'Скопировать хеш'"
                 @click="copyHash(parentHash)"
               >
                 {{ copiedHash === parentHash ? "copied!" : formatShortHash(parentHash) }}
