@@ -1,15 +1,30 @@
 export type ToolbarActionType = "prompt" | "command" | "raw-input";
 
+export type ToolbarPresetColor =
+  | "primary"
+  | "secondary"
+  | "accent"
+  | "info"
+  | "success"
+  | "warning"
+  | "error"
+  | "neutral"
+  | "ghost";
+
+export type ToolbarButtonColor = ToolbarPresetColor | `#${string}`;
+
 export interface ToolbarAction {
   readonly label: string;
   readonly value: string;
   readonly type: ToolbarActionType;
   readonly shortcut?: string;
+  readonly color?: ToolbarButtonColor;
 }
 
 export interface ToolbarDropdown {
   readonly label: string;
   readonly items: readonly ToolbarAction[];
+  readonly color?: ToolbarButtonColor;
 }
 
 export type ToolbarElement = ToolbarDropdown | ToolbarAction;

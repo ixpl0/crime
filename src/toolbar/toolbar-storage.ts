@@ -1,6 +1,8 @@
 import {
   type ToolbarAction,
   type ToolbarActionType,
+  type ToolbarButtonColor,
+  type ToolbarPresetColor,
   type ToolbarConfig,
   type ToolbarElement
 } from "../types/toolbar";
@@ -13,6 +15,18 @@ import {
 
 export const TOOLBAR_CONFIG_FILENAME = "agent-toolbar.json";
 
+const TOOLBAR_PRESET_COLORS = new Set<string>([
+  "primary", "secondary", "accent", "info", "success", "warning", "error", "neutral", "ghost"
+]);
+
+const HEX_COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+const isToolbarButtonColor = (value: unknown): value is ToolbarButtonColor =>
+  typeof value === "string" && (TOOLBAR_PRESET_COLORS.has(value) || HEX_COLOR_PATTERN.test(value));
+
+export const isToolbarPresetColor = (value: string): value is ToolbarPresetColor =>
+  TOOLBAR_PRESET_COLORS.has(value);
+
 const isToolbarActionType = (value: unknown): value is ToolbarActionType =>
   value === "prompt" || value === "command" || value === "raw-input";
 
@@ -22,6 +36,7 @@ const parseToolbarAction = (value: unknown): ToolbarAction | null => {
   }
 
   const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
+  const color = isToolbarButtonColor(value.color) ? value.color : undefined;
 
   if (typeof value.value !== "string" || !isToolbarActionType(value.type)) {
     return null;
@@ -31,7 +46,8 @@ const parseToolbarAction = (value: unknown): ToolbarAction | null => {
     label: value.label,
     value: value.value,
     type: value.type,
-    shortcut
+    shortcut,
+    color
   };
 };
 
@@ -55,7 +71,8 @@ const parseToolbarElement = (value: unknown): ToolbarElement | null => {
       items.push(parsedItem);
     }
 
-    return { label: value.label, items };
+    const color = isToolbarButtonColor(value.color) ? value.color : undefined;
+    return { label: value.label, items, color };
   }
 
   return parseToolbarAction(value);

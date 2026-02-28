@@ -41,6 +41,7 @@ export const defaultToolbarConfig: ToolbarConfig = {
   elements: [
     {
       label: "\u0410\u0433\u0435\u043d\u0442\u044b",
+      color: "#f28b8b",
       items: [
         {
           label: "Claude Code",
@@ -61,6 +62,7 @@ export const defaultToolbarConfig: ToolbarConfig = {
     },
     {
       label: "\u0420\u0435\u0432\u044c\u044e",
+      color: "#f2b56b",
       items: [
         {
           label: "DRY \u0438 \u043f\u0435\u0440\u0435\u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u0435",
@@ -97,27 +99,32 @@ export const defaultToolbarConfig: ToolbarConfig = {
     {
       label: "Ctrl+C",
       value: "\u0003",
-      type: "raw-input"
+      type: "raw-input",
+      color: "#f2db6b"
     },
     {
       label: "/resume",
       value: "/resume",
-      type: "command"
+      type: "command",
+      color: "#7dd490"
     },
     {
       label: "/new",
       value: "/new",
-      type: "command"
+      type: "command",
+      color: "#7bc8e8"
     },
     {
       label: "\u041a\u043e\u043c\u043c\u0438\u0442 \u043f\u0443\u0448",
       value: "\u043a\u043e\u043c\u043c\u0438\u0442 \u043f\u0443\u0448",
-      type: "prompt"
+      type: "prompt",
+      color: "#b08be8"
     },
     {
       label: "Обнови доку",
       value: "Изучи проект и обнови документацию, если нужно",
-      type: "prompt"
+      type: "prompt",
+      color: "#e88bbb"
     }
   ]
 };
