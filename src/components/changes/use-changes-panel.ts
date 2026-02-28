@@ -13,8 +13,6 @@ import {
   statusLabel
 } from "./changes-panel-utils";
 
-const REFRESH_INTERVAL_MS = 3000;
-
 export interface ChangesContextMenuState {
   x: number;
   y: number;
@@ -22,9 +20,21 @@ export interface ChangesContextMenuState {
   status: GitFileStatus;
 }
 
+interface UseChangesPanelOptions {
+  projectPath: Ref<string>;
+  gitStatusResponse: Ref<GitStatusResponse | null>;
+  gitRefreshToken: Ref<number>;
+  refreshGitStatus: () => Promise<void>;
+}
+
 // eslint-disable-next-line max-lines-per-function
-export function useChangesPanel(projectPath: Ref<string>) {
-  const isLoading = ref(false);
+export function useChangesPanel({
+  projectPath,
+  gitStatusResponse,
+  gitRefreshToken,
+  refreshGitStatus
+}: UseChangesPanelOptions) {
+  const isLoading = ref(true);
   const loadError = ref("");
   const changeEntries = ref<GitStatusEntry[]>([]);
   const infoMessage = ref("");
@@ -42,9 +52,6 @@ export function useChangesPanel(projectPath: Ref<string>) {
     return counts;
   });
 
-  let loadRequestId = 0;
-  let refreshIntervalId: ReturnType<typeof setInterval> | null = null;
-  let isAutoRefreshInFlight = false;
   let lastSnapshot = "";
 
   function closeContextMenu() {
@@ -88,45 +95,13 @@ export function useChangesPanel(projectPath: Ref<string>) {
     loadError.value = error;
   }
 
-  function beginLoad(isBackgroundRefresh: boolean) {
-    const requestId = ++loadRequestId;
-    if (!isBackgroundRefresh) {
-      isLoading.value = true;
-      loadError.value = "";
+  function applyGitStatusResponse(response: GitStatusResponse | null) {
+    if (!response) {
+      return;
     }
-    return requestId;
-  }
 
-  function finishLoad(isBackgroundRefresh: boolean) {
-    if (!isBackgroundRefresh) {
-      isLoading.value = false;
-    }
-  }
+    isLoading.value = false;
 
-  async function requestGitStatus(
-    requestId: number,
-    isBackgroundRefresh: boolean
-  ): Promise<GitStatusResponse | null> {
-    try {
-      const response = await window.projectApi.git.getStatus(projectPath.value);
-      return requestId === loadRequestId ? response : null;
-    } catch (error) {
-      if (requestId !== loadRequestId) {
-        return null;
-      }
-
-      const message = toErrorMessage(error, "Failed to load git status.");
-      if (!isBackgroundRefresh) {
-        isLoading.value = false;
-        loadError.value = message;
-      } else {
-        infoMessage.value = `Auto-refresh failed: ${message}`;
-      }
-      return null;
-    }
-  }
-
-  function applyGitStatusResponse(response: GitStatusResponse) {
     if (!response.ok) {
       updateSnapshot([], "", response.error ?? "Git status unavailable.");
       closeContextMenu();
@@ -147,17 +122,6 @@ export function useChangesPanel(projectPath: Ref<string>) {
     }
   }
 
-  const loadChanges = async (isBackgroundRefresh = false) => {
-    const requestId = beginLoad(isBackgroundRefresh);
-    const response = await requestGitStatus(requestId, isBackgroundRefresh);
-    if (!response) {
-      return;
-    }
-
-    finishLoad(isBackgroundRefresh);
-    applyGitStatusResponse(response);
-  };
-
   async function revertPath(path: string) {
     if (isActionInProgress.value || !window.confirm(`Откатить изменения файла?\n${path}`)) {
       return;
@@ -173,7 +137,7 @@ export function useChangesPanel(projectPath: Ref<string>) {
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
-        await loadChanges();
+        await refreshGitStatus();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert file changes.");
@@ -199,7 +163,7 @@ export function useChangesPanel(projectPath: Ref<string>) {
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
-        await loadChanges();
+        await refreshGitStatus();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert all changes.");
@@ -237,50 +201,27 @@ export function useChangesPanel(projectPath: Ref<string>) {
     }
   }
 
-  function stopAutoRefresh() {
-    if (refreshIntervalId !== null) {
-      clearInterval(refreshIntervalId);
-      refreshIntervalId = null;
-    }
-  }
+  watch(gitRefreshToken, () => {
+    applyGitStatusResponse(gitStatusResponse.value);
+  });
 
-  function startAutoRefresh() {
-    stopAutoRefresh();
-    refreshIntervalId = setInterval(() => {
-      if (isLoading.value || isAutoRefreshInFlight || isActionInProgress.value) {
-        return;
-      }
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
-        return;
-      }
-
-      isAutoRefreshInFlight = true;
-      void loadChanges(true).finally(() => {
-        isAutoRefreshInFlight = false;
-      });
-    }, REFRESH_INTERVAL_MS);
-  }
+  watch(projectPath, () => {
+    lastSnapshot = "";
+    isLoading.value = true;
+    closeContextMenu();
+  });
 
   onMounted(() => {
-    void loadChanges();
-    startAutoRefresh();
+    applyGitStatusResponse(gitStatusResponse.value);
     window.addEventListener("pointerdown", handleGlobalPointerDown, true);
     window.addEventListener("keydown", handleGlobalKeydown, true);
     window.addEventListener("scroll", closeContextMenu, true);
   });
 
   onBeforeUnmount(() => {
-    stopAutoRefresh();
     window.removeEventListener("pointerdown", handleGlobalPointerDown, true);
     window.removeEventListener("keydown", handleGlobalKeydown, true);
     window.removeEventListener("scroll", closeContextMenu, true);
-  });
-
-  watch(projectPath, () => {
-    lastSnapshot = "";
-    closeContextMenu();
-    void loadChanges();
-    startAutoRefresh();
   });
 
   return {

@@ -14,6 +14,7 @@ import { registerGitIpcHandlers } from "./main/ipc/register-git-ipc.mjs";
 import { registerProjectIpcHandlers } from "./main/ipc/register-project-ipc.mjs";
 import { registerSettingsIpcHandlers } from "./main/ipc/register-settings-ipc.mjs";
 import { registerTerminalIpcHandlers } from "./main/ipc/register-terminal-ipc.mjs";
+import { registerGitWatcherIpcHandlers } from "./main/ipc/register-git-watcher-ipc.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,6 +22,7 @@ const IDE_ROOT_PATH = resolve(__dirname, "..");
 const IDE_NODE_MODULES_BIN_PATH = join(IDE_ROOT_PATH, "node_modules", ".bin");
 const terminalSessions = new Map();
 const settingsWatchers = new Map();
+const gitWatchers = new Map();
 const { IPC_CHANNELS } = ipcChannelsModule;
 const { SETTINGS_DIRNAME } = settingsConstantsModule;
 const { quickKeyBindings } = quickKeyBindingsModule;
@@ -60,6 +62,16 @@ function stopSettingsWatcher(webContentsId) {
 
   watcher.close();
   settingsWatchers.delete(webContentsId);
+}
+
+function stopGitWatcher(webContentsId) {
+  const watcher = gitWatchers.get(webContentsId);
+  if (!watcher) {
+    return;
+  }
+
+  watcher.close();
+  gitWatchers.delete(webContentsId);
 }
 
 function resolveShell() {
@@ -141,6 +153,7 @@ function createWindow() {
   mainWindow.on("closed", () => {
     stopTerminalSession(webContentsId);
     stopSettingsWatcher(webContentsId);
+    stopGitWatcher(webContentsId);
   });
 
   if (initialWindowState.isMaximized) {
@@ -185,6 +198,12 @@ function registerIpcHandlers() {
   registerClipboardIpcHandlers({ IPC_CHANNELS });
   registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService });
   registerGitIpcHandlers({ IPC_CHANNELS, gitService });
+  registerGitWatcherIpcHandlers({
+    IPC_CHANNELS,
+    gitWatchers,
+    stopGitWatcher,
+    toIpcFailure
+  });
 }
 
 function registerGlobalQuickKeys() {

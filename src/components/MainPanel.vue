@@ -41,6 +41,9 @@
             :selected-path="filesDisplayPath"
             :reveal-path="fileTreeRevealPath"
             :reveal-request-token="fileTreeRevealRequestToken"
+            :git-status-response="gitStatusResponse"
+            :git-refresh-token="gitRefreshToken"
+            :refresh-git-status="refreshGitStatus"
             @select-file="handleFileSelect"
           />
 
@@ -61,6 +64,9 @@
             class="h-full min-h-0"
             :project-path="projectPath"
             :selected-path="changesSelectedFilePath"
+            :git-status-response="gitStatusResponse"
+            :git-refresh-token="gitRefreshToken"
+            :refresh-git-status="refreshGitStatus"
             @select-file="handleChangesFileSelect"
             @open-path="handleChangesPathOpen"
           />
@@ -75,7 +81,7 @@
       </div>
 
       <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
-        <GitGraphPanel :project-path="projectPath" />
+        <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRefreshToken" />
       </div>
     </div>
   </div>
@@ -85,6 +91,7 @@
 import { computed } from "vue";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
+import { useGitStatus } from "../composables/use-git-status";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
 import FileContentViewer from "./FileContentViewer.vue";
@@ -137,6 +144,12 @@ const projectPath = computed(() => {
 
   return currentProjectPath;
 });
+
+const {
+  statusResponse: gitStatusResponse,
+  refreshToken: gitRefreshToken,
+  refresh: refreshGitStatus
+} = useGitStatus(projectPath, activeTab);
 
 const toolbarConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${toolbarConfigFilename}`

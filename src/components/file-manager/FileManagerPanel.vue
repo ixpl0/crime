@@ -93,6 +93,9 @@ const props = withDefaults(
     selectedPath?: string | null;
     revealPath?: string | null;
     revealRequestToken?: number;
+    gitStatusResponse: GitStatusResponse | null;
+    gitRefreshToken: number;
+    refreshGitStatus: () => Promise<void>;
   }>(),
   {
     selectedPath: null,
@@ -122,6 +125,11 @@ const {
   openContextMenu,
   handleContextMenuRevertClick,
   handleRevertAllClick
-} = useFileManagerPanel(toRef(props, "projectPath"));
+} = useFileManagerPanel({
+  projectPath: toRef(props, "projectPath"),
+  gitStatusResponse: toRef(props, "gitStatusResponse"),
+  gitRefreshToken: toRef(props, "gitRefreshToken"),
+  refreshGitStatus: props.refreshGitStatus
+});
 </script>
 

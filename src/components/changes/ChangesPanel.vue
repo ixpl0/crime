@@ -129,6 +129,9 @@ import { useChangesPanel } from "./use-changes-panel";
 const props = defineProps<{
   projectPath: string;
   selectedPath?: string | null;
+  gitStatusResponse: GitStatusResponse | null;
+  gitRefreshToken: number;
+  refreshGitStatus: () => Promise<void>;
 }>();
 
 const emit = defineEmits<{
@@ -156,7 +159,12 @@ const {
   isPathReverting,
   handleContextMenuRevertClick,
   handleRevertAllClick
-} = useChangesPanel(toRef(props, "projectPath"));
+} = useChangesPanel({
+  projectPath: toRef(props, "projectPath"),
+  gitStatusResponse: toRef(props, "gitStatusResponse"),
+  gitRefreshToken: toRef(props, "gitRefreshToken"),
+  refreshGitStatus: props.refreshGitStatus
+});
 
 function handleEntryPathClick(path: string) {
   emit("open-path", path);

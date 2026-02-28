@@ -218,6 +218,7 @@ import { useGitGraphPanel } from "./use-git-graph-panel";
 
 const props = defineProps<{
   projectPath: string;
+  gitRefreshToken: number;
 }>();
 
 const {
@@ -247,6 +248,6 @@ const {
   copyHash,
   selectCommit,
   closeDetails
-} = useGitGraphPanel(toRef(props, "projectPath"));
+} = useGitGraphPanel(toRef(props, "projectPath"), toRef(props, "gitRefreshToken"));
 </script>
 

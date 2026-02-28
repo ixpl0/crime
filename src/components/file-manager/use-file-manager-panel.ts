@@ -1,4 +1,4 @@
-﻿import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
 import { type DeletedChildrenByParent } from "./file-tree-status-utils";
 import { toErrorMessage } from "../../utils/fail-fast";
 import {
@@ -9,7 +9,7 @@ import {
   type NextTreeState
 } from "./file-manager-panel-utils";
 
-const REFRESH_INTERVAL_MS = 3000;
+const FILESYSTEM_REFRESH_INTERVAL_MS = 5000;
 
 export interface FileManagerContextMenuPayload {
   event: MouseEvent;
@@ -24,8 +24,20 @@ export interface FileManagerContextMenuState {
   status: GitFileStatus;
 }
 
+interface UseFileManagerPanelOptions {
+  projectPath: Ref<string>;
+  gitStatusResponse: Ref<GitStatusResponse | null>;
+  gitRefreshToken: Ref<number>;
+  refreshGitStatus: () => Promise<void>;
+}
+
 // eslint-disable-next-line max-lines-per-function
-export function useFileManagerPanel(projectPath: Ref<string>) {
+export function useFileManagerPanel({
+  projectPath,
+  gitStatusResponse,
+  gitRefreshToken,
+  refreshGitStatus
+}: UseFileManagerPanelOptions) {
   const isLoading = ref(false);
   const loadError = ref("");
   const entries = ref<FileEntry[]>([]);
@@ -51,6 +63,7 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
   let isAutoRefreshInFlight = false;
   let lastStateSnapshot = "";
   let lastStructureSnapshot = "";
+  let lastDirectoryResponse: FilesystemReadResponse | null = null;
 
   function closeContextMenu() {
     contextMenu.value = null;
@@ -71,47 +84,6 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
     void nextTick(() => {
       contextMenuElement.value?.focus();
     });
-  }
-
-  function beginLoad(isBackgroundRefresh: boolean) {
-    const requestId = ++loadRequestId;
-    if (!isBackgroundRefresh) {
-      isLoading.value = true;
-      loadError.value = "";
-    }
-    return requestId;
-  }
-
-  function finishLoad(isBackgroundRefresh: boolean) {
-    if (!isBackgroundRefresh) {
-      isLoading.value = false;
-    }
-  }
-
-  async function requestDirectoryState(
-    requestId: number,
-    isBackgroundRefresh: boolean
-  ): Promise<[FilesystemReadResponse, GitStatusResponse] | null> {
-    try {
-      const responses = await Promise.all([
-        window.projectApi.filesystem.readDirectory(projectPath.value),
-        window.projectApi.git.getStatus(projectPath.value)
-      ]);
-      return requestId === loadRequestId ? responses : null;
-    } catch (error) {
-      if (requestId !== loadRequestId) {
-        return null;
-      }
-
-      const message = toErrorMessage(error, "Failed to load project directory.");
-      if (!isBackgroundRefresh) {
-        isLoading.value = false;
-        loadError.value = message;
-      } else {
-        gitInfoMessage.value = `Auto-refresh failed: ${message}`;
-      }
-      return null;
-    }
   }
 
   function applyTreeState(nextState: NextTreeState) {
@@ -136,15 +108,57 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
     }
   }
 
-  const loadRootDirectory = async (isBackgroundRefresh = false) => {
-    const requestId = beginLoad(isBackgroundRefresh);
-    const responses = await requestDirectoryState(requestId, isBackgroundRefresh);
-    if (!responses) {
+  function rebuildTreeWithGitStatus() {
+    const gitResponse = gitStatusResponse.value;
+    if (!lastDirectoryResponse || !gitResponse) {
       return;
     }
 
-    finishLoad(isBackgroundRefresh);
-    const [directoryResponse, gitResponse] = responses;
+    const nextState = buildNextTreeState(projectPath.value, lastDirectoryResponse, gitResponse);
+    applyTreeState(nextState);
+  }
+
+  async function requestDirectoryState(
+    requestId: number,
+    isBackgroundRefresh: boolean
+  ): Promise<FilesystemReadResponse | null> {
+    try {
+      const response = await window.projectApi.filesystem.readDirectory(projectPath.value);
+      return requestId === loadRequestId ? response : null;
+    } catch (error) {
+      if (requestId !== loadRequestId) {
+        return null;
+      }
+
+      const message = toErrorMessage(error, "Failed to load project directory.");
+      if (!isBackgroundRefresh) {
+        isLoading.value = false;
+        loadError.value = message;
+      } else {
+        gitInfoMessage.value = `Auto-refresh failed: ${message}`;
+      }
+      return null;
+    }
+  }
+
+  const loadRootDirectory = async (isBackgroundRefresh = false) => {
+    const requestId = ++loadRequestId;
+    if (!isBackgroundRefresh) {
+      isLoading.value = true;
+      loadError.value = "";
+    }
+
+    const directoryResponse = await requestDirectoryState(requestId, isBackgroundRefresh);
+    if (!directoryResponse) {
+      return;
+    }
+
+    if (!isBackgroundRefresh) {
+      isLoading.value = false;
+    }
+
+    lastDirectoryResponse = directoryResponse;
+    const gitResponse = gitStatusResponse.value ?? { ok: true, available: true, entries: [] };
     const nextState = buildNextTreeState(projectPath.value, directoryResponse, gitResponse);
     applyTreeState(nextState);
   };
@@ -164,6 +178,7 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
+        await refreshGitStatus();
         await loadRootDirectory();
       }
     } catch (error) {
@@ -190,6 +205,7 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
+        await refreshGitStatus();
         await loadRootDirectory();
       }
     } catch (error) {
@@ -249,8 +265,12 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
       void loadRootDirectory(true).finally(() => {
         isAutoRefreshInFlight = false;
       });
-    }, REFRESH_INTERVAL_MS);
+    }, FILESYSTEM_REFRESH_INTERVAL_MS);
   }
+
+  watch(gitRefreshToken, () => {
+    rebuildTreeWithGitStatus();
+  });
 
   onMounted(() => {
     void loadRootDirectory();
@@ -270,6 +290,7 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
   watch(projectPath, () => {
     lastStateSnapshot = "";
     lastStructureSnapshot = "";
+    lastDirectoryResponse = null;
     closeContextMenu();
     void loadRootDirectory();
     startAutoRefresh();
@@ -294,4 +315,3 @@ export function useFileManagerPanel(projectPath: Ref<string>) {
     handleRevertAllClick
   };
 }
-

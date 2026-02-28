@@ -56,7 +56,7 @@ function getUnavailableLogMessage(reason?: GitLogResponse["reason"]) {
 }
 
 // eslint-disable-next-line max-lines-per-function
-export function useGitGraphPanel(projectPath: Ref<string>) {
+export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<number>) {
   const isLoading = ref(false);
   const loadError = ref("");
   const graphRows = ref<GraphRow[]>([]);
@@ -228,6 +228,10 @@ export function useGitGraphPanel(projectPath: Ref<string>) {
     graphRows.value = [];
     infoMessage.value = "";
     maxLaneCount.value = 0;
+    void loadLog();
+  });
+
+  watch(gitRefreshToken, () => {
     void loadLog();
   });
 

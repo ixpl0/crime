@@ -168,6 +168,11 @@ interface GitCommitDetailsResponse {
   error?: string;
 }
 
+interface GitWatchResponse {
+  ok: boolean;
+  error?: string;
+}
+
 interface GitApi {
   getStatus: (projectPath: string) => Promise<GitStatusResponse>;
   getFileDiff: (projectPath: string, filePath: string) => Promise<GitFileDiffResponse>;
@@ -175,6 +180,9 @@ interface GitApi {
   revertAll: (projectPath: string) => Promise<GitMutateResponse>;
   getLog: (projectPath: string, maxCount?: number) => Promise<GitLogResponse>;
   getCommitDetails: (projectPath: string, hash: string) => Promise<GitCommitDetailsResponse>;
+  watch: (projectPath: string) => Promise<GitWatchResponse>;
+  unwatch: () => Promise<GitWatchResponse>;
+  onChanged: (listener: () => void) => () => void;
 }
 
 interface ZoomApi {

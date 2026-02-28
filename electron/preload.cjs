@@ -25,6 +25,9 @@ const IPC_CHANNELS = Object.freeze({
   "gitRevertAll": "git:revert-all",
   "gitLog": "git:log",
   "gitCommitDetails": "git:commit-details",
+  "gitChanged": "git:changed",
+  "gitWatch": "git:watch",
+  "gitUnwatch": "git:unwatch",
   "globalQuickKey": "global:quick-key"
 });
 
@@ -184,7 +187,14 @@ contextBridge.exposeInMainWorld("projectApi", {
     getLog: (projectPath, maxCount) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitLog, projectPath, maxCount),
     getCommitDetails: (projectPath, hash) =>
-      ipcRenderer.invoke(IPC_CHANNELS.gitCommitDetails, projectPath, hash)
+      ipcRenderer.invoke(IPC_CHANNELS.gitCommitDetails, projectPath, hash),
+    watch: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitWatch, projectPath),
+    unwatch: () => ipcRenderer.invoke(IPC_CHANNELS.gitUnwatch),
+    onChanged: (listener) => {
+      const handler = () => listener();
+      ipcRenderer.on(IPC_CHANNELS.gitChanged, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.gitChanged, handler);
+    }
   },
   zoom: {
     getFactor: () => webFrame.getZoomFactor(),
