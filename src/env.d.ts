@@ -23,6 +23,10 @@ interface ClipboardApi {
   writeText: (text: string) => Promise<TerminalResponse>;
 }
 
+interface ShellApi {
+  openExternal: (url: string) => Promise<TerminalResponse>;
+}
+
 interface SettingsReadResponse {
   ok: boolean;
   content?: string | null;
@@ -196,6 +200,7 @@ interface ProjectApi {
   settings: SettingsApi;
   terminal: TerminalApi;
   clipboard: ClipboardApi;
+  shell: ShellApi;
   filesystem: FilesystemApi;
   git: GitApi;
   zoom: ZoomApi;

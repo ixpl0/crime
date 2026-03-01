@@ -11,6 +11,7 @@ import { attachWindowStatePersistence, getInitialWindowState } from "./main/wind
 import { registerClipboardIpcHandlers } from "./main/ipc/register-clipboard-ipc.mjs";
 import { registerFilesystemIpcHandlers } from "./main/ipc/register-filesystem-ipc.mjs";
 import { registerGitIpcHandlers } from "./main/ipc/register-git-ipc.mjs";
+import { registerShellIpcHandlers } from "./main/ipc/register-shell-ipc.mjs";
 import { registerProjectIpcHandlers } from "./main/ipc/register-project-ipc.mjs";
 import { registerSettingsIpcHandlers } from "./main/ipc/register-settings-ipc.mjs";
 import { registerTerminalIpcHandlers } from "./main/ipc/register-terminal-ipc.mjs";
@@ -196,6 +197,7 @@ function registerIpcHandlers() {
     sendTerminalEvent
   });
   registerClipboardIpcHandlers({ IPC_CHANNELS });
+  registerShellIpcHandlers({ IPC_CHANNELS });
   registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService });
   registerGitIpcHandlers({ IPC_CHANNELS, gitService });
   registerGitWatcherIpcHandlers({

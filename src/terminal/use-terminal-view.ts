@@ -1,6 +1,8 @@
 import { FitAddon } from "@xterm/addon-fit";
+import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
 import { type Ref } from "vue";
+import { playTerminalBell } from "./play-terminal-bell";
 import { collectTerminalPathMatches } from "./terminal-path-utils";
 
 type TerminalBackendResponse = {
@@ -40,6 +42,7 @@ type TerminalViewState = {
   options: UseTerminalViewOptions;
   terminal: Terminal | null;
   fitAddon: FitAddon | null;
+  webLinksAddon: WebLinksAddon | null;
   terminalPathLinkProvider: { dispose: () => void } | null;
 };
 
@@ -74,6 +77,7 @@ function createTerminalViewState(options: UseTerminalViewOptions): TerminalViewS
     options,
     terminal: null,
     fitAddon: null,
+    webLinksAddon: null,
     terminalPathLinkProvider: null
   };
 }
@@ -132,58 +136,7 @@ function bindTerminalInput(state: TerminalViewState, terminal: Terminal) {
     void state.options.sendTerminalInput(data, DEFAULT_INPUT_ERROR);
   });
 
-  terminal.onBell(playBellSound);
-}
-
-function createAudioContext() {
-  return new window.AudioContext();
-}
-
-function configureOscillator(oscillator: OscillatorNode, mainGain: GainNode, delay: DelayNode, delayGain: GainNode, delay2: DelayNode, delayGain2: GainNode, audioContext: AudioContext) {
-  oscillator.connect(mainGain);
-  mainGain.connect(audioContext.destination);
-
-  oscillator.connect(delay);
-  delay.connect(delayGain);
-  delayGain.connect(audioContext.destination);
-
-  oscillator.connect(delay2);
-  delay2.connect(delayGain2);
-  delayGain2.connect(audioContext.destination);
-
-  oscillator.frequency.value = 1350;
-  oscillator.type = "square";
-
-  mainGain.gain.value = 0.4;
-  mainGain.gain.setValueAtTime(0.4, audioContext.currentTime);
-  mainGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.12);
-
-  delay.delayTime.value = 0.15;
-  delayGain.gain.value = 0.35;
-  delayGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.35);
-
-  delay2.delayTime.value = 0.3;
-  delayGain2.gain.value = 0.2;
-  delayGain2.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.5);
-
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + 0.12);
-}
-
-function playBellSound() {
-  try {
-    const audioContext = createAudioContext();
-
-    const oscillator = audioContext.createOscillator();
-    const mainGain = audioContext.createGain();
-    const delay = audioContext.createDelay();
-    const delayGain = audioContext.createGain();
-    const delay2 = audioContext.createDelay();
-    const delayGain2 = audioContext.createGain();
-
-    configureOscillator(oscillator, mainGain, delay, delayGain, delay2, delayGain2, audioContext);
-  } catch {
-  }
+  terminal.onBell(playTerminalBell);
 }
 
 function initializeTerminalView(state: TerminalViewState) {
@@ -194,9 +147,14 @@ function initializeTerminalView(state: TerminalViewState) {
 
   const terminal = createTerminal(state.options.getTerminalFontSize());
   const fitAddon = new FitAddon();
+  const webLinksAddon = new WebLinksAddon((_event, uri) => {
+    void window.projectApi.shell.openExternal(uri);
+  });
   state.terminal = terminal;
   state.fitAddon = fitAddon;
+  state.webLinksAddon = webLinksAddon;
   terminal.loadAddon(fitAddon);
+  terminal.loadAddon(webLinksAddon);
   terminal.open(container);
   registerTerminalPathLinkProvider(state);
   fitAddon.fit();
@@ -335,6 +293,7 @@ function disposeTerminalView(state: TerminalViewState) {
   state.terminal?.dispose();
   state.terminal = null;
   state.fitAddon = null;
+  state.webLinksAddon = null;
 }
 
 export function useTerminalView(options: UseTerminalViewOptions) {

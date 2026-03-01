@@ -28,7 +28,8 @@ const IPC_CHANNELS = Object.freeze({
   "gitChanged": "git:changed",
   "gitWatch": "git:watch",
   "gitUnwatch": "git:unwatch",
-  "globalQuickKey": "global:quick-key"
+  "globalQuickKey": "global:quick-key",
+  "shellOpenExternal": "shell:open-external"
 });
 
 const SETTINGS_DIRNAME = ".ide";
@@ -171,6 +172,9 @@ contextBridge.exposeInMainWorld("projectApi", {
   },
   clipboard: {
     writeText: (text) => ipcRenderer.invoke(IPC_CHANNELS.clipboardWriteText, text)
+  },
+  shell: {
+    openExternal: (url) => ipcRenderer.invoke(IPC_CHANNELS.shellOpenExternal, url)
   },
   filesystem: {
     readDirectory: (dirPath) => ipcRenderer.invoke(IPC_CHANNELS.filesystemReadDirectory, dirPath),

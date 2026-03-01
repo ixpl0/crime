@@ -23,7 +23,8 @@ const IPC_CHANNELS = Object.freeze({
   gitChanged: "git:changed",
   gitWatch: "git:watch",
   gitUnwatch: "git:unwatch",
-  globalQuickKey: "global:quick-key"
+  globalQuickKey: "global:quick-key",
+  shellOpenExternal: "shell:open-external"
 });
 
 module.exports = {
