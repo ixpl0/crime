@@ -19,6 +19,7 @@ export interface ToolbarAction {
   readonly type: ToolbarActionType;
   readonly shortcut?: string;
   readonly color?: ToolbarButtonColor;
+  readonly resetTerminal?: boolean;
 }
 
 export interface ToolbarDropdown {

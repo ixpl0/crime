@@ -8,6 +8,7 @@ import {
 
 interface TerminalActionsDeps {
   readonly isTerminalReady: Ref<boolean>;
+  readonly resetTerminal: () => Promise<boolean>;
   readonly attemptSubmitTerminalText: (
     text: string,
     options: SubmitTerminalTextAttemptOptions
@@ -24,6 +25,7 @@ interface TerminalActionsDeps {
 
 export function useTerminalActions({
   isTerminalReady,
+  resetTerminal,
   attemptSubmitTerminalText,
   sendTerminalInput,
   focusTerminal,
@@ -39,24 +41,37 @@ export function useTerminalActions({
   };
 
   function executeToolbarAction(action: ToolbarAction) {
-    if (!isTerminalReady.value) {
+    void performToolbarAction(action);
+  }
+
+  async function performToolbarAction(action: ToolbarAction) {
+    if (action.resetTerminal) {
+      const didReset = await resetTerminal();
+      if (!didReset) {
+        return;
+      }
+    } else if (!isTerminalReady.value) {
+      return;
+    }
+
+    if (action.value.length === 0) {
       return;
     }
 
     if (action.type === "prompt") {
-      void runToolbarPrompt(action.value);
+      await runToolbarPrompt(action.value);
       return;
     }
 
     if (action.type === "raw-input") {
-      void sendTerminalInput(
+      await sendTerminalInput(
         action.value,
         "Failed to send raw input to terminal."
       );
       return;
     }
 
-    void runTerminalCommand(action.value);
+    await runTerminalCommand(action.value);
   }
 
   async function runTerminalCommand(command: string) {

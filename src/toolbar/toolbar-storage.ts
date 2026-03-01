@@ -30,24 +30,69 @@ export const isToolbarPresetColor = (value: string): value is ToolbarPresetColor
 const isToolbarActionType = (value: unknown): value is ToolbarActionType =>
   value === "prompt" || value === "command" || value === "raw-input";
 
+function parseToolbarActionResetFlag(value: Record<string, unknown>) {
+  if ("resetTerminal" in value && typeof value.resetTerminal !== "boolean") {
+    return null;
+  }
+
+  return value.resetTerminal === true ? true : undefined;
+}
+
+function resolveToolbarActionDefinition(
+  value: Record<string, unknown>,
+  resetTerminal: true | undefined
+) {
+  if ("value" in value && typeof value.value !== "string") {
+    return null;
+  }
+  if ("type" in value && !isToolbarActionType(value.type)) {
+    return null;
+  }
+
+  const explicitValue = typeof value.value === "string" ? value.value : null;
+  const explicitType = isToolbarActionType(value.type) ? value.type : null;
+  const canUseImplicitResetAction =
+    resetTerminal === true &&
+    (value.value === undefined || value.value === "") &&
+    (value.type === undefined || value.type === "command");
+  if (explicitValue === null && !canUseImplicitResetAction) {
+    return null;
+  }
+  if (explicitType === null && !canUseImplicitResetAction) {
+    return null;
+  }
+
+  return {
+    value: explicitValue ?? "",
+    type: explicitType ?? "command"
+  };
+}
+
 const parseToolbarAction = (value: unknown): ToolbarAction | null => {
   if (!isRecord(value) || typeof value.label !== "string") {
+    return null;
+  }
+
+  const resetTerminal = parseToolbarActionResetFlag(value);
+  if (resetTerminal === null) {
+    return null;
+  }
+
+  const actionDefinition = resolveToolbarActionDefinition(value, resetTerminal);
+  if (!actionDefinition) {
     return null;
   }
 
   const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
   const color = isToolbarButtonColor(value.color) ? value.color : undefined;
 
-  if (typeof value.value !== "string" || !isToolbarActionType(value.type)) {
-    return null;
-  }
-
   return {
     label: value.label,
-    value: value.value,
-    type: value.type,
+    value: actionDefinition.value,
+    type: actionDefinition.type,
     shortcut,
-    color
+    color,
+    resetTerminal
   };
 };
 
@@ -104,6 +149,49 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
   return { elements };
 };
 
+function serializeToolbarAction(action: ToolbarAction) {
+  const serializedAction: Record<string, unknown> = {
+    label: action.label
+  };
+
+  if (!(action.resetTerminal && action.type === "command" && action.value.length === 0)) {
+    serializedAction.value = action.value;
+    serializedAction.type = action.type;
+  }
+
+  if (action.shortcut) {
+    serializedAction.shortcut = action.shortcut;
+  }
+  if (action.color) {
+    serializedAction.color = action.color;
+  }
+  if (action.resetTerminal) {
+    serializedAction.resetTerminal = true;
+  }
+
+  return serializedAction;
+}
+
+function serializeToolbarElement(element: ToolbarElement) {
+  if (!("items" in element)) {
+    return serializeToolbarAction(element);
+  }
+
+  const serializedElement: Record<string, unknown> = {
+    label: element.label,
+    items: element.items.map(serializeToolbarAction)
+  };
+  if (element.color) {
+    serializedElement.color = element.color;
+  }
+
+  return serializedElement;
+}
+
+export const serializeToolbarConfig = (config: ToolbarConfig) => ({
+  elements: config.elements.map(serializeToolbarElement)
+});
+
 export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
   return loadJsonProjectSetting(
     projectPath,
@@ -111,11 +199,17 @@ export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarCon
     parseToolbarConfig,
     defaultToolbarConfig,
     {
-      settingLabel: "agent toolbar config"
+      settingLabel: "agent toolbar config",
+      persistFallbackValue: serializeToolbarConfig(defaultToolbarConfig)
     }
   );
 };
 
 export const saveToolbarConfig = async (projectPath: string, config: ToolbarConfig): Promise<void> => {
-  await saveJsonProjectSetting(projectPath, TOOLBAR_CONFIG_FILENAME, config, "agent toolbar config");
+  await saveJsonProjectSetting(
+    projectPath,
+    TOOLBAR_CONFIG_FILENAME,
+    serializeToolbarConfig(config),
+    "agent toolbar config"
+  );
 };

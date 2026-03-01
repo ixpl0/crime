@@ -25,7 +25,7 @@
         >
           <li v-for="(item, itemIndex) in element.items" :key="`item-${elementIndex}-${itemIndex}`">
             <button
-              :disabled="!isTerminalReady"
+              :disabled="isActionDisabled(item, isTerminalReady)"
               :tabindex="openDropdownIndex === elementIndex ? 0 : -1"
               :title="getActionTitle(item)"
               class="flex justify-between"
@@ -43,7 +43,7 @@
         class="btn btn-sm"
         :class="getToolbarButtonColorClass(element.color)"
         :style="getToolbarButtonCustomStyle(element.color)"
-        :disabled="!isTerminalReady"
+        :disabled="isActionDisabled(element, isTerminalReady)"
         :title="getActionTitle(element)"
         @click="$emit('execute-action', element)"
       >
@@ -148,15 +148,23 @@ function handleDropdownActionClick(action: ToolbarAction) {
   emit("execute-action", action);
 }
 
-function getActionTitle(action: ToolbarAction): string | undefined {
-  const valueTitle = action.value;
-  const shortcutTitle = action.shortcut ? formatShortcut(action.shortcut) : undefined;
+function isActionDisabled(action: ToolbarAction, isTerminalReady: boolean) {
+  return !isTerminalReady && !action.resetTerminal;
+}
 
-  if (valueTitle && shortcutTitle) {
-    return `${valueTitle}\n${shortcutTitle}`;
+function getActionTitle(action: ToolbarAction): string | undefined {
+  const titleParts: string[] = [];
+  if (action.resetTerminal) {
+    titleParts.push(action.value.length > 0 ? "Reset terminal before action" : "Reset terminal");
+  }
+  if (action.value) {
+    titleParts.push(action.value);
+  }
+  if (action.shortcut) {
+    titleParts.push(formatShortcut(action.shortcut));
   }
 
-  return valueTitle || shortcutTitle;
+  return titleParts.length > 0 ? titleParts.join("\n") : undefined;
 }
 </script>
 

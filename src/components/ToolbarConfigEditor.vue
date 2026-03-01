@@ -3,8 +3,8 @@
     :open="props.open"
     :title="props.title"
     :file-path="props.configFilePath"
-    :current-value="props.currentConfig"
-    :default-value="props.defaultConfig"
+    :current-value="serializeToolbarConfig(props.currentConfig)"
+    :default-value="serializeToolbarConfig(props.defaultConfig)"
     :parser="parseToolbarConfig"
     invalid-structure-message="Invalid toolbar configuration structure"
     @save="handleSave"
@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import JsonConfigEditorDialog from "./JsonConfigEditorDialog.vue";
 import { type ToolbarConfig } from "../types/toolbar";
-import { parseToolbarConfig } from "../toolbar/toolbar-storage";
+import { parseToolbarConfig, serializeToolbarConfig } from "../toolbar/toolbar-storage";
 import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
 
 const props = withDefaults(defineProps<{

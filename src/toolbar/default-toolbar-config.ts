@@ -46,27 +46,32 @@ export const defaultToolbarConfig: ToolbarConfig = {
         {
           label: "Claude Code",
           value: "claude",
-          type: "command"
+          type: "command",
+          resetTerminal: true
         },
         {
           label: "Codex CLI",
           value: "codex",
-          type: "command"
+          type: "command",
+          resetTerminal: true
         },
         {
           label: "Gemini CLI",
           value: "gemini",
-          type: "command"
+          type: "command",
+          resetTerminal: true
         },
         {
           label: "GLM-5",
           value: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$f='.ide\\.env'; if(-not(Test-Path $f)){Write-Host '>>> Ошибка: Секреты не настроены. Нажмите кнопку [Секреты] в верхней панели.' -ForegroundColor Red; exit 1}; $k=(Get-Content $f | ConvertFrom-StringData).GLM_API_KEY; if(-not $k){Write-Host '>>> Ошибка: GLM_API_KEY не найден в .ide\\.env. Настройте его через меню [Секреты].' -ForegroundColor Red; exit 1}; $env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=$k; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5'; claude /resume\"",
-          type: "command"
+          type: "command",
+          resetTerminal: true
         },
         {
           label: "GLM-4.7",
           value: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$f='.ide\\.env'; if(-not(Test-Path $f)){Write-Host '>>> Ошибка: Секреты не настроены. Нажмите кнопку [Секреты] в верхней панели.' -ForegroundColor Red; exit 1}; $k=(Get-Content $f | ConvertFrom-StringData).GLM_API_KEY; if(-not $k){Write-Host '>>> Ошибка: GLM_API_KEY не найден в .ide\\.env. Настройте его через меню [Секреты].' -ForegroundColor Red; exit 1}; $env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=$k; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-4.7'; claude /resume\"",
-          type: "command"
+          type: "command",
+          resetTerminal: true
         }
       ]
     },
@@ -107,9 +112,10 @@ export const defaultToolbarConfig: ToolbarConfig = {
       ]
     },
     {
-      label: "Ctrl+C",
-      value: "\u0003",
-      type: "raw-input",
+      label: "Reset",
+      value: "",
+      type: "command",
+      resetTerminal: true,
       color: "#f2db6b"
     },
     {

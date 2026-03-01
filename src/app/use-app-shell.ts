@@ -301,6 +301,7 @@ export function useAppShell() {
     sendTodoEntryToTerminal
   } = useTerminalActions({
     isTerminalReady,
+    resetTerminal: resetPrimaryTerminal,
     attemptSubmitTerminalText,
     sendTerminalInput,
     focusTerminal,
@@ -493,6 +494,22 @@ export function useAppShell() {
     resetTerminalInputRuntimeState();
     resetTodoRuntimeState();
     resetConfigPersistState();
+  }
+
+  async function resetPrimaryTerminal() {
+    const currentProjectPath = projectPath.value;
+    if (!currentProjectPath) {
+      return false;
+    }
+
+    errorMessage.value = "";
+    try {
+      await startTerminal(currentProjectPath);
+      return true;
+    } catch (error) {
+      reportUiError("Terminal reset", error, "Failed to reset terminal.");
+      return false;
+    }
   }
 
   function handleProjectSettingsSave(settings: ProjectSettings) {
