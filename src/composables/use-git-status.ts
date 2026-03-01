@@ -18,6 +18,7 @@ interface GitStatusState {
   statusResponse: Ref<GitStatusResponse | null>;
   error: Ref<string>;
   refreshToken: Ref<number>;
+  repositoryRefreshToken: Ref<number>;
   isLoading: Ref<boolean>;
 }
 
@@ -57,7 +58,8 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     statusResponse: ref<GitStatusResponse | null>(null),
     isLoading: ref(false),
     error: ref(""),
-    refreshToken: ref(0)
+    refreshToken: ref(0),
+    repositoryRefreshToken: ref(0)
   };
 
   let requestId = 0;
@@ -78,6 +80,10 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     }
 
     lastSnapshot = applySuccessResponse(state, response, lastSnapshot);
+  };
+
+  const bumpRepositoryRefreshToken = () => {
+    state.repositoryRefreshToken.value += 1;
   };
 
   const refresh = async () => {
@@ -127,6 +133,10 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
         return;
       }
 
+      if (activeTab.value === "git") {
+        bumpRepositoryRefreshToken();
+      }
+
       void refresh();
     }, FALLBACK_POLLING_MS);
   };
@@ -144,18 +154,27 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     stopWatcher();
     void window.projectApi.git.watch(projectPath.value);
     unsubscribeWatcher = window.projectApi.git.onChanged(() => {
+      bumpRepositoryRefreshToken();
       void refresh();
     });
   };
 
   const handleVisibilityChange = () => {
     if (document.visibilityState === "visible" && GIT_TABS.has(activeTab.value)) {
+      if (activeTab.value === "git") {
+        bumpRepositoryRefreshToken();
+      }
+
       void refresh();
     }
   };
 
   watch(activeTab, (newTab) => {
     if (GIT_TABS.has(newTab)) {
+      if (newTab === "git") {
+        bumpRepositoryRefreshToken();
+      }
+
       void refresh();
     }
   });
@@ -192,6 +211,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     isLoading: state.isLoading,
     error: state.error,
     refreshToken: state.refreshToken,
+    repositoryRefreshToken: state.repositoryRefreshToken,
     refresh
   };
 }

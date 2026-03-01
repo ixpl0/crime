@@ -4,13 +4,15 @@ import { join } from "node:path";
 
 const GIT_WATCH_DEBOUNCE_MS = 300;
 
-const WATCHED_FILENAMES = new Set([
+const WATCHED_PATHS = new Set([
   "index",
   "HEAD",
+  "ORIG_HEAD",
   "MERGE_HEAD",
   "COMMIT_EDITMSG",
   "FETCH_HEAD",
-  "refs"
+  "packed-refs",
+  "logs/HEAD"
 ]);
 
 function isRelevantGitChange(filename) {
@@ -18,7 +20,32 @@ function isRelevantGitChange(filename) {
     return true;
   }
 
-  return WATCHED_FILENAMES.has(filename);
+  const normalizedPath = filename.replaceAll("\\", "/");
+  if (WATCHED_PATHS.has(normalizedPath)) {
+    return true;
+  }
+
+  return normalizedPath.startsWith("refs/") || normalizedPath.startsWith("logs/refs/");
+}
+
+function isRecursiveWatchUnsupportedError(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  return "code" in error && error.code === "ERR_FEATURE_UNAVAILABLE_ON_PLATFORM";
+}
+
+function createGitWatcher(gitDirPath, listener) {
+  try {
+    return watch(gitDirPath, { recursive: true }, listener);
+  } catch (error) {
+    if (isRecursiveWatchUnsupportedError(error)) {
+      return watch(gitDirPath, listener);
+    }
+
+    throw error;
+  }
 }
 
 function removeGitWatcherHandlers(IPC_CHANNELS) {
@@ -50,7 +77,7 @@ export function registerGitWatcherIpcHandlers({
     let debounceTimer = null;
 
     try {
-      const fsWatcher = watch(gitDirPath, (_eventType, changedFile) => {
+      const fsWatcher = createGitWatcher(gitDirPath, (_eventType, changedFile) => {
         const filename = typeof changedFile === "string"
           ? changedFile
           : (Buffer.isBuffer(changedFile) ? changedFile.toString("utf-8") : null);

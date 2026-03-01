@@ -68,7 +68,7 @@
             :reveal-path="fileTreeRevealPath"
             :reveal-request-token="fileTreeRevealRequestToken"
             :git-status-response="gitStatusResponse"
-            :git-refresh-token="gitRefreshToken"
+            :git-refresh-token="gitStatusRefreshToken"
             :refresh-git-status="refreshGitStatus"
             @select-file="handleFileSelect"
           />
@@ -91,7 +91,7 @@
             :project-path="projectPath"
             :selected-path="changesSelectedFilePath"
             :git-status-response="gitStatusResponse"
-            :git-refresh-token="gitRefreshToken"
+            :git-refresh-token="gitStatusRefreshToken"
             :refresh-git-status="refreshGitStatus"
             @select-file="handleChangesFileSelect"
             @open-path="handleChangesPathOpen"
@@ -109,7 +109,7 @@
       </div>
 
       <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
-        <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRefreshToken" />
+        <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" />
       </div>
     </div>
   </div>
@@ -191,7 +191,8 @@ const projectPath = computed(() => {
 
 const {
   statusResponse: gitStatusResponse,
-  refreshToken: gitRefreshToken,
+  refreshToken: gitStatusRefreshToken,
+  repositoryRefreshToken: gitRepositoryRefreshToken,
   refresh: refreshGitStatus
 } = useGitStatus(projectPath, activeTab);
 
