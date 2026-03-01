@@ -137,6 +137,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "select-file": [path: string];
   "open-path": [path: string];
+  "reset-selected-file": [];
 }>();
 
 const {
@@ -161,9 +162,13 @@ const {
   handleRevertAllClick
 } = useChangesPanel({
   projectPath: toRef(props, "projectPath"),
+  selectedPath: toRef(props, "selectedPath"),
   gitStatusResponse: toRef(props, "gitStatusResponse"),
   gitRefreshToken: toRef(props, "gitRefreshToken"),
-  refreshGitStatus: props.refreshGitStatus
+  refreshGitStatus: props.refreshGitStatus,
+  onResetSelectedFile: () => {
+    emit("reset-selected-file");
+  }
 });
 
 function handleEntryPathClick(path: string) {

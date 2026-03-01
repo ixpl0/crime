@@ -79,6 +79,7 @@
             :refresh-git-status="refreshGitStatus"
             @select-file="handleChangesFileSelect"
             @open-path="handleChangesPathOpen"
+            @reset-selected-file="resetChangesSelectedFile"
           />
 
           <FileContentViewer

@@ -22,17 +22,21 @@ export interface ChangesContextMenuState {
 
 interface UseChangesPanelOptions {
   projectPath: Ref<string>;
+  selectedPath: Ref<string | null | undefined>;
   gitStatusResponse: Ref<GitStatusResponse | null>;
   gitRefreshToken: Ref<number>;
   refreshGitStatus: () => Promise<void>;
+  onResetSelectedFile?: () => void;
 }
 
 // eslint-disable-next-line max-lines-per-function
 export function useChangesPanel({
   projectPath,
+  selectedPath,
   gitStatusResponse,
   gitRefreshToken,
-  refreshGitStatus
+  refreshGitStatus,
+  onResetSelectedFile
 }: UseChangesPanelOptions) {
   const hasRefreshed = ref(false);
   const isLoading: ComputedRef<boolean> = computed(
@@ -90,6 +94,13 @@ export function useChangesPanel({
     const nextSnapshot = buildSnapshot(entries, info, error);
     if (nextSnapshot === lastSnapshot) {
       return;
+    }
+
+    if (selectedPath.value !== null && selectedPath.value !== undefined) {
+      const pathExists = entries.some((entry) => entry.path === selectedPath.value);
+      if (!pathExists && onResetSelectedFile) {
+        onResetSelectedFile();
+      }
     }
 
     lastSnapshot = nextSnapshot;
@@ -212,6 +223,9 @@ export function useChangesPanel({
     lastSnapshot = "";
     hasRefreshed.value = false;
     closeContextMenu();
+    if (onResetSelectedFile) {
+      onResetSelectedFile();
+    }
   });
 
   onMounted(() => {
