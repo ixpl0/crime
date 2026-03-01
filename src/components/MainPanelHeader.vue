@@ -12,6 +12,14 @@
       <button
         role="tab"
         class="tab"
+        :class="{ 'tab-active': activeTab === 'terminal' }"
+        @click="setActiveTab('terminal')"
+      >
+        &#1058;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;
+      </button>
+      <button
+        role="tab"
+        class="tab"
         :class="{ 'tab-active': activeTab === 'files' }"
         @click="setActiveTab('files')"
       >

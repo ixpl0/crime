@@ -30,6 +30,7 @@ const { quickKeyBindings } = quickKeyBindingsModule;
 
 const WINDOW_STATE_SAVE_DEBOUNCE_MS = 250;
 const IS_FAIL_FAST = process.env.NODE_ENV !== "production";
+const DEFAULT_TERMINAL_SESSION_ID = "primary";
 
 const runCommand = createCommandRunner(IDE_NODE_MODULES_BIN_PATH);
 const gitService = createGitService(runCommand);
@@ -94,18 +95,61 @@ function sendTerminalEvent(webContents, channel, payload) {
   webContents.send(channel, payload);
 }
 
-function stopTerminalSession(webContentsId) {
-  const session = terminalSessions.get(webContentsId);
+function getTerminalSessionGroup(webContentsId, shouldCreate = false) {
+  const existingGroup = terminalSessions.get(webContentsId);
+  if (existingGroup) {
+    return existingGroup;
+  }
+
+  if (!shouldCreate) {
+    return null;
+  }
+
+  const nextGroup = new Map();
+  terminalSessions.set(webContentsId, nextGroup);
+  return nextGroup;
+}
+
+function removeTerminalSession(webContentsId, sessionId) {
+  const sessionGroup = getTerminalSessionGroup(webContentsId);
+  if (!sessionGroup) {
+    return;
+  }
+
+  sessionGroup.delete(sessionId);
+  if (sessionGroup.size === 0) {
+    terminalSessions.delete(webContentsId);
+  }
+}
+
+function stopTerminalSession(
+  webContentsId,
+  sessionId = DEFAULT_TERMINAL_SESSION_ID
+) {
+  const sessionGroup = getTerminalSessionGroup(webContentsId);
+  const session = sessionGroup?.get(sessionId);
   if (!session) {
     return;
   }
 
   session.process.kill();
-  terminalSessions.delete(webContentsId);
+  removeTerminalSession(webContentsId, sessionId);
 }
 
-function isActiveSession(webContentsId, shellProcess) {
-  const session = terminalSessions.get(webContentsId);
+function stopAllTerminalSessions(webContentsId) {
+  const sessionGroup = getTerminalSessionGroup(webContentsId);
+  if (!sessionGroup) {
+    return;
+  }
+
+  const sessionIds = [...sessionGroup.keys()];
+  for (const sessionId of sessionIds) {
+    stopTerminalSession(webContentsId, sessionId);
+  }
+}
+
+function isActiveSession(webContentsId, sessionId, shellProcess) {
+  const session = getTerminalSessionGroup(webContentsId)?.get(sessionId);
   return session?.process === shellProcess;
 }
 
@@ -152,7 +196,7 @@ function createWindow() {
   attachWindowStatePersistence(mainWindow, WINDOW_STATE_SAVE_DEBOUNCE_MS);
 
   mainWindow.on("closed", () => {
-    stopTerminalSession(webContentsId);
+    stopAllTerminalSessions(webContentsId);
     stopSettingsWatcher(webContentsId);
     stopGitWatcher(webContentsId);
   });

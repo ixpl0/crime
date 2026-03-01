@@ -1,0 +1,51 @@
+import { type ToolbarConfig } from "../types/toolbar";
+
+export const defaultTerminalToolbarConfig: ToolbarConfig = {
+  elements: [
+    {
+      label: "Dev",
+      value: "bun run dev",
+      type: "command",
+      color: "primary"
+    },
+    {
+      label: "Build",
+      value: "bun run build",
+      type: "command",
+      color: "secondary"
+    },
+    {
+      label: "Typecheck",
+      value: "bun run typecheck",
+      type: "command",
+      color: "accent"
+    },
+    {
+      label: "Lint",
+      value: "bun run lint",
+      type: "command",
+      color: "info"
+    },
+    {
+      label: "Git",
+      color: "#f2b56b",
+      items: [
+        {
+          label: "status",
+          value: "git status",
+          type: "command"
+        },
+        {
+          label: "diff",
+          value: "git diff --stat",
+          type: "command"
+        },
+        {
+          label: "log",
+          value: "git log --oneline -10",
+          type: "command"
+        }
+      ]
+    }
+  ]
+};

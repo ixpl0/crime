@@ -155,17 +155,20 @@ contextBridge.exposeInMainWorld("projectApi", {
     }
   },
   terminal: {
-    start: (cwd, size) => ipcRenderer.invoke(IPC_CHANNELS.terminalStart, cwd, size),
-    input: (data) => ipcRenderer.invoke(IPC_CHANNELS.terminalInput, data),
-    resize: (size) => ipcRenderer.invoke(IPC_CHANNELS.terminalResize, size),
-    stop: () => ipcRenderer.invoke(IPC_CHANNELS.terminalStop),
+    start: (cwd, size, sessionId) =>
+      ipcRenderer.invoke(IPC_CHANNELS.terminalStart, cwd, size, sessionId),
+    input: (data, sessionId) =>
+      ipcRenderer.invoke(IPC_CHANNELS.terminalInput, data, sessionId),
+    resize: (size, sessionId) =>
+      ipcRenderer.invoke(IPC_CHANNELS.terminalResize, size, sessionId),
+    stop: (sessionId) => ipcRenderer.invoke(IPC_CHANNELS.terminalStop, sessionId),
     onData: (listener) => {
-      const handler = (_event, data) => listener(data);
+      const handler = (_event, payload) => listener(payload.data, payload.sessionId);
       ipcRenderer.on(IPC_CHANNELS.terminalData, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalData, handler);
     },
     onExit: (listener) => {
-      const handler = (_event, code) => listener(code);
+      const handler = (_event, payload) => listener(payload.code, payload.sessionId);
       ipcRenderer.on(IPC_CHANNELS.terminalExit, handler);
       return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalExit, handler);
     }

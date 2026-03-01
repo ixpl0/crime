@@ -2,7 +2,7 @@
 
 const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
 
-export type AppTab = "agent" | "files" | "changes" | "git";
+export type AppTab = "agent" | "terminal" | "files" | "changes" | "git";
 export type HiddenPanelId = "todo";
 
 export interface HiddenPanelOption {

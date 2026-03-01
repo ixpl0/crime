@@ -15,6 +15,16 @@
         @close="closeToolbarConfigEditor"
       />
 
+      <ToolbarConfigEditor
+        :current-config="terminalToolbarConfig"
+        :config-file-path="terminalToolbarConfigFilePath"
+        :open="isTerminalToolbarConfigEditorOpen"
+        title="Terminal Toolbar Settings"
+        :default-config="defaultTerminalToolbarConfig"
+        @save="handleTerminalToolbarConfigSave"
+        @close="closeTerminalToolbarConfigEditor"
+      />
+
       <PromptSuffixConfigEditor
         :current-config="promptSuffixConfig"
         :config-file-path="promptSuffixConfigFilePath"
@@ -42,6 +52,12 @@
       />
 
       <AgentPanel v-show="activeTab === 'agent'" />
+
+      <TerminalWorkspacePanel
+        v-show="activeTab === 'terminal'"
+        :project-path="projectPath"
+        :is-active="activeTab === 'terminal'"
+      />
 
       <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1">
         <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
@@ -103,6 +119,7 @@
 import { computed } from "vue";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
+import { defaultTerminalToolbarConfig } from "../toolbar/default-terminal-toolbar-config";
 import { useGitStatus } from "../composables/use-git-status";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
@@ -113,28 +130,34 @@ import MainPanelHeader from "./MainPanelHeader.vue";
 import ProjectSettingsEditor from "./ProjectSettingsEditor.vue";
 import PromptSuffixConfigEditor from "./PromptSuffixConfigEditor.vue";
 import SecretsEditor from "./SecretsEditor.vue";
+import TerminalWorkspacePanel from "./TerminalWorkspacePanel.vue";
 import ToolbarConfigEditor from "./ToolbarConfigEditor.vue";
 
 const {
   settingsDirectoryName,
   toolbarConfigFilename,
+  terminalToolbarConfigFilename,
   promptSuffixConfigFilename,
   projectSettingsFilename,
   secretsFilename,
   errorMessage,
   isToolbarConfigEditorOpen,
+  isTerminalToolbarConfigEditorOpen,
   isPromptSuffixConfigEditorOpen,
   isProjectSettingsEditorOpen,
   isSecretsEditorOpen,
   toolbarConfig,
+  terminalToolbarConfig,
   promptSuffixConfig,
   projectSettings,
   secretsConfig,
   handleToolbarConfigSave,
+  handleTerminalToolbarConfigSave,
   handlePromptSuffixConfigSave,
   handleProjectSettingsSave,
   handleSecretsSave,
   closeToolbarConfigEditor,
+  closeTerminalToolbarConfigEditor,
   closePromptSuffixConfigEditor,
   closeProjectSettingsEditor,
   closeSecretsEditor
@@ -174,6 +197,9 @@ const {
 
 const toolbarConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${toolbarConfigFilename}`
+);
+const terminalToolbarConfigFilePath = computed(
+  () => `${projectPath.value}/${settingsDirectoryName}/${terminalToolbarConfigFilename}`
 );
 const promptSuffixConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${promptSuffixConfigFilename}`

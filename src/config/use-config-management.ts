@@ -13,7 +13,9 @@ import {
   defaultSecretsContent,
   saveSecrets
 } from "../settings/secrets-storage";
+import { defaultTerminalToolbarConfig } from "../toolbar/default-terminal-toolbar-config";
 import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
+import { saveTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { saveToolbarConfig } from "../toolbar/toolbar-storage";
 
 interface ConfigManagementDeps {
@@ -30,10 +32,12 @@ export function useConfigManagement({
   reportUiError
 }: ConfigManagementDeps) {
   const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
+  const terminalToolbarConfig = ref<ToolbarConfig>(defaultTerminalToolbarConfig);
   const promptSuffixConfig = ref<PromptSuffixConfig>(defaultPromptSuffixConfig);
   const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
   const secretsConfig = ref<string>(defaultSecretsContent);
   const isToolbarConfigEditorOpen = ref(false);
+  const isTerminalToolbarConfigEditorOpen = ref(false);
   const isPromptSuffixConfigEditorOpen = ref(false);
   const isProjectSettingsEditorOpen = ref(false);
   const isSecretsEditorOpen = ref(false);
@@ -45,15 +49,19 @@ export function useConfigManagement({
 
   return {
     toolbarConfig,
+    terminalToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
     isToolbarConfigEditorOpen,
+    isTerminalToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
     isSecretsEditorOpen,
     openToolbarConfigEditor,
+    openTerminalToolbarConfigEditor,
     closeToolbarConfigEditor,
+    closeTerminalToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     closePromptSuffixConfigEditor,
     openProjectSettingsEditor,
@@ -61,6 +69,7 @@ export function useConfigManagement({
     openSecretsEditor,
     closeSecretsEditor,
     handleToolbarConfigSave,
+    handleTerminalToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handlePromptSuffixToggle,
     handleSecretsSave,
@@ -76,6 +85,14 @@ export function useConfigManagement({
 
   function closeToolbarConfigEditor() {
     isToolbarConfigEditorOpen.value = false;
+  }
+
+  function openTerminalToolbarConfigEditor() {
+    isTerminalToolbarConfigEditorOpen.value = true;
+  }
+
+  function closeTerminalToolbarConfigEditor() {
+    isTerminalToolbarConfigEditorOpen.value = false;
   }
 
   function openPromptSuffixConfigEditor() {
@@ -158,6 +175,23 @@ export function useConfigManagement({
       }
     }
     isToolbarConfigEditorOpen.value = false;
+  }
+
+  async function handleTerminalToolbarConfigSave(config: ToolbarConfig) {
+    terminalToolbarConfig.value = config;
+    if (projectPath.value) {
+      try {
+        await saveTerminalToolbarConfig(projectPath.value, config);
+      } catch (error) {
+        reportUiError(
+          "Terminal toolbar config",
+          error,
+          "Failed to save terminal toolbar configuration."
+        );
+        return;
+      }
+    }
+    isTerminalToolbarConfigEditorOpen.value = false;
   }
 
   function handlePromptSuffixToggle(index: number) {

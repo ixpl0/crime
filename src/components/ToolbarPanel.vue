@@ -10,8 +10,8 @@
         <button
           type="button"
           class="btn btn-sm"
-          :class="getColorClass(element.color)"
-          :style="getCustomColorStyle(element.color)"
+          :class="getToolbarButtonColorClass(element.color)"
+          :style="getToolbarButtonCustomStyle(element.color)"
           :aria-expanded="openDropdownIndex === elementIndex"
           @click="toggleDropdownTabNavigation(elementIndex)"
           @keydown="handleDropdownTriggerKeydown($event, elementIndex)"
@@ -41,8 +41,8 @@
       <button
         v-else
         class="btn btn-sm"
-        :class="getColorClass(element.color)"
-        :style="getCustomColorStyle(element.color)"
+        :class="getToolbarButtonColorClass(element.color)"
+        :style="getToolbarButtonCustomStyle(element.color)"
         :disabled="!isTerminalReady"
         :title="getActionTitle(element)"
         @click="$emit('execute-action', element)"
@@ -66,12 +66,13 @@
 import { nextTick, ref } from "vue";
 import {
   type ToolbarConfig,
-  type ToolbarAction,
-  type ToolbarButtonColor,
-  type ToolbarPresetColor
+  type ToolbarAction
 } from "../types/toolbar";
+import {
+  getToolbarButtonColorClass,
+  getToolbarButtonCustomStyle
+} from "../toolbar/toolbar-button-styles";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
-import { isToolbarPresetColor } from "../toolbar/toolbar-storage";
 import { ChevronDown, Pencil } from "lucide-vue-next";
 
 defineProps<{
@@ -147,56 +148,6 @@ function handleDropdownActionClick(action: ToolbarAction) {
   emit("execute-action", action);
 }
 
-const presetClassMap: Record<ToolbarPresetColor, string> = {
-  primary: "btn-primary",
-  secondary: "btn-secondary",
-  accent: "btn-accent",
-  info: "btn-info",
-  success: "btn-success",
-  warning: "btn-warning",
-  error: "btn-error",
-  neutral: "btn-neutral",
-  ghost: "btn-ghost"
-};
-
-const getColorClass = (color?: ToolbarButtonColor): string =>
-  color && isToolbarPresetColor(color) ? presetClassMap[color] : "";
-
-const parseHexToRgb = (hex: string): readonly [number, number, number] => {
-  const normalized = hex.length === 4
-    ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
-    : hex;
-  const value = parseInt(normalized.slice(1), 16);
-  return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
-};
-
-const linearizeChannel = (channel: number): number => {
-  const normalized = channel / 255;
-  return normalized <= 0.04045
-    ? normalized / 12.92
-    : ((normalized + 0.055) / 1.055) ** 2.4;
-};
-
-const getContrastingTextColor = (hex: string): string => {
-  const [red, green, blue] = parseHexToRgb(hex);
-  const luminance =
-    0.2126 * linearizeChannel(red) +
-    0.7152 * linearizeChannel(green) +
-    0.0722 * linearizeChannel(blue);
-  return luminance > 0.179 ? "#000000" : "#ffffff";
-};
-
-const getCustomColorStyle = (color?: ToolbarButtonColor): Record<string, string> | undefined => {
-  if (!color || isToolbarPresetColor(color)) {
-    return undefined;
-  }
-  return {
-    backgroundColor: color,
-    color: getContrastingTextColor(color),
-    borderColor: color
-  };
-};
-
 function getActionTitle(action: ToolbarAction): string | undefined {
   const valueTitle = action.value;
   const shortcutTitle = action.shortcut ? formatShortcut(action.shortcut) : undefined;
@@ -216,4 +167,3 @@ function getActionTitle(action: ToolbarAction): string | undefined {
   pointer-events: none;
 }
 </style>
-

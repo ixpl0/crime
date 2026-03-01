@@ -6,15 +6,17 @@ import {
   watch
 } from "vue";
 
+const PRIMARY_TERMINAL_SESSION_ID = "primary";
+
 interface UseAppRuntimeOptions {
   isTodoPanelCollapsed: Ref<boolean>;
   isTerminalReady: Ref<boolean>;
   loadRecentProjectsFromStorage: () => void;
   validateRecentProjects: () => Promise<void>;
-  subscribeTerminalData: (listener: (data: string) => void) => () => void;
+  subscribeTerminalData: (listener: (data: string, sessionId: string) => void) => () => void;
   markTerminalDataReceived: () => void;
   writeTerminalOutput: (data: string) => void;
-  subscribeTerminalExit: (listener: (code: number | null) => void) => () => void;
+  subscribeTerminalExit: (listener: (code: number | null, sessionId: string) => void) => () => void;
   writeTerminalNotice: (message: string) => void;
   startProjectLayoutListeners: () => void;
   handleHistoryNavigationMouseButton: (event: MouseEvent) => void;
@@ -54,13 +56,21 @@ function subscribeTerminalStreams(
   options: UseAppRuntimeOptions,
   state: RuntimeSubscriptionState
 ) {
-  state.unsubscribeTerminalData = options.subscribeTerminalData((data) => {
+  state.unsubscribeTerminalData = options.subscribeTerminalData((data, sessionId) => {
+    if (sessionId !== PRIMARY_TERMINAL_SESSION_ID) {
+      return;
+    }
+
     options.markTerminalDataReceived();
     // Keep terminal stream untouched: PTY output must reach xterm as-is.
     options.writeTerminalOutput(data);
   });
 
-  state.unsubscribeTerminalExit = options.subscribeTerminalExit((code) => {
+  state.unsubscribeTerminalExit = options.subscribeTerminalExit((code, sessionId) => {
+    if (sessionId !== PRIMARY_TERMINAL_SESSION_ID) {
+      return;
+    }
+
     options.isTerminalReady.value = false;
     options.writeTerminalNotice(`\r\n[terminal exited: ${String(code ?? "unknown")}]`);
   });

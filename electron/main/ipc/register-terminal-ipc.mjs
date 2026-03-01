@@ -1,6 +1,8 @@
 import { ipcMain } from "electron";
 import * as pty from "node-pty";
 
+const DEFAULT_TERMINAL_SESSION_ID = "primary";
+
 function parseTerminalDimension(size, axis) {
   if (!size || typeof size !== "object") {
     return null;
@@ -20,6 +22,15 @@ function parseTerminalCols(size) {
 
 function parseTerminalRows(size) {
   return parseTerminalDimension(size, "rows");
+}
+
+function parseTerminalSessionId(value) {
+  if (typeof value !== "string") {
+    return DEFAULT_TERMINAL_SESSION_ID;
+  }
+
+  const normalizedValue = value.trim();
+  return normalizedValue.length > 0 ? normalizedValue : DEFAULT_TERMINAL_SESSION_ID;
 }
 
 function removeTerminalHandlers(IPC_CHANNELS) {
@@ -42,13 +53,14 @@ export function registerTerminalIpcHandlers(options) {
   } = options;
   removeTerminalHandlers(IPC_CHANNELS);
 
-  ipcMain.handle(IPC_CHANNELS.terminalStart, async (event, cwd, size) => {
+  ipcMain.handle(IPC_CHANNELS.terminalStart, async (event, cwd, size, sessionIdValue) => {
     if (!cwd || typeof cwd !== "string") {
       return { ok: false, error: "Project path is required." };
     }
 
     const webContentsId = event.sender.id;
-    stopTerminalSession(webContentsId);
+    const sessionId = parseTerminalSessionId(sessionIdValue);
+    stopTerminalSession(webContentsId, sessionId);
 
     const shell = resolveShell();
     const cols = parseTerminalCols(size) ?? 120;
@@ -71,30 +83,48 @@ export function registerTerminalIpcHandlers(options) {
       };
     }
 
-    terminalSessions.set(webContentsId, { process: shellProcess });
+    let sessionGroup = terminalSessions.get(webContentsId);
+    if (!sessionGroup) {
+      sessionGroup = new Map();
+      terminalSessions.set(webContentsId, sessionGroup);
+    }
+
+    sessionGroup.set(sessionId, { process: shellProcess });
     shellProcess.onData((data) => {
-      if (isActiveSession(webContentsId, shellProcess)) {
-        sendTerminalEvent(event.sender, IPC_CHANNELS.terminalData, data);
+      if (isActiveSession(webContentsId, sessionId, shellProcess)) {
+        sendTerminalEvent(event.sender, IPC_CHANNELS.terminalData, {
+          sessionId,
+          data
+        });
       }
     });
     shellProcess.onExit(({ exitCode }) => {
-      if (!isActiveSession(webContentsId, shellProcess)) {
+      const activeGroup = terminalSessions.get(webContentsId);
+      if (!isActiveSession(webContentsId, sessionId, shellProcess) || !activeGroup) {
         return;
       }
 
-      terminalSessions.delete(webContentsId);
-      sendTerminalEvent(event.sender, IPC_CHANNELS.terminalExit, exitCode ?? null);
+      activeGroup.delete(sessionId);
+      if (activeGroup.size === 0) {
+        terminalSessions.delete(webContentsId);
+      }
+
+      sendTerminalEvent(event.sender, IPC_CHANNELS.terminalExit, {
+        sessionId,
+        code: exitCode ?? null
+      });
     });
 
     return { ok: true };
   });
 
-  ipcMain.handle(IPC_CHANNELS.terminalInput, async (event, data) => {
+  ipcMain.handle(IPC_CHANNELS.terminalInput, async (event, data, sessionIdValue) => {
     if (typeof data !== "string") {
       return { ok: false, error: "Input must be a string." };
     }
 
-    const session = terminalSessions.get(event.sender.id);
+    const sessionId = parseTerminalSessionId(sessionIdValue);
+    const session = terminalSessions.get(event.sender.id)?.get(sessionId);
     if (!session) {
       return { ok: false, error: "Terminal session is not running." };
     }
@@ -110,8 +140,9 @@ export function registerTerminalIpcHandlers(options) {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.terminalResize, async (event, size) => {
-    const session = terminalSessions.get(event.sender.id);
+  ipcMain.handle(IPC_CHANNELS.terminalResize, async (event, size, sessionIdValue) => {
+    const sessionId = parseTerminalSessionId(sessionIdValue);
+    const session = terminalSessions.get(event.sender.id)?.get(sessionId);
     if (!session) {
       return { ok: false, error: "Terminal session is not running." };
     }
@@ -133,8 +164,8 @@ export function registerTerminalIpcHandlers(options) {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.terminalStop, async (event) => {
-    stopTerminalSession(event.sender.id);
+  ipcMain.handle(IPC_CHANNELS.terminalStop, async (event, sessionIdValue) => {
+    stopTerminalSession(event.sender.id, parseTerminalSessionId(sessionIdValue));
     return { ok: true };
   });
 }

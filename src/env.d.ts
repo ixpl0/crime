@@ -11,12 +11,12 @@ interface TerminalSize {
 }
 
 interface TerminalApi {
-  start: (cwd: string, size?: TerminalSize) => Promise<TerminalResponse>;
-  input: (data: string) => Promise<TerminalResponse>;
-  resize: (size: TerminalSize) => Promise<TerminalResponse>;
-  stop: () => Promise<TerminalResponse>;
-  onData: (listener: (data: string) => void) => () => void;
-  onExit: (listener: (code: number | null) => void) => () => void;
+  start: (cwd: string, size?: TerminalSize, sessionId?: string) => Promise<TerminalResponse>;
+  input: (data: string, sessionId?: string) => Promise<TerminalResponse>;
+  resize: (size: TerminalSize, sessionId?: string) => Promise<TerminalResponse>;
+  stop: (sessionId?: string) => Promise<TerminalResponse>;
+  onData: (listener: (data: string, sessionId: string) => void) => () => void;
+  onExit: (listener: (code: number | null, sessionId: string) => void) => () => void;
 }
 
 interface ClipboardApi {

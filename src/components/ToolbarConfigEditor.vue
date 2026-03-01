@@ -1,10 +1,10 @@
 <template>
   <JsonConfigEditorDialog
-    :open="open"
-    title="Toolbar Settings"
-    :file-path="configFilePath"
-    :current-value="currentConfig"
-    :default-value="defaultToolbarConfig"
+    :open="props.open"
+    :title="props.title"
+    :file-path="props.configFilePath"
+    :current-value="props.currentConfig"
+    :default-value="props.defaultConfig"
     :parser="parseToolbarConfig"
     invalid-structure-message="Invalid toolbar configuration structure"
     @save="handleSave"
@@ -18,11 +18,16 @@ import { type ToolbarConfig } from "../types/toolbar";
 import { parseToolbarConfig } from "../toolbar/toolbar-storage";
 import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
 
-defineProps<{
+const props = withDefaults(defineProps<{
   currentConfig: ToolbarConfig;
   configFilePath: string;
   open: boolean;
-}>();
+  title?: string;
+  defaultConfig?: ToolbarConfig;
+}>(), {
+  title: "Toolbar Settings",
+  defaultConfig: () => defaultToolbarConfig
+});
 
 const emit = defineEmits<{
   save: [config: ToolbarConfig];

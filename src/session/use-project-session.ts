@@ -12,7 +12,12 @@ import {
 import { defaultSecretsContent, loadSecrets, SECRETS_FILENAME } from "../settings/secrets-storage";
 import { TERMINAL_INPUT_HISTORY_FILENAME } from "../settings/terminal-input-history-storage";
 import { TODO_FILENAME } from "../settings/todo-storage";
+import { defaultTerminalToolbarConfig } from "../toolbar/default-terminal-toolbar-config";
 import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
+import {
+  loadTerminalToolbarConfig,
+  TERMINAL_TOOLBAR_CONFIG_FILENAME
+} from "../toolbar/terminal-toolbar-storage";
 import { loadToolbarConfig, TOOLBAR_CONFIG_FILENAME } from "../toolbar/toolbar-storage";
 import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { type ProjectSettings } from "../types/project-settings";
@@ -31,6 +36,7 @@ export interface UseProjectSessionOptions {
   isTerminalReady: Ref<boolean>;
   errorMessage: Ref<string>;
   toolbarConfig: Ref<ToolbarConfig>;
+  terminalToolbarConfig: Ref<ToolbarConfig>;
   promptSuffixConfig: Ref<PromptSuffixConfig>;
   projectSettings: Ref<ProjectSettings>;
   secretsConfig: Ref<string>;
@@ -108,6 +114,7 @@ function resetProjectSessionToDefaults(state: ProjectSessionState) {
   state.options.projectPath.value = null;
   state.options.resetProjectRuntimeState();
   state.options.toolbarConfig.value = defaultToolbarConfig;
+  state.options.terminalToolbarConfig.value = defaultTerminalToolbarConfig;
   state.options.promptSuffixConfig.value = defaultPromptSuffixConfig;
   state.options.secretsConfig.value = defaultSecretsContent;
   assignProjectSettings(state, defaultProjectSettings);
@@ -169,6 +176,7 @@ async function loadProjectSettingsForProject(state: ProjectSessionState, path: s
 
 async function loadProjectResources(state: ProjectSessionState, path: string) {
   state.options.toolbarConfig.value = await loadToolbarConfig(path);
+  state.options.terminalToolbarConfig.value = await loadTerminalToolbarConfig(path);
   state.options.secretsConfig.value = await loadSecrets(path);
   await loadPromptSuffixConfigForProject(state, path);
   await loadProjectSettingsForProject(state, path);
@@ -176,6 +184,7 @@ async function loadProjectResources(state: ProjectSessionState, path: string) {
   await state.options.loadTodoEntriesForProject(path, "project-open");
 }
 
+/* eslint-disable-next-line max-lines-per-function */
 async function handleSettingsFileChanged(state: ProjectSessionState, filename: string) {
   const path = state.options.projectPath.value;
   if (!path) {
@@ -185,6 +194,9 @@ async function handleSettingsFileChanged(state: ProjectSessionState, filename: s
   const change = createSettingsFileChange(filename);
   if (matchesWatchedSettingsFile(change, TOOLBAR_CONFIG_FILENAME)) {
     state.options.toolbarConfig.value = await loadToolbarConfig(path);
+  }
+  if (matchesWatchedSettingsFile(change, TERMINAL_TOOLBAR_CONFIG_FILENAME)) {
+    state.options.terminalToolbarConfig.value = await loadTerminalToolbarConfig(path);
   }
   if (matchesWatchedSettingsFile(change, SECRETS_FILENAME)) {
     state.options.secretsConfig.value = await loadSecrets(path);

@@ -17,6 +17,9 @@ import {
 import {
   TOOLBAR_CONFIG_FILENAME
 } from "../toolbar/toolbar-storage";
+import {
+  TERMINAL_TOOLBAR_CONFIG_FILENAME
+} from "../toolbar/terminal-toolbar-storage";
 import { toContextualErrorMessage } from "../utils/fail-fast";
 import { provideAppConfigStore } from "../config/config-store";
 import { normalizeProjectZoomSettings, normalizeTerminalFontSize } from "../layout/project-layout-utils";
@@ -106,15 +109,19 @@ export function useAppShell() {
 
   const {
     toolbarConfig,
+    terminalToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
     isToolbarConfigEditorOpen,
+    isTerminalToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
     isSecretsEditorOpen,
     openToolbarConfigEditor,
+    openTerminalToolbarConfigEditor,
     closeToolbarConfigEditor,
+    closeTerminalToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     closePromptSuffixConfigEditor,
     openProjectSettingsEditor,
@@ -122,6 +129,7 @@ export function useAppShell() {
     openSecretsEditor,
     closeSecretsEditor,
     handleToolbarConfigSave,
+    handleTerminalToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handlePromptSuffixToggle,
     handleSecretsSave,
@@ -312,6 +320,7 @@ export function useAppShell() {
     isTerminalReady,
     errorMessage,
     toolbarConfig,
+    terminalToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
@@ -387,27 +396,33 @@ export function useAppShell() {
   provideAppConfigStore({
     settingsDirectoryName,
     toolbarConfigFilename: TOOLBAR_CONFIG_FILENAME,
+    terminalToolbarConfigFilename: TERMINAL_TOOLBAR_CONFIG_FILENAME,
     promptSuffixConfigFilename: PROMPT_SUFFIX_CONFIG_FILENAME,
     projectSettingsFilename: PROJECT_SETTINGS_FILENAME,
     secretsFilename: SECRETS_FILENAME,
     errorMessage,
     toolbarConfig,
+    terminalToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
     isToolbarConfigEditorOpen,
+    isTerminalToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
     isSecretsEditorOpen,
     handleToolbarConfigSave,
+    handleTerminalToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handleProjectSettingsSave,
     handleSecretsSave,
     openToolbarConfigEditor,
+    openTerminalToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     openProjectSettingsEditor,
     openSecretsEditor,
     closeToolbarConfigEditor,
+    closeTerminalToolbarConfigEditor,
     closePromptSuffixConfigEditor,
     closeProjectSettingsEditor,
     closeSecretsEditor,
