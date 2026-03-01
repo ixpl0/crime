@@ -1,5 +1,36 @@
 import { type ToolbarConfig } from "../types/toolbar";
 
+const fileSizeLimitsPrompt = [
+  "Проверь кодбейс на нарушения ограничений размера: слишком большие файлы и функции с избыточным количеством ответственностей.",
+  "Для каждого нарушения объясни, что смешано, и предложи конкретный план разбиения с минимальным риском регрессий."
+].join(" ");
+
+const updateAiInstructionsPrompt = [
+  "Внимательно изучи текущее состояние проекта: архитектуру, стек, скрипты, соглашения по коду.",
+  "Сравни с тем, что написано в CLAUDE.md (или аналогичном файле инструкций для агента).",
+  "Если что-то устарело, неточно или отсутствует — обнови файл.",
+  "Не добавляй ничего лишнего: только то, что реально нужно агенту для работы с этим проектом."
+].join(" ");
+
+const dependenciesAuditPrompt = [
+  "Проверь зависимости проекта на наличие устаревших версий и известных уязвимостей.",
+  "Для каждого кандидата на обновление укажи: текущая версия, целевая версия, есть ли breaking changes, безопасно ли обновить прямо сейчас.",
+  "Предложи порядок обновления батчами по уровню риска."
+].join(" ");
+
+const gitignoreAuditPrompt = [
+  "Проверь .gitignore на полноту.",
+  "Убедись, что исключены артефакты сборки, зависимости, локальные конфиги, .env-файлы и другие чувствительные или генерируемые файлы.",
+  "Если чего-то не хватает — добавь с кратким объяснением, почему это не должно попасть в репозиторий."
+].join(" ");
+
+const precommitHooksPrompt = [
+  "Проверь конфигурацию pre-commit хуков.",
+  "Убедись, что хуки покрывают проверку типов, линтинг, и при необходимости тесты.",
+  "Если есть пробелы — предложи конкретные дополнения.",
+  "Проверь, что при ошибке хук возвращает ненулевой exit code и коммит реально блокируется."
+].join(" ");
+
 const dryAndReuseReviewPrompt = [
   "Проведи ревью текущего кодбейса или diff со строгим фокусом на DRY.",
   "Найди дублированную логику, повторяющиеся ветвления, скопированные типы или тесты и места, где поведение можно централизовать без ущерба для читаемости.",
@@ -72,6 +103,37 @@ export const defaultToolbarConfig: ToolbarConfig = {
           value: "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$f='.ide\\.env'; if(-not(Test-Path $f)){Write-Host '>>> Ошибка: Секреты не настроены. Нажмите кнопку [Секреты] в верхней панели.' -ForegroundColor Red; exit 1}; $k=(Get-Content $f | ConvertFrom-StringData).GLM_API_KEY; if(-not $k){Write-Host '>>> Ошибка: GLM_API_KEY не найден в .ide\\.env. Настройте его через меню [Секреты].' -ForegroundColor Red; exit 1}; $env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=$k; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-4.7'; claude /resume\"",
           type: "command",
           resetTerminal: true
+        }
+      ]
+    },
+    {
+      label: "\u041f\u0440\u0430\u043a\u0442\u0438\u043a\u0438",
+      color: "#f2a07b",
+      items: [
+        {
+          label: "\u0420\u0430\u0437\u043c\u0435\u0440\u044b \u0444\u0430\u0439\u043b\u043e\u0432 \u0438 \u0444\u0443\u043d\u043a\u0446\u0438\u0439",
+          value: fileSizeLimitsPrompt,
+          type: "prompt"
+        },
+        {
+          label: "\u0418\u043d\u0441\u0442\u0440\u0443\u043a\u0446\u0438\u0438 \u0434\u043b\u044f \u0418\u0418",
+          value: updateAiInstructionsPrompt,
+          type: "prompt"
+        },
+        {
+          label: "\u0410\u0443\u0434\u0438\u0442 \u0437\u0430\u0432\u0438\u0441\u0438\u043c\u043e\u0441\u0442\u0435\u0439",
+          value: dependenciesAuditPrompt,
+          type: "prompt"
+        },
+        {
+          label: ".gitignore",
+          value: gitignoreAuditPrompt,
+          type: "prompt"
+        },
+        {
+          label: "Pre-commit \u0445\u0443\u043a\u0438",
+          value: precommitHooksPrompt,
+          type: "prompt"
         }
       ]
     },

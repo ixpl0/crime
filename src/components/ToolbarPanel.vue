@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-2 py-1">
+  <div class="flex flex-wrap items-center gap-2 py-1">
     <template v-for="(element, elementIndex) in toolbarConfig.elements" :key="`element-${elementIndex}`">
       <div
         v-if="'items' in element"
@@ -53,7 +53,8 @@
     </template>
 
     <button
-      class="btn btn-sm btn-ghost"
+      type="button"
+      class="btn btn-sm btn-square btn-ghost h-8 min-h-8"
       title="Edit toolbar"
       @click="$emit('open-config-editor')"
     >

@@ -31,11 +31,12 @@ const isToolbarActionType = (value: unknown): value is ToolbarActionType =>
   value === "prompt" || value === "command" || value === "raw-input";
 
 function parseToolbarActionResetFlag(value: Record<string, unknown>) {
-  if ("resetTerminal" in value && typeof value.resetTerminal !== "boolean") {
+  const resetTerminal = value.resetTerminal;
+  if (resetTerminal !== undefined && resetTerminal !== true) {
     return null;
   }
 
-  return value.resetTerminal === true ? true : undefined;
+  return resetTerminal === true ? true : undefined;
 }
 
 function resolveToolbarActionDefinition(
@@ -90,9 +91,9 @@ const parseToolbarAction = (value: unknown): ToolbarAction | null => {
     label: value.label,
     value: actionDefinition.value,
     type: actionDefinition.type,
-    shortcut,
-    color,
-    resetTerminal
+    ...(shortcut !== undefined && { shortcut }),
+    ...(color !== undefined && { color }),
+    ...(resetTerminal !== undefined && { resetTerminal })
   };
 };
 
