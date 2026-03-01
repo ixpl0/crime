@@ -3,9 +3,12 @@
     <label
       v-for="(item, index) in suffixConfig.items"
       :key="`suffix-${index}`"
+      tabindex="0"
       class="label inline-flex h-8 cursor-pointer select-none items-center gap-2 rounded-btn px-2 py-0 whitespace-nowrap hover:bg-base-100/60"
       :title="item.value"
       @click.prevent="$emit('toggle-suffix', index)"
+      @keydown.enter.prevent="$emit('toggle-suffix', index)"
+      @keydown.space.prevent="$emit('toggle-suffix', index)"
     >
       <span
         :ref="(el) => setIndicatorRef(index, el as HTMLElement | null)"

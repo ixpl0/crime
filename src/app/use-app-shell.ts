@@ -448,7 +448,8 @@ export function useAppShell() {
     handleTextareaInput,
     handleTextareaPaste,
     sendTextareaToTerminal,
-    sendQuickKey
+    sendQuickKey,
+    focusTextarea: () => terminalInputTextarea.value?.focus()
   });
   provideAppTodoStore({
     isTodoPanelCollapsed,

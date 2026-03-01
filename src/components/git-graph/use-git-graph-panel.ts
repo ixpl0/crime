@@ -90,6 +90,8 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
   let loadRequestId = 0;
   let detailsRequestId = 0;
   let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastCommitsSnapshot = "";
+  let isInitialized = false;
 
   function clearCopyFeedbackTimer() {
     if (copyFeedbackTimer !== null) {
@@ -166,10 +168,22 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
 
   function applyGraphRows(entries: readonly GitLogEntry[]) {
     const rows = buildGitGraphRows(entries);
+    const selectedHash =
+      selectedRowIndex.value !== null
+        ? graphRows.value[selectedRowIndex.value]?.commit.hash ?? null
+        : null;
     graphRows.value = rows;
     maxLaneCount.value = computeMaxLaneCount(rows);
     infoMessage.value = entries.length > 0 ? `${String(entries.length)} commits` : "";
-    closeDetails();
+
+    if (selectedHash !== null) {
+      const newIndex = rows.findIndex((r) => r.commit.hash === selectedHash);
+      if (newIndex >= 0) {
+        selectedRowIndex.value = newIndex;
+      } else {
+        closeDetails();
+      }
+    }
   }
 
   function applyUnavailableLog(reason?: GitLogResponse["reason"]) {
@@ -193,7 +207,9 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
 
   const loadLog = async () => {
     const requestId = ++loadRequestId;
-    isLoading.value = true;
+    if (!isInitialized) {
+      isLoading.value = true;
+    }
     loadError.value = "";
     const response = await requestGitLog(requestId);
     if (!response) {
@@ -201,17 +217,27 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     }
 
     isLoading.value = false;
+    isInitialized = true;
+
     if (!response.ok) {
       loadError.value = response.error ?? "Git log unavailable.";
+      lastCommitsSnapshot = "";
       return;
     }
 
     if (!response.available) {
       applyUnavailableLog(response.reason);
+      lastCommitsSnapshot = "";
       return;
     }
 
-    applyGraphRows(response.entries ?? []);
+    const entries = response.entries ?? [];
+    const snapshot = entries.map((e) => e.hash).join(",");
+    if (snapshot === lastCommitsSnapshot) {
+      return;
+    }
+    lastCommitsSnapshot = snapshot;
+    applyGraphRows(entries);
   };
 
   onMounted(() => {
@@ -228,6 +254,8 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     graphRows.value = [];
     infoMessage.value = "";
     maxLaneCount.value = 0;
+    lastCommitsSnapshot = "";
+    isInitialized = false;
     void loadLog();
   });
 

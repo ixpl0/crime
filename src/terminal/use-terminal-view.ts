@@ -156,6 +156,10 @@ function initializeTerminalView(state: TerminalViewState) {
   terminal.loadAddon(fitAddon);
   terminal.loadAddon(webLinksAddon);
   terminal.open(container);
+  const xtermTextarea = container.querySelector("textarea.xterm-helper-textarea");
+  if (xtermTextarea instanceof HTMLElement) {
+    xtermTextarea.tabIndex = -1;
+  }
   registerTerminalPathLinkProvider(state);
   fitAddon.fit();
   terminal.writeln(INITIAL_TERMINAL_MESSAGE);

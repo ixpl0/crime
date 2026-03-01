@@ -10,7 +10,6 @@ const WATCHED_PATHS = new Set([
   "ORIG_HEAD",
   "MERGE_HEAD",
   "COMMIT_EDITMSG",
-  "FETCH_HEAD",
   "packed-refs",
   "logs/HEAD"
 ]);

@@ -133,11 +133,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
         return;
       }
 
-      if (activeTab.value === "git") {
-        bumpRepositoryRefreshToken();
-      }
-
-      void refresh();
+        void refresh();
     }, FALLBACK_POLLING_MS);
   };
 
@@ -161,20 +157,12 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
 
   const handleVisibilityChange = () => {
     if (document.visibilityState === "visible" && GIT_TABS.has(activeTab.value)) {
-      if (activeTab.value === "git") {
-        bumpRepositoryRefreshToken();
-      }
-
       void refresh();
     }
   };
 
   watch(activeTab, (newTab) => {
     if (GIT_TABS.has(newTab)) {
-      if (newTab === "git") {
-        bumpRepositoryRefreshToken();
-      }
-
       void refresh();
     }
   });

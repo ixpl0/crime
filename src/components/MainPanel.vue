@@ -59,7 +59,7 @@
         :is-active="activeTab === 'terminal'"
       />
 
-      <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1">
+      <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
         <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
           <FileManagerPanel
             class="h-full min-h-0"
@@ -84,7 +84,7 @@
         </div>
       </div>
 
-      <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1">
+      <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
         <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
           <ChangesPanel
             class="h-full min-h-0"

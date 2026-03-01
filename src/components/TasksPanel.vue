@@ -8,6 +8,7 @@
         <button
           class="btn btn-ghost btn-xs"
           type="button"
+          tabindex="-1"
           title="Hide todo panel"
           @click="toggleTodoPanelCollapse"
         >
@@ -40,6 +41,7 @@
               v-if="shouldShowTodoDragHandle(todoDraftView.index)"
               class="btn btn-ghost btn-xs btn-square cursor-grab text-base-content/60 active:cursor-grabbing"
               type="button"
+              tabindex="-1"
               :draggable="canDragTodoDraft(todoDraftView.index)"
               :disabled="!canDragTodoDraft(todoDraftView.index)"
               title="Drag to reorder"

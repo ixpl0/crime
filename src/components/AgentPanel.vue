@@ -18,6 +18,7 @@
       />
       <button
         type="button"
+        tabindex="-1"
         class="terminal-resize-handle group relative -mt-[6px] flex h-3 w-full cursor-ns-resize items-center justify-center border-0 bg-transparent p-0"
         title="&#1055;&#1086;&#1090;&#1103;&#1085;&#1080;&#1090;&#1077;, &#1095;&#1090;&#1086;&#1073;&#1099; &#1080;&#1079;&#1084;&#1077;&#1085;&#1080;&#1090;&#1100; &#1074;&#1099;&#1089;&#1086;&#1090;&#1091; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;&#1072;"
         aria-label="&#1048;&#1079;&#1084;&#1077;&#1085;&#1080;&#1090;&#1100; &#1074;&#1099;&#1089;&#1086;&#1090;&#1091; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;&#1072;"
@@ -71,9 +72,11 @@
           <button
             v-if="quickKey"
             type="button"
+            tabindex="-1"
             class="btn btn-sm min-w-0 px-2"
             :disabled="!isTerminalReady"
             :title="quickKey.accelerator"
+            @mousedown.prevent="focusTextarea"
             @click="sendQuickKey(quickKey.input)"
           >
             <ArrowUp v-if="quickKey.icon === 'arrow-up'" :size="14" />
@@ -129,7 +132,8 @@ const {
   handleTextareaInput,
   handleTextareaPaste,
   sendTextareaToTerminal,
-  sendQuickKey
+  sendQuickKey,
+  focusTextarea
 } = useAppTerminalStore();
 
 function handleTerminalInput(event: Event) {
