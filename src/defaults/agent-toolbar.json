@@ -141,6 +141,11 @@
           "label": "/compact",
           "value": "/compact",
           "type": "command"
+        },
+        {
+          "label": "/model",
+          "value": "/model",
+          "type": "command"
         }
       ]
     },
