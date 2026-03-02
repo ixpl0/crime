@@ -15,8 +15,7 @@
 <script setup lang="ts">
 import JsonConfigEditorDialog from "./JsonConfigEditorDialog.vue";
 import { type PromptSuffixConfig } from "../types/prompt-suffix";
-import { parsePromptSuffixConfig } from "../prompt-suffix/prompt-suffix-storage";
-import { defaultPromptSuffixConfig } from "../prompt-suffix/default-prompt-suffix-config";
+import { defaultPromptSuffixConfig, parsePromptSuffixConfig } from "../prompt-suffix/prompt-suffix-storage";
 
 defineProps<{
   currentConfig: PromptSuffixConfig;

@@ -28,8 +28,17 @@ const linearizeChannel = (channel: number): number => {
     : ((normalized + 0.055) / 1.055) ** 2.4;
 };
 
-const getContrastingTextColor = (hex: string): string => {
-  const [red, green, blue] = parseHexToRgb(hex);
+const parseOklchLightness = (color: string): number | null => {
+  const match = /^oklch\(\s*([\d.]+)\s+[\d.]+\s+[\d.]+\s*\)$/.exec(color);
+  return match ? parseFloat(match[1]) : null;
+};
+
+const getContrastingTextColor = (color: string): string => {
+  const oklchLightness = parseOklchLightness(color);
+  if (oklchLightness !== null) {
+    return oklchLightness > 0.6 ? "#000000" : "#ffffff";
+  }
+  const [red, green, blue] = parseHexToRgb(color);
   const luminance =
     0.2126 * linearizeChannel(red) +
     0.7152 * linearizeChannel(green) +

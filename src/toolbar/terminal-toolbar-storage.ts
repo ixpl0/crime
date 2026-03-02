@@ -1,9 +1,11 @@
 import { loadJsonProjectSetting, saveJsonProjectSetting } from "../settings/settings-storage-helpers";
 import { type ToolbarConfig } from "../types/toolbar";
-import { defaultTerminalToolbarConfig } from "./default-terminal-toolbar-config";
+import defaultTerminalToolbarJson from "../defaults/terminal-toolbar.json";
 import { parseToolbarConfig, serializeToolbarConfig } from "./toolbar-storage";
 
 export const TERMINAL_TOOLBAR_CONFIG_FILENAME = "terminal-toolbar.json";
+
+export const defaultTerminalToolbarConfig = defaultTerminalToolbarJson as unknown as ToolbarConfig;
 
 export const loadTerminalToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
   return loadJsonProjectSetting(
@@ -13,7 +15,7 @@ export const loadTerminalToolbarConfig = async (projectPath: string): Promise<To
     defaultTerminalToolbarConfig,
     {
       settingLabel: "terminal toolbar config",
-      persistFallbackValue: serializeToolbarConfig(defaultTerminalToolbarConfig)
+      persistFallbackValue: defaultTerminalToolbarJson
     }
   );
 };

@@ -6,7 +6,7 @@ import {
   type ToolbarConfig,
   type ToolbarElement
 } from "../types/toolbar";
-import { defaultToolbarConfig } from "./default-toolbar-config";
+import defaultAgentToolbarJson from "../defaults/agent-toolbar.json";
 import {
   isRecord,
   loadJsonProjectSetting,
@@ -15,14 +15,21 @@ import {
 
 export const TOOLBAR_CONFIG_FILENAME = "agent-toolbar.json";
 
+export const defaultToolbarConfig = defaultAgentToolbarJson as unknown as ToolbarConfig;
+
 const TOOLBAR_PRESET_COLORS = new Set<string>([
   "primary", "secondary", "accent", "info", "success", "warning", "error", "neutral", "ghost"
 ]);
 
 const HEX_COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+const OKLCH_COLOR_PATTERN = /^oklch\(\s*[\d.]+\s+[\d.]+\s+[\d.]+\s*\)$/;
 
 const isToolbarButtonColor = (value: unknown): value is ToolbarButtonColor =>
-  typeof value === "string" && (TOOLBAR_PRESET_COLORS.has(value) || HEX_COLOR_PATTERN.test(value));
+  typeof value === "string" && (
+    TOOLBAR_PRESET_COLORS.has(value) ||
+    HEX_COLOR_PATTERN.test(value) ||
+    OKLCH_COLOR_PATTERN.test(value)
+  );
 
 export const isToolbarPresetColor = (value: string): value is ToolbarPresetColor =>
   TOOLBAR_PRESET_COLORS.has(value);
@@ -201,7 +208,7 @@ export const loadToolbarConfig = async (projectPath: string): Promise<ToolbarCon
     defaultToolbarConfig,
     {
       settingLabel: "agent toolbar config",
-      persistFallbackValue: serializeToolbarConfig(defaultToolbarConfig)
+      persistFallbackValue: defaultAgentToolbarJson
     }
   );
 };

@@ -15,8 +15,7 @@
 <script setup lang="ts">
 import JsonConfigEditorDialog from "./JsonConfigEditorDialog.vue";
 import { type ToolbarConfig } from "../types/toolbar";
-import { parseToolbarConfig, serializeToolbarConfig } from "../toolbar/toolbar-storage";
-import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
+import { defaultToolbarConfig, parseToolbarConfig, serializeToolbarConfig } from "../toolbar/toolbar-storage";
 
 const props = withDefaults(defineProps<{
   currentConfig: ToolbarConfig;

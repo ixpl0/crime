@@ -119,7 +119,7 @@
 import { computed } from "vue";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
-import { defaultTerminalToolbarConfig } from "../toolbar/default-terminal-toolbar-config";
+import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { useGitStatus } from "../composables/use-git-status";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";

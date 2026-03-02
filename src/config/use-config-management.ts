@@ -3,8 +3,10 @@ import { ref, type Ref } from "vue";
 import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { type ProjectSettings } from "../types/project-settings";
 import { type ToolbarConfig } from "../types/toolbar";
-import { defaultPromptSuffixConfig } from "../prompt-suffix/default-prompt-suffix-config";
-import { savePromptSuffixConfig } from "../prompt-suffix/prompt-suffix-storage";
+import {
+  defaultPromptSuffixConfig,
+  savePromptSuffixConfig
+} from "../prompt-suffix/prompt-suffix-storage";
 import {
   defaultProjectSettings,
   saveProjectSettings
@@ -13,10 +15,8 @@ import {
   defaultSecretsContent,
   saveSecrets
 } from "../settings/secrets-storage";
-import { defaultTerminalToolbarConfig } from "../toolbar/default-terminal-toolbar-config";
-import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
-import { saveTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
-import { saveToolbarConfig } from "../toolbar/toolbar-storage";
+import { defaultTerminalToolbarConfig, saveTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
+import { defaultToolbarConfig, saveToolbarConfig } from "../toolbar/toolbar-storage";
 
 interface ConfigManagementDeps {
   readonly projectPath: Ref<string | null>;

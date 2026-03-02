@@ -3,7 +3,7 @@ import {
   type PromptSuffixItem,
   type PromptSuffixMode
 } from "../types/prompt-suffix";
-import { defaultPromptSuffixConfig } from "./default-prompt-suffix-config";
+import defaultPromptSuffixesJson from "../defaults/prompt-suffixes.json";
 import {
   isRecord,
   loadJsonProjectSetting,
@@ -11,6 +11,8 @@ import {
 } from "../settings/settings-storage-helpers";
 
 export const PROMPT_SUFFIX_CONFIG_FILENAME = "prompt-suffixes.json";
+
+export const defaultPromptSuffixConfig = defaultPromptSuffixesJson as unknown as PromptSuffixConfig;
 
 const VALID_MODES: readonly PromptSuffixMode[] = ["off", "once", "always"];
 

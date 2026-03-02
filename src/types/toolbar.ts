@@ -11,7 +11,7 @@ export type ToolbarPresetColor =
   | "neutral"
   | "ghost";
 
-export type ToolbarButtonColor = ToolbarPresetColor | `#${string}`;
+export type ToolbarButtonColor = ToolbarPresetColor | `#${string}` | `oklch(${string})`;
 
 export interface ToolbarAction {
   readonly label: string;

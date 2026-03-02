@@ -1,6 +1,6 @@
 import { nextTick, type Ref } from "vue";
-import { defaultPromptSuffixConfig } from "../prompt-suffix/default-prompt-suffix-config";
 import {
+  defaultPromptSuffixConfig,
   loadPromptSuffixConfig,
   PROMPT_SUFFIX_CONFIG_FILENAME
 } from "../prompt-suffix/prompt-suffix-storage";
@@ -12,13 +12,16 @@ import {
 import { defaultSecretsContent, loadSecrets, SECRETS_FILENAME } from "../settings/secrets-storage";
 import { TERMINAL_INPUT_HISTORY_FILENAME } from "../settings/terminal-input-history-storage";
 import { TODO_FILENAME } from "../settings/todo-storage";
-import { defaultTerminalToolbarConfig } from "../toolbar/default-terminal-toolbar-config";
-import { defaultToolbarConfig } from "../toolbar/default-toolbar-config";
 import {
+  defaultTerminalToolbarConfig,
   loadTerminalToolbarConfig,
   TERMINAL_TOOLBAR_CONFIG_FILENAME
 } from "../toolbar/terminal-toolbar-storage";
-import { loadToolbarConfig, TOOLBAR_CONFIG_FILENAME } from "../toolbar/toolbar-storage";
+import {
+  defaultToolbarConfig,
+  loadToolbarConfig,
+  TOOLBAR_CONFIG_FILENAME
+} from "../toolbar/toolbar-storage";
 import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { type ProjectSettings } from "../types/project-settings";
 import { type ToolbarConfig } from "../types/toolbar";
