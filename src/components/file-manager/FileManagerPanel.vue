@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 import { RotateCcw, Trash2 } from "lucide-vue-next";
+import { useConfirmDialog } from "../../utils/dialog-utils";
 import FileTreeNode from "./FileTreeNode.vue";
 import { useFileManagerPanel } from "./use-file-manager-panel";
 
@@ -119,6 +120,8 @@ const emit = defineEmits<{
   "select-file": [path: string];
 }>();
 
+const { requestConfirm } = useConfirmDialog();
+
 const {
   isLoading,
   loadError,
@@ -141,7 +144,8 @@ const {
   projectPath: toRef(props, "projectPath"),
   gitStatusResponse: toRef(props, "gitStatusResponse"),
   gitRefreshToken: toRef(props, "gitRefreshToken"),
-  refreshGitStatus: props.refreshGitStatus
+  refreshGitStatus: props.refreshGitStatus,
+  requestConfirm
 });
 </script>
 

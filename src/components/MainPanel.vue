@@ -41,6 +41,8 @@
         @close="closeProjectSettingsEditor"
       />
 
+      <ConfirmDialog />
+
       <SecretsEditor
         title="Секреты проекта"
         :file-path="secretsConfigFilePath"
@@ -126,6 +128,7 @@ import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storag
 import { useGitStatus } from "../composables/use-git-status";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
+import ConfirmDialog from "./ConfirmDialog.vue";
 import FileContentViewer from "./FileContentViewer.vue";
 import FileManagerPanel from "./file-manager/FileManagerPanel.vue";
 import GitGraphPanel from "./git-graph/GitGraphPanel.vue";

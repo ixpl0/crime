@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 import { File, FilePen, FilePlus, FileX, RotateCcw } from "lucide-vue-next";
+import { useConfirmDialog } from "../../utils/dialog-utils";
 import { useChangesPanel } from "./use-changes-panel";
 
 const props = defineProps<{
@@ -139,6 +140,8 @@ const emit = defineEmits<{
   "open-path": [path: string];
   "reset-selected-file": [];
 }>();
+
+const { requestConfirm } = useConfirmDialog();
 
 const {
   isLoading,
@@ -166,6 +169,7 @@ const {
   gitStatusResponse: toRef(props, "gitStatusResponse"),
   gitRefreshToken: toRef(props, "gitRefreshToken"),
   refreshGitStatus: props.refreshGitStatus,
+  requestConfirm,
   onResetSelectedFile: () => {
     emit("reset-selected-file");
   }

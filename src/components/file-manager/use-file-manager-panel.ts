@@ -2,10 +2,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } 
 import { type DeletedChildrenByParent } from "./file-tree-status-utils";
 import { toErrorMessage } from "../../utils/fail-fast";
 import { clampContextMenuX, clampContextMenuY, getGitUnavailableMessage } from "../../utils/context-menu-utils";
-import {
-  buildNextTreeState,
-  type NextTreeState
-} from "./file-manager-panel-utils";
+import { buildNextTreeState, type NextTreeState } from "./file-manager-panel-utils";
 import type { FileManagerContextMenuPayload, FileManagerContextMenuState } from "./file-manager-context-menu-types";
 export type { FileManagerContextMenuPayload, FileManagerContextMenuState };
 
@@ -16,6 +13,7 @@ interface UseFileManagerPanelOptions {
   gitStatusResponse: Ref<GitStatusResponse | null>;
   gitRefreshToken: Ref<number>;
   refreshGitStatus: () => Promise<void>;
+  requestConfirm: (options: { title: string; body?: string }) => Promise<boolean>;
 }
 
 // eslint-disable-next-line max-lines-per-function
@@ -23,7 +21,8 @@ export function useFileManagerPanel({
   projectPath,
   gitStatusResponse,
   gitRefreshToken,
-  refreshGitStatus
+  refreshGitStatus,
+  requestConfirm
 }: UseFileManagerPanelOptions) {
   const isLoading = ref(false);
   const loadError = ref("");
@@ -150,10 +149,9 @@ export function useFileManagerPanel({
   };
 
   async function revertPath(path: string) {
-    if (isActionInProgress.value || !window.confirm(`Откатить изменения файла?\n${path}`)) {
+    if (isActionInProgress.value || !await requestConfirm({ title: "Откатить изменения файла?", body: path })) {
       return;
     }
-
     closeContextMenu();
     revertingPath.value = path;
     loadError.value = "";
@@ -175,12 +173,12 @@ export function useFileManagerPanel({
   }
 
   async function revertAllChanges() {
-    const confirmationText =
-      "Откатить ВСЕ изменения в текущем проекте? Это удалит все незакоммиченные правки.";
-    if (isActionInProgress.value || !hasChanges.value || !window.confirm(confirmationText)) {
+    if (isActionInProgress.value || !hasChanges.value) {
       return;
     }
-
+    if (!await requestConfirm({ title: "Откатить ВСЕ изменения?", body: "Это удалит все незакоммиченные правки в текущем проекте." })) {
+      return;
+    }
     closeContextMenu();
     isRevertingAll.value = true;
     loadError.value = "";
@@ -203,10 +201,9 @@ export function useFileManagerPanel({
 
   async function deletePath(targetPath: string, isDirectory: boolean) {
     const entityLabel = isDirectory ? "папку" : "файл";
-    if (isActionInProgress.value || !window.confirm(`Удалить ${entityLabel}?\n${targetPath}`)) {
+    if (isActionInProgress.value || !await requestConfirm({ title: `Удалить ${entityLabel}?`, body: targetPath })) {
       return;
     }
-
     closeContextMenu();
     revertingPath.value = targetPath;
     loadError.value = "";

@@ -24,6 +24,7 @@ interface UseChangesPanelOptions {
   gitStatusResponse: Ref<GitStatusResponse | null>;
   gitRefreshToken: Ref<number>;
   refreshGitStatus: () => Promise<void>;
+  requestConfirm: (options: { title: string; body?: string }) => Promise<boolean>;
   onResetSelectedFile?: () => void;
 }
 
@@ -34,6 +35,7 @@ export function useChangesPanel({
   gitStatusResponse,
   gitRefreshToken,
   refreshGitStatus,
+  requestConfirm,
   onResetSelectedFile
 }: UseChangesPanelOptions) {
   const hasRefreshed = ref(false);
@@ -135,7 +137,12 @@ export function useChangesPanel({
   }
 
   async function revertPath(path: string) {
-    if (isActionInProgress.value || !window.confirm(`Откатить изменения файла?\n${path}`)) {
+    if (isActionInProgress.value) {
+      return;
+    }
+
+    const confirmed = await requestConfirm({ title: "Откатить изменения файла?", body: path });
+    if (!confirmed) {
       return;
     }
 
@@ -159,9 +166,15 @@ export function useChangesPanel({
   }
 
   async function revertAllChanges() {
-    const confirmationText =
-      "Откатить ВСЕ изменения в текущем проекте? Это удалит все незакоммиченные правки.";
-    if (isActionInProgress.value || !hasChanges.value || !window.confirm(confirmationText)) {
+    if (isActionInProgress.value || !hasChanges.value) {
+      return;
+    }
+
+    const confirmed = await requestConfirm({
+      title: "Откатить ВСЕ изменения?",
+      body: "Это удалит все незакоммиченные правки в текущем проекте."
+    });
+    if (!confirmed) {
       return;
     }
 

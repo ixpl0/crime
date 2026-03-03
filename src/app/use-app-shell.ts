@@ -22,6 +22,7 @@ import {
   TERMINAL_TOOLBAR_CONFIG_FILENAME
 } from "../toolbar/terminal-toolbar-storage";
 import { toContextualErrorMessage } from "../utils/fail-fast";
+import { provideConfirmDialog } from "../utils/dialog-utils";
 import { provideAppConfigStore } from "../config/config-store";
 import { normalizeProjectZoomSettings, normalizeTerminalFontSize } from "../layout/project-layout-utils";
 import { provideAppNavigationStore } from "../navigation/navigation-store";
@@ -367,6 +368,8 @@ export function useAppShell() {
   });
 
   useToolbarShortcuts(toolbarConfig, executeToolbarAction);
+
+  provideConfirmDialog();
 
   provideAppNavigationStore({
     projectPath,
