@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { readdir, readFile, rm } from "node:fs/promises";
+import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { isPathInsideBase } from "./path-utils.mjs";
 
@@ -7,6 +7,7 @@ function removeFilesystemHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadDirectory);
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadFile);
   ipcMain.removeHandler(IPC_CHANNELS.filesystemDeletePath);
+  ipcMain.removeHandler(IPC_CHANNELS.filesystemWriteFile);
 }
 
 function withIgnoredState(entries, ignoredEntryPathKeySet, toPathKey) {
@@ -77,6 +78,27 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
       return {
         ok: false,
         error: error instanceof Error ? error.message : "Failed to read file."
+      };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.filesystemWriteFile, async (_event, projectPath, filePath, content) => {
+    if (typeof projectPath !== "string" || typeof filePath !== "string" || typeof content !== "string") {
+      return { ok: false, error: "Project path, file path, and content are required." };
+    }
+
+    const resolvedFilePath = resolve(filePath);
+    if (!isPathInsideBase(projectPath, resolvedFilePath)) {
+      return { ok: false, error: "Invalid file path." };
+    }
+
+    try {
+      await writeFile(resolvedFilePath, content, "utf-8");
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to write file."
       };
     }
   });

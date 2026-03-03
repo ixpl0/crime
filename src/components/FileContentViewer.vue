@@ -3,13 +3,24 @@
     <div class="border-b border-base-300/80 bg-base-100/40 px-3 py-2">
       <div class="flex items-center gap-2">
         <span class="truncate text-sm font-semibold">{{ filePath ? fileName : "File preview" }}</span>
-        <span v-if="filePath && !isLoading" class="ml-auto text-[11px] text-base-content/45">
+        <span v-if="filePath && !isLoading && !isEditing" class="ml-auto text-[11px] text-base-content/45">
           {{ `${String(displayLines.length)} lines` }}
         </span>
+        <button v-if="filePath && canEdit" class="ml-auto btn btn-ghost btn-xs btn-square" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
+          <component :is="isEditing ? Eye : Pencil" :size="14" />
+        </button>
       </div>
       <div v-if="filePath" class="truncate text-xs text-base-content/55">{{ filePath }}</div>
     </div>
-    <div ref="scrollContainer" class="min-h-0 flex-1 overflow-auto bg-base-100/35">
+    <FileEditor
+      v-if="isEditing && filePath"
+      :project-path="projectPath"
+      :file-path="filePath"
+      :is-active="isActive"
+      class="min-h-0 flex-1"
+      @saved="handleEditorSaved"
+    />
+    <div v-else ref="scrollContainer" class="min-h-0 flex-1 overflow-auto bg-base-100/35">
       <div v-if="!filePath" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
         Select a file in tree to preview it.
       </div>
@@ -33,8 +44,10 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { Eye, Pencil } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
 import { diffLinePrefix as linePrefix, toContextDiffLines } from "./file-content-viewer-utils";
+import FileEditor from "./FileEditor.vue";
 
 const props = defineProps<{
   projectPath: string;
@@ -44,7 +57,25 @@ const props = defineProps<{
   isActive: boolean;
 }>();
 
-const emit = defineEmits<{ "file-not-found": [filePath: string] }>();
+const emit = defineEmits<{ "file-not-found": [filePath: string]; "file-saved": [] }>();
+
+const isEditing = ref(false);
+
+const canEdit = computed(() => {
+  if (!props.filePath) { return false; }
+  return !isLoading.value && !loadError.value;
+});
+
+const toggleEditMode = () => {
+  isEditing.value = !isEditing.value;
+  if (!isEditing.value) {
+    void loadFilePreview();
+  }
+};
+
+const handleEditorSaved = () => {
+  emit("file-saved");
+};
 type ViewerLine = GitDiffLine;
 const isLoading = ref(false);
 const loadError = ref("");
@@ -203,6 +234,7 @@ async function loadFilePreview() {
   applyDiffResultState(responses.diffResponse, responses.fileResponse, fallbackLines);
 }
 
+watch(() => props.filePath, () => { isEditing.value = false; });
 watch(() => [props.projectPath, props.filePath, props.isActive], () => { void loadFilePreview(); }, { immediate: true });
 watch(() => [props.filePath, props.targetLine ?? null, props.targetRequestToken ?? 0, props.isActive, displayLines.value.length] as const, () => { void focusTargetLine(); }, { immediate: true });
 onBeforeUnmount(() => { clearHighlightTimer(); });

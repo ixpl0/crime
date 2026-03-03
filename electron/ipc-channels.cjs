@@ -15,6 +15,7 @@ const IPC_CHANNELS = Object.freeze({
   filesystemReadDirectory: "filesystem:read-directory",
   filesystemReadFile: "filesystem:read-file",
   filesystemDeletePath: "filesystem:delete-path",
+  filesystemWriteFile: "filesystem:write-file",
   gitStatus: "git:status",
   gitFileDiff: "git:file-diff",
   gitRevertFile: "git:revert-file",

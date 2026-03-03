@@ -88,10 +88,16 @@ interface FilesystemDeleteResponse {
   error?: string;
 }
 
+interface FilesystemWriteFileResponse {
+  ok: boolean;
+  error?: string;
+}
+
 interface FilesystemApi {
   readDirectory: (path: string) => Promise<FilesystemReadResponse>;
   readFile: (projectPath: string, filePath: string) => Promise<FilesystemReadFileResponse>;
   deletePath: (projectPath: string, targetPath: string) => Promise<FilesystemDeleteResponse>;
+  writeFile: (projectPath: string, filePath: string, content: string) => Promise<FilesystemWriteFileResponse>;
 }
 
 type GitFileStatus = "added" | "modified" | "deleted";
