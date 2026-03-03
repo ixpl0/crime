@@ -20,7 +20,7 @@
       class="min-h-0 flex-1"
       @saved="handleEditorSaved"
     />
-    <div v-else ref="scrollContainer" class="min-h-0 flex-1 overflow-auto bg-base-100/35">
+    <div v-else class="min-h-0 flex-1 overflow-hidden bg-base-100/35">
       <div v-if="!filePath" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
         Select a file in tree to preview it.
       </div>
@@ -29,12 +29,13 @@
       <div v-else-if="displayLines.length === 0" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
         File is empty.
       </div>
-      <div v-else class="font-mono text-[13px] leading-6">
-        <div v-for="(line, index) in displayLines" :key="`${line.type}:${String(index)}:${line.text}`" class="flex transition-colors duration-200 hover:bg-base-300/40" :data-line-number="index + 1" :class="lineRowClasses(line.type, index + 1)">
-          <span class="w-14 shrink-0 select-none border-r border-base-300/50 px-2 py-0.5 text-right text-xs text-base-content/50">{{ index + 1 }}</span>
-          <span class="flex-1 whitespace-pre px-3 py-0.5"><span class="mr-2 inline-block w-2 select-none opacity-80">{{ linePrefix(line.type) }}</span>{{ line.text }}</span>
-        </div>
-      </div>
+      <CodeMirrorDiffViewer
+        v-else
+        :file-path="filePath"
+        :display-lines="displayLines"
+        :target-line="targetLine"
+        :target-request-token="targetRequestToken"
+      />
     </div>
     <div v-if="diffInfoMessage" class="border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
       {{ diffInfoMessage }}
@@ -43,11 +44,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { Eye, Pencil } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
-import { diffLinePrefix as linePrefix, toContextDiffLines } from "./file-content-viewer-utils";
+import { toContextDiffLines } from "./file-content-viewer-utils";
 import FileEditor from "./FileEditor.vue";
+import CodeMirrorDiffViewer from "./CodeMirrorDiffViewer.vue";
 
 const props = defineProps<{
   projectPath: string;
@@ -81,10 +83,7 @@ const isLoading = ref(false);
 const loadError = ref("");
 const diffInfoMessage = ref("");
 const displayLines = ref<ViewerLine[]>([]);
-const highlightedLine = ref<number | null>(null);
-const scrollContainer = ref<HTMLElement | null>(null);
 let loadRequestId = 0;
-let clearHighlightTimeoutId: number | null = null;
 
 const fileName = computed(() => {
   if (!props.filePath) return "";
@@ -92,63 +91,11 @@ const fileName = computed(() => {
   return segments[segments.length - 1] ?? props.filePath;
 });
 
-function clearHighlightTimer() {
-  if (clearHighlightTimeoutId === null) return;
-  window.clearTimeout(clearHighlightTimeoutId);
-  clearHighlightTimeoutId = null;
-}
-
-function resolveHighlightedLine(): number | null {
-  if (!props.isActive || !props.filePath) return null;
-  const targetLine = props.targetLine ?? null;
-  if (targetLine === null || targetLine <= 0) return null;
-  const lineCount = displayLines.value.length;
-  if (lineCount === 0) return null;
-  return Math.min(targetLine, lineCount);
-}
-
-function scheduleLineHighlightReset(lineNumber: number) {
-  highlightedLine.value = lineNumber;
-  clearHighlightTimer();
-  clearHighlightTimeoutId = window.setTimeout(() => {
-    if (highlightedLine.value === lineNumber) highlightedLine.value = null;
-    clearHighlightTimeoutId = null;
-  }, 2500);
-}
-
-async function scrollLineIntoView(lineNumber: number) {
-  await nextTick();
-  const container = scrollContainer.value;
-  if (!container) return;
-  const row = container.querySelector<HTMLElement>(`[data-line-number="${String(lineNumber)}"]`);
-  row?.scrollIntoView({ block: "center", inline: "nearest" });
-}
-
-async function focusTargetLine() {
-  const lineNumber = resolveHighlightedLine();
-  if (lineNumber === null) {
-    highlightedLine.value = null;
-    clearHighlightTimer();
-    return;
-  }
-  scheduleLineHighlightReset(lineNumber);
-  await scrollLineIntoView(lineNumber);
-}
-
-function lineRowClasses(type: ViewerLine["type"], lineNumber: number) {
-  const baseClass = highlightedLine.value === lineNumber ? "bg-warning/30 text-base-content ring-1 ring-warning/50" : "";
-  if (type === "added") return baseClass || "bg-green-500/10 text-green-700";
-  if (type === "removed") return baseClass || "bg-red-500/10 text-red-700";
-  return baseClass || "text-base-content";
-}
-
 function clearViewerContentState() {
   isLoading.value = false;
   loadError.value = "";
   diffInfoMessage.value = "";
   displayLines.value = [];
-  highlightedLine.value = null;
-  clearHighlightTimer();
 }
 
 function buildFallbackLines(fileResponse: FilesystemReadFileResponse): ViewerLine[] {
@@ -236,6 +183,4 @@ async function loadFilePreview() {
 
 watch(() => props.filePath, () => { isEditing.value = false; });
 watch(() => [props.projectPath, props.filePath, props.isActive], () => { void loadFilePreview(); }, { immediate: true });
-watch(() => [props.filePath, props.targetLine ?? null, props.targetRequestToken ?? 0, props.isActive, displayLines.value.length] as const, () => { void focusTargetLine(); }, { immediate: true });
-onBeforeUnmount(() => { clearHighlightTimer(); });
 </script>

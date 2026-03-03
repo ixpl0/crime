@@ -11,12 +11,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
-import { EditorState, type Extension } from "@codemirror/state";
+import { EditorState } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { toErrorMessage } from "../utils/fail-fast";
+import { loadLanguageExtension } from "../codemirror/language-detection";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -47,31 +48,6 @@ const saveStatusClasses = computed(() => {
   if (saveStatus.value === "saving") { return "text-base-content/60"; }
   return "text-base-content/40";
 });
-
-const extensionToLanguage: Partial<Record<string, () => Promise<Extension>>> = {
-  js: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
-  mjs: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
-  cjs: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
-  jsx: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ jsx: true })),
-  ts: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ typescript: true })),
-  mts: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ typescript: true })),
-  cts: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ typescript: true })),
-  tsx: () => import("@codemirror/lang-javascript").then((m) => m.javascript({ jsx: true, typescript: true })),
-  vue: () => import("@codemirror/lang-html").then((m) => m.html()),
-  html: () => import("@codemirror/lang-html").then((m) => m.html()),
-  htm: () => import("@codemirror/lang-html").then((m) => m.html()),
-  css: () => import("@codemirror/lang-css").then((m) => m.css()),
-  json: () => import("@codemirror/lang-json").then((m) => m.json()),
-  md: () => import("@codemirror/lang-markdown").then((m) => m.markdown()),
-  markdown: () => import("@codemirror/lang-markdown").then((m) => m.markdown()),
-  py: () => import("@codemirror/lang-python").then((m) => m.python()),
-};
-
-const getFileExtension = (path: string): string => {
-  const dotIndex = path.lastIndexOf(".");
-  if (dotIndex === -1) { return ""; }
-  return path.slice(dotIndex + 1).toLowerCase();
-};
 
 const clearSavedResetTimeout = () => {
   if (savedResetTimeoutId !== null) {
@@ -104,20 +80,8 @@ const saveFile = async () => {
   }
 };
 
-const loadLanguageExtension = async (extension: string): Promise<Extension[]> => {
-  const loader = extensionToLanguage[extension];
-  if (!loader) { return []; }
-  try {
-    const result = await loader();
-    return [result];
-  } catch {
-    return [];
-  }
-};
-
 const createEditor = async (container: HTMLElement, content: string) => {
-  const extension = getFileExtension(props.filePath);
-  const languageExtensions = await loadLanguageExtension(extension);
+  const languageExtensions = await loadLanguageExtension(props.filePath);
 
   const saveKeymap = keymap.of([{
     key: "Mod-s",
