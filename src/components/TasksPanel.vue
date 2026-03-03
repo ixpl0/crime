@@ -29,7 +29,7 @@
             :value="todoDraftView.value"
             data-todo-textarea="true"
             :data-todo-index="todoDraftView.index"
-            class="textarea textarea-autosize-native textarea-bordered h-auto min-h-0 w-full resize-none overflow-y-hidden text-sm leading-relaxed"
+            class="textarea textarea-autosize-native textarea-bordered h-auto max-h-38 min-h-0 w-full resize-none overflow-y-auto text-sm leading-relaxed"
             rows="1"
             placeholder="Промпт"
             @input="handleTodoTextareaInput(todoDraftView.index, $event)"
