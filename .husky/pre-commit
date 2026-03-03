@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 set -e
-bun run lint:fix
+bun run lint
 bun run typecheck
