@@ -51,7 +51,7 @@ function getHashLocation(value: string): TerminalPathLocation | null {
 }
 
 function getColonLocation(value: string): TerminalPathLocation | null {
-  const match = value.match(/^(.*):(\d+)(?::(\d+))?$/);
+  const match = value.match(/^(.*?):(\d+)(?::(\d+))?$/);
   if (!match || match[1].length === 0 || !/[\\/]/.test(match[1])) {
     return null;
   }

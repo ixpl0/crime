@@ -93,12 +93,12 @@ describe("isCommandNotFoundError", () => {
     expect(isCommandNotFoundError(error)).toBe(false);
   });
 
-  it("returns falsy for null", () => {
-    expect(isCommandNotFoundError(null)).toBeFalsy();
+  it("returns false for null", () => {
+    expect(isCommandNotFoundError(null)).toBe(false);
   });
 
-  it("returns falsy for undefined", () => {
-    expect(isCommandNotFoundError(undefined)).toBeFalsy();
+  it("returns false for undefined", () => {
+    expect(isCommandNotFoundError(undefined)).toBe(false);
   });
 
   it("returns false for plain object without code", () => {

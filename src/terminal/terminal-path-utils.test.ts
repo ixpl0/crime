@@ -52,13 +52,13 @@ describe("collectTerminalPathMatches", () => {
       ]);
     });
 
-    it("parses path:line:column greedily as (path:line):column", () => {
+    it("extracts line and column from colon suffix", () => {
       const matches = collectTerminalPathMatches(
         "D:\\projects\\myapp\\src\\index.ts:42:10",
         PROJECT_WIN
       );
       expect(matchPaths(matches)).toEqual([
-        { resolvedPath: "D:\\projects\\myapp\\src\\index.ts:42", line: 10, column: null }
+        { resolvedPath: "D:\\projects\\myapp\\src\\index.ts", line: 42, column: 10 }
       ]);
     });
 
@@ -104,13 +104,13 @@ describe("collectTerminalPathMatches", () => {
       ]);
     });
 
-    it("parses path:line:column greedily as (path:line):column", () => {
+    it("extracts line and column from colon suffix", () => {
       const matches = collectTerminalPathMatches(
         "/home/user/myapp/src/index.ts:15:8",
         PROJECT_POSIX
       );
       expect(matchPaths(matches)).toEqual([
-        { resolvedPath: "/home/user/myapp/src/index.ts:15", line: 8, column: null }
+        { resolvedPath: "/home/user/myapp/src/index.ts", line: 15, column: 8 }
       ]);
     });
 

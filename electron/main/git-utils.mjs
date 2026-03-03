@@ -30,7 +30,7 @@ export function toGitRelativePath(basePath, targetPath) {
 export { toErrorMessage } from "./error-utils.mjs";
 
 export function isCommandNotFoundError(error) {
-  return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === "ENOENT");
 }
 
 export function isGitPathspecMissingError(stderr) {
