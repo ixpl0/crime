@@ -5,7 +5,7 @@
         <span>{{ errorMessage }}</span>
       </div>
 
-      <MainPanelHeader />
+      <MainPanelHeader :changes-count="changesCount" />
 
       <ToolbarConfigEditor
         :current-config="toolbarConfig"
@@ -197,6 +197,8 @@ const {
   repositoryRefreshToken: gitRepositoryRefreshToken,
   refresh: refreshGitStatus
 } = useGitStatus(projectPath, activeTab);
+
+const changesCount = computed(() => gitStatusResponse.value?.entries?.length ?? 0);
 
 const toolbarConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${toolbarConfigFilename}`

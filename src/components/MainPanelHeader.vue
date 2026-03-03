@@ -32,6 +32,7 @@
         @click="setActiveTab('changes')"
       >
         &#1048;&#1079;&#1084;&#1077;&#1085;&#1077;&#1085;&#1080;&#1103;
+        <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
       </button>
       <button
         role="tab"
@@ -155,6 +156,10 @@ import { ChevronDown, Eye, Moon, Settings, Sun } from "lucide-vue-next";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
+
+defineProps<{
+  changesCount: number;
+}>();
 
 const { currentTheme, toggleTheme } = useTheme();
 
