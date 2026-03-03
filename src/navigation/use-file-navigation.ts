@@ -163,6 +163,21 @@ function resetChangesSelectedFile(state: FileNavigationState) {
   state.changesSelectedFilePath.value = null;
 }
 
+function openChangesPathInFiles(
+  path: string,
+  options: UseFileNavigationOptions,
+  state: FileNavigationState
+) {
+  const currentProjectPath = getProjectPathForOpen(path, options);
+  if (!currentProjectPath) {
+    return;
+  }
+  options.activateFilesTab();
+  requestFileTreeReveal(path, state);
+  options.errorMessage.value = "";
+  showFilePath(path, null, state);
+}
+
 function resetFileNavigationState(state: FileNavigationState) {
   state.selectedFilePath.value = null;
   state.filesDisplayPath.value = null;
@@ -197,7 +212,7 @@ export function useFileNavigation(options: UseFileNavigationOptions) {
     },
     resetChangesSelectedFile: () => { resetChangesSelectedFile(state); },
     handleChangesPathOpen: (path: string) => {
-      void openTerminalPathInFiles(path, null, null, options, state);
+      openChangesPathInFiles(path, options, state);
     },
     resetFileNavigationState: () => {
       resetFileNavigationState(state);
