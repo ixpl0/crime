@@ -156,7 +156,8 @@ function isActionDisabled(action: ToolbarAction, isTerminalReady: boolean) {
 function getActionTitle(action: ToolbarAction): string | undefined {
   const titleParts: string[] = [];
   if (action.resetTerminal) {
-    titleParts.push(action.value.length > 0 ? "Reset terminal before action" : "Reset terminal");
+    const hasValue = typeof action.value === "string" && action.value.length > 0;
+    titleParts.push(hasValue ? "Reset terminal before action" : "Reset terminal");
   }
   if (action.value) {
     titleParts.push(action.value);
