@@ -1,6 +1,7 @@
 /* eslint-disable max-lines */
 import { ref, type ComponentPublicInstance } from "vue";
 import { type ProjectSettings } from "../types/project-settings";
+import { type ToolbarAction } from "../types/toolbar";
 import {
   PROMPT_SUFFIX_CONFIG_FILENAME
 } from "../prompt-suffix/prompt-suffix-storage";
@@ -134,6 +135,7 @@ export function useAppShell() {
     handlePromptSuffixToggle,
     handleSecretsSave,
     applyPromptSuffixConfig,
+    updateToolbarActionTracking,
     persistProjectSettings,
     canReloadPromptSuffixConfig,
     resetConfigPersistState
@@ -296,7 +298,7 @@ export function useAppShell() {
   });
 
   const {
-    executeToolbarAction,
+    executeToolbarAction: executeToolbarActionBase,
     sendQuickKey,
     sendTodoEntryToTerminal
   } = useTerminalActions({
@@ -309,6 +311,11 @@ export function useAppShell() {
     removeTodoEntry,
     appendTerminalInputHistory
   });
+
+  const executeToolbarAction = (action: ToolbarAction) => {
+    executeToolbarActionBase(action);
+    void updateToolbarActionTracking(action);
+  };
 
   const {
     openProject,

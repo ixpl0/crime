@@ -2,7 +2,7 @@
 import { ref, type Ref } from "vue";
 import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { type ProjectSettings } from "../types/project-settings";
-import { type ToolbarConfig } from "../types/toolbar";
+import { type ToolbarAction, type ToolbarConfig } from "../types/toolbar";
 import {
   defaultPromptSuffixConfig,
   savePromptSuffixConfig
@@ -17,6 +17,7 @@ import {
 } from "../settings/secrets-storage";
 import { defaultTerminalToolbarConfig, saveTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { defaultToolbarConfig, saveToolbarConfig } from "../toolbar/toolbar-storage";
+import { applyToolbarActionTracking } from "../toolbar/toolbar-tracking";
 
 interface ConfigManagementDeps {
   readonly projectPath: Ref<string | null>;
@@ -75,6 +76,7 @@ export function useConfigManagement({
     handleSecretsSave,
     applyPromptSuffixConfig,
     persistProjectSettings,
+    updateToolbarActionTracking,
     canReloadPromptSuffixConfig,
     resetConfigPersistState
   };
@@ -117,6 +119,29 @@ export function useConfigManagement({
 
   function closeSecretsEditor() {
     isSecretsEditorOpen.value = false;
+  }
+
+  async function updateToolbarActionTracking(executedAction: ToolbarAction) {
+    const updatedConfig = applyToolbarActionTracking(
+      toolbarConfig.value,
+      executedAction
+    );
+    if (!updatedConfig) {
+      return;
+    }
+
+    toolbarConfig.value = updatedConfig;
+    if (projectPath.value) {
+      try {
+        await saveToolbarConfig(projectPath.value, updatedConfig);
+      } catch (error) {
+        reportUiError(
+          "Toolbar tracking",
+          error,
+          "Failed to save toolbar tracking data."
+        );
+      }
+    }
   }
 
   function persistPromptSuffixSettings(

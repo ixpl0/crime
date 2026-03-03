@@ -20,7 +20,7 @@
           <ChevronDown :size="14" />
         </button>
         <ul
-          class="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-0 shadow"
+          class="dropdown-content menu bg-base-100 rounded-box z-10 min-w-52 p-0 shadow"
           @keydown.esc.stop.prevent="openDropdownIndex = null"
         >
           <li v-for="(item, itemIndex) in element.items" :key="`item-${elementIndex}-${itemIndex}`">
@@ -28,10 +28,17 @@
               :disabled="isActionDisabled(item, isTerminalReady)"
               :tabindex="openDropdownIndex === elementIndex ? 0 : -1"
               :title="getActionTitle(item)"
-              class="flex justify-between"
+              class="flex justify-between whitespace-nowrap"
               @click="handleDropdownActionClick(item)"
             >
-              <span>{{ item.label }}</span>
+              <span class="flex min-w-0 items-center gap-1.5">
+                <CircleAlert v-if="isTrackingAlert(item)" :size="14" class="shrink-0 text-error" />
+                <CircleCheck v-else-if="isTrackingSuccess(item)" :size="14" class="shrink-0 text-success" />
+                <span v-else-if="getTrackingDaysLabel(item)" class="shrink-0 text-xs font-semibold text-warning">
+                  {{ getTrackingDaysLabel(item) }}
+                </span>
+                <span class="truncate">{{ item.label }}</span>
+              </span>
               <kbd v-if="item.shortcut" class="kbd kbd-xs">{{ formatShortcut(item.shortcut) }}</kbd>
             </button>
           </li>
@@ -74,7 +81,8 @@ import {
   getToolbarButtonCustomStyle
 } from "../toolbar/toolbar-button-styles";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
-import { ChevronDown, Pencil } from "lucide-vue-next";
+import { computeDaysSinceLastUsed } from "../toolbar/toolbar-tracking";
+import { ChevronDown, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";
 
 defineProps<{
   toolbarConfig: ToolbarConfig;
@@ -88,6 +96,40 @@ const emit = defineEmits<{
 
 const openDropdownIndex = ref<number | null>(null);
 const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
+const MILLISECONDS_PER_DAY = 86_400_000;
+
+function isTrackingAlert(action: ToolbarAction): boolean {
+  if (action.done === false) {
+    return true;
+  }
+  if (action.lastUsed === null) {
+    return true;
+  }
+  return false;
+}
+
+function isTrackingSuccess(action: ToolbarAction): boolean {
+  if (action.done === true) {
+    return true;
+  }
+  if (action.lastUsed !== undefined && action.lastUsed !== null) {
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(action.lastUsed.replace(" ", "T")).getTime();
+    return diffMs >= 0 && diffMs < MILLISECONDS_PER_DAY;
+  }
+  return false;
+}
+
+function getTrackingDaysLabel(action: ToolbarAction): string | null {
+  if (action.lastUsed === undefined || action.lastUsed === null) {
+    return null;
+  }
+  const days = computeDaysSinceLastUsed(action.lastUsed, new Date());
+  if (days === null || days < 1) {
+    return null;
+  }
+  return `${String(days)}d`;
+}
 
 function toggleDropdownTabNavigation(index: number) {
   openDropdownIndex.value = openDropdownIndex.value === index ? null : index;

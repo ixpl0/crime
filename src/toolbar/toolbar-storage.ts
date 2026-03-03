@@ -37,6 +37,49 @@ export const isToolbarPresetColor = (value: string): value is ToolbarPresetColor
 const isToolbarActionType = (value: unknown): value is ToolbarActionType =>
   value === "prompt" || value === "command" || value === "raw-input";
 
+interface ParsedLastUsed {
+  readonly valid: true;
+  readonly value: string | null | undefined;
+}
+
+interface ParsedDone {
+  readonly valid: true;
+  readonly value: boolean | undefined;
+}
+
+interface ParsedInvalid {
+  readonly valid: false;
+}
+
+const TRACKING_DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+
+function parseToolbarActionLastUsed(
+  raw: unknown
+): ParsedLastUsed | ParsedInvalid {
+  if (raw === undefined) {
+    return { valid: true, value: undefined };
+  }
+  if (raw === null) {
+    return { valid: true, value: null };
+  }
+  if (typeof raw === "string" && TRACKING_DATETIME_PATTERN.test(raw)) {
+    return { valid: true, value: raw };
+  }
+  return { valid: false };
+}
+
+function parseToolbarActionDone(
+  raw: unknown
+): ParsedDone | ParsedInvalid {
+  if (raw === undefined) {
+    return { valid: true, value: undefined };
+  }
+  if (typeof raw === "boolean") {
+    return { valid: true, value: raw };
+  }
+  return { valid: false };
+}
+
 function parseToolbarActionResetFlag(value: Record<string, unknown>) {
   const resetTerminal = value.resetTerminal;
   if (resetTerminal !== undefined && resetTerminal !== true) {
@@ -76,6 +119,23 @@ function resolveToolbarActionDefinition(
   };
 }
 
+function parseToolbarActionTracking(value: Record<string, unknown>): {
+  readonly lastUsed: string | null | undefined;
+  readonly done: boolean | undefined;
+} | null {
+  const parsedLastUsed = parseToolbarActionLastUsed(value.lastUsed);
+  if (!parsedLastUsed.valid) {
+    return null;
+  }
+
+  const parsedDone = parseToolbarActionDone(value.done);
+  if (!parsedDone.valid) {
+    return null;
+  }
+
+  return { lastUsed: parsedLastUsed.value, done: parsedDone.value };
+}
+
 const parseToolbarAction = (value: unknown): ToolbarAction | null => {
   if (!isRecord(value) || typeof value.label !== "string") {
     return null;
@@ -91,6 +151,11 @@ const parseToolbarAction = (value: unknown): ToolbarAction | null => {
     return null;
   }
 
+  const tracking = parseToolbarActionTracking(value);
+  if (!tracking) {
+    return null;
+  }
+
   const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
   const color = isToolbarButtonColor(value.color) ? value.color : undefined;
 
@@ -100,7 +165,9 @@ const parseToolbarAction = (value: unknown): ToolbarAction | null => {
     type: actionDefinition.type,
     ...(shortcut !== undefined && { shortcut }),
     ...(color !== undefined && { color }),
-    ...(resetTerminal !== undefined && { resetTerminal })
+    ...(resetTerminal !== undefined && { resetTerminal }),
+    ...(tracking.lastUsed !== undefined && { lastUsed: tracking.lastUsed }),
+    ...(tracking.done !== undefined && { done: tracking.done })
   };
 };
 
@@ -175,6 +242,12 @@ function serializeToolbarAction(action: ToolbarAction) {
   }
   if (action.resetTerminal) {
     serializedAction.resetTerminal = true;
+  }
+  if (action.lastUsed !== undefined) {
+    serializedAction.lastUsed = action.lastUsed;
+  }
+  if (action.done !== undefined) {
+    serializedAction.done = action.done;
   }
 
   return serializedAction;
