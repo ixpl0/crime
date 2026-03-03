@@ -1,4 +1,5 @@
 import { clipboard, ipcMain } from "electron";
+import { toIpcErrorResponse } from "../error-utils.mjs";
 
 function removeClipboardHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.clipboardWriteText);
@@ -16,10 +17,7 @@ export function registerClipboardIpcHandlers({ IPC_CHANNELS }) {
       clipboard.writeText(text);
       return { ok: true };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to write clipboard text."
-      };
+      return toIpcErrorResponse(error, "Failed to write clipboard text.");
     }
   });
 }

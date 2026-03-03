@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, ref } from "vue";
+import { ref } from "vue";
 import {
   type ToolbarConfig,
   type ToolbarAction
@@ -81,7 +81,8 @@ import {
   getToolbarButtonCustomStyle
 } from "../toolbar/toolbar-button-styles";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
-import { computeDaysSinceLastUsed } from "../toolbar/toolbar-tracking";
+import { computeDaysSinceLastUsed, isLastUsedWithinOneDay } from "../toolbar/toolbar-tracking";
+import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem } from "../utils/dropdown-utils";
 import { ChevronDown, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";
 
 defineProps<{
@@ -95,8 +96,6 @@ const emit = defineEmits<{
 }>();
 
 const openDropdownIndex = ref<number | null>(null);
-const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
-const MILLISECONDS_PER_DAY = 86_400_000;
 
 function isTrackingAlert(action: ToolbarAction): boolean {
   if (action.done === false) {
@@ -113,9 +112,7 @@ function isTrackingSuccess(action: ToolbarAction): boolean {
     return true;
   }
   if (action.lastUsed !== undefined && action.lastUsed !== null) {
-    const now = new Date();
-    const diffMs = now.getTime() - new Date(action.lastUsed.replace(" ", "T")).getTime();
-    return diffMs >= 0 && diffMs < MILLISECONDS_PER_DAY;
+    return isLastUsedWithinOneDay(action.lastUsed, new Date());
   }
   return false;
 }
@@ -133,21 +130,6 @@ function getTrackingDaysLabel(action: ToolbarAction): string | null {
 
 function toggleDropdownTabNavigation(index: number) {
   openDropdownIndex.value = openDropdownIndex.value === index ? null : index;
-}
-
-function focusFirstDropdownItem(triggerTarget: EventTarget | null) {
-  const trigger = triggerTarget instanceof HTMLElement ? triggerTarget : null;
-  const dropdownRoot = trigger?.closest(".manual-dropdown");
-  const firstItem = dropdownRoot?.querySelector<HTMLButtonElement>(
-    ".dropdown-content button:not(:disabled)"
-  );
-  if (!firstItem) {
-    return;
-  }
-
-  void nextTick(() => {
-    firstItem.focus();
-  });
 }
 
 function handleDropdownTriggerKeydown(event: KeyboardEvent, index: number) {
@@ -211,11 +193,3 @@ function getActionTitle(action: ToolbarAction): string | undefined {
   return titleParts.length > 0 ? titleParts.join("\n") : undefined;
 }
 </script>
-
-<style scoped>
-.manual-dropdown:not(.dropdown-open):focus-within .dropdown-content {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-</style>

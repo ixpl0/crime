@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { toIpcErrorResponse } from "../error-utils.mjs";
 import { isPathInsideBase } from "./path-utils.mjs";
 
 function removeFilesystemHandlers(IPC_CHANNELS) {
@@ -54,10 +55,7 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
         entries: sortEntries(entriesWithIgnoredState, gitService.getFileEntrySortGroup)
       };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to read directory."
-      };
+      return toIpcErrorResponse(error, "Failed to read directory.");
     }
   });
 
@@ -75,10 +73,7 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
       const content = await readFile(resolvedFilePath, "utf-8");
       return { ok: true, content };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to read file."
-      };
+      return toIpcErrorResponse(error, "Failed to read file.");
     }
   });
 
@@ -96,10 +91,7 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
       await writeFile(resolvedFilePath, content, "utf-8");
       return { ok: true };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to write file."
-      };
+      return toIpcErrorResponse(error, "Failed to write file.");
     }
   });
 
@@ -117,10 +109,7 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
       await rm(resolvedTargetPath, { recursive: true, force: true });
       return { ok: true };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to delete path."
-      };
+      return toIpcErrorResponse(error, "Failed to delete path.");
     }
   });
 }

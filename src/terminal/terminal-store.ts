@@ -2,13 +2,10 @@ import {
   inject,
   provide,
   type ComponentPublicInstance,
-  type InjectionKey,
-  type Ref
+  type InjectionKey
 } from "vue";
 import { type ToolbarAction } from "../types/toolbar";
-
-type ReadableRef<T> = Readonly<Ref<T>>;
-type MaybePromise = void | Promise<void>;
+import { type MaybePromise, type ReadableRef } from "../types/utils";
 
 export interface AppTerminalStore {
   isTerminalReady: ReadableRef<boolean>;

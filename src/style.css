@@ -16,6 +16,40 @@ body {
   margin: 0;
 }
 
+.textarea-autosize-native {
+  field-sizing: content;
+}
+
+.manual-dropdown:not(.dropdown-open):focus-within .dropdown-content {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.terminal-host {
+  overflow: hidden;
+}
+
+.terminal-host .xterm,
+.terminal-host .xterm-viewport,
+.terminal-host .xterm-screen {
+  background-color: #05070d !important;
+}
+
+.terminal-host .xterm-viewport {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.terminal-host .xterm-viewport::-webkit-scrollbar {
+  display: none !important;
+}
+
+.terminal-host .xterm {
+  height: 100%;
+  padding: 0.4rem;
+}
+
 .xterm-bell {
   animation: xterm-bell-flash 150ms ease-in-out;
 }

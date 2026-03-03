@@ -146,10 +146,6 @@ function handleTerminalInput(event: Event) {
 </script>
 
 <style scoped>
-.terminal-host {
-  overflow: hidden;
-}
-
 .terminal-resize-handle {
   touch-action: none;
 }
@@ -158,28 +154,7 @@ function handleTerminalInput(event: Event) {
   outline: none;
 }
 
-.textarea-autosize-native {
-  field-sizing: content;
-}
-
-.terminal-host :deep(.xterm),
-.terminal-host :deep(.xterm-viewport),
-.terminal-host :deep(.xterm-screen) {
-  background-color: #05070d !important;
-}
-
-.terminal-host :deep(.xterm-viewport) {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.terminal-host :deep(.xterm-viewport::-webkit-scrollbar) {
-  display: none !important;
-}
-
 .terminal-host :deep(.xterm) {
-  height: 100%;
-  padding: 0.4rem;
   border-radius: inherit;
 }
 </style>

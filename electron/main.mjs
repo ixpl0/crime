@@ -16,6 +16,7 @@ import { registerProjectIpcHandlers } from "./main/ipc/register-project-ipc.mjs"
 import { registerSettingsIpcHandlers } from "./main/ipc/register-settings-ipc.mjs";
 import { registerTerminalIpcHandlers } from "./main/ipc/register-terminal-ipc.mjs";
 import { registerGitWatcherIpcHandlers } from "./main/ipc/register-git-watcher-ipc.mjs";
+import { toErrorMessage, toIpcErrorResponse } from "./main/error-utils.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,25 +36,13 @@ const DEFAULT_TERMINAL_SESSION_ID = "primary";
 const runCommand = createCommandRunner(IDE_NODE_MODULES_BIN_PATH);
 const gitService = createGitService(runCommand);
 
-function toErrorMessage(error, fallbackMessage) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (typeof error === "string" && error.length > 0) {
-    return error;
-  }
-
-  return fallbackMessage;
-}
-
 function toIpcFailure(error, fallbackMessage) {
-  const message = toErrorMessage(error, fallbackMessage);
+  const response = toIpcErrorResponse(error, fallbackMessage);
   if (IS_FAIL_FAST) {
-    throw new Error(message);
+    throw new Error(response.error);
   }
 
-  return { ok: false, error: message };
+  return response;
 }
 
 function stopSettingsWatcher(webContentsId) {

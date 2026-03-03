@@ -184,11 +184,3 @@ const {
   openSecretsEditor
 } = useAppConfigStore();
 </script>
-
-<style scoped>
-.manual-dropdown:not(.dropdown-open):focus-within .dropdown-content {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-</style>

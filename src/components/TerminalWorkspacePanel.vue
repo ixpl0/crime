@@ -70,7 +70,7 @@
 
         <div
           :ref="(element) => setSessionContainer(session.id, element)"
-          class="mini-terminal-host min-h-0 flex-1"
+          class="terminal-host min-h-0 flex-1"
           @click="focusSession(session.id)"
           @contextmenu="handleSessionContextMenu(session.id, $event)"
           @auxclick="handleSessionAuxClick(session.id, $event)"
@@ -457,30 +457,3 @@ async function disposeAllSessions() {
   }
 }
 </script>
-
-<style scoped>
-.mini-terminal-host {
-  overflow: hidden;
-  background: #05070d;
-}
-
-.mini-terminal-host :deep(.xterm),
-.mini-terminal-host :deep(.xterm-viewport),
-.mini-terminal-host :deep(.xterm-screen) {
-  background-color: #05070d !important;
-}
-
-.mini-terminal-host :deep(.xterm-viewport) {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.mini-terminal-host :deep(.xterm-viewport::-webkit-scrollbar) {
-  display: none !important;
-}
-
-.mini-terminal-host :deep(.xterm) {
-  height: 100%;
-  padding: 0.4rem;
-}
-</style>

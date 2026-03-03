@@ -1,7 +1,7 @@
 import { computed, nextTick, ref, type Ref } from "vue";
 import { loadTodoEntries, saveTodoEntries } from "../settings/todo-storage";
+import { areStringArraysEqual } from "../utils/array-utils";
 import {
-  areStringArraysEqual,
   focusTodoComposerTextarea,
   getFocusedTodoSnapshot,
   getNormalizedTodoDrafts,

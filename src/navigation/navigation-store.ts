@@ -1,11 +1,10 @@
-import { inject, provide, type InjectionKey, type Ref } from "vue";
+import { inject, provide, type InjectionKey } from "vue";
+import { type ReadableRef } from "../types/utils";
 import {
   type AppTab,
   type HiddenPanelId,
   type HiddenPanelOption
 } from "./use-app-navigation";
-
-type ReadableRef<T> = Readonly<Ref<T>>;
 
 export interface AppNavigationStore {
   projectPath: ReadableRef<string | null>;

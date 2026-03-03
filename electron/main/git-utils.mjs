@@ -27,17 +27,7 @@ export function toGitRelativePath(basePath, targetPath) {
   return relativePath;
 }
 
-export function toErrorMessage(error, fallbackMessage) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (typeof error === "string" && error.length > 0) {
-    return error;
-  }
-
-  return fallbackMessage;
-}
+export { toErrorMessage } from "./error-utils.mjs";
 
 export function isCommandNotFoundError(error) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";

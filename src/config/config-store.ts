@@ -1,10 +1,8 @@
-import { inject, provide, type InjectionKey, type Ref } from "vue";
+import { inject, provide, type InjectionKey } from "vue";
 import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { type ProjectSettings } from "../types/project-settings";
 import { type ToolbarConfig } from "../types/toolbar";
-
-type ReadableRef<T> = Readonly<Ref<T>>;
-type MaybePromise = void | Promise<void>;
+import { type MaybePromise, type ReadableRef } from "../types/utils";
 
 export interface AppConfigStore {
   settingsDirectoryName: string;

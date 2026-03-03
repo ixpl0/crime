@@ -1,6 +1,5 @@
 ﻿import { computed, nextTick, ref, type Ref } from "vue";
-
-const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
+import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem } from "../utils/dropdown-utils";
 
 export type AppTab = "agent" | "terminal" | "files" | "changes" | "git";
 export type HiddenPanelId = "todo";
@@ -36,21 +35,6 @@ function shouldKeepDropdownFocus(event: FocusEvent) {
 
   const nextFocused = event.relatedTarget;
   return nextFocused instanceof Node && currentDropdown.contains(nextFocused);
-}
-
-function focusFirstDropdownItem(triggerTarget: EventTarget | null) {
-  const trigger = triggerTarget instanceof HTMLElement ? triggerTarget : null;
-  const dropdownRoot = trigger?.closest(".manual-dropdown");
-  const firstItem = dropdownRoot?.querySelector<HTMLButtonElement>(
-    ".dropdown-content button:not(:disabled)"
-  );
-  if (!firstItem) {
-    return;
-  }
-
-  void nextTick(() => {
-    firstItem.focus();
-  });
 }
 
 function updateDropdownState(shouldOpen: boolean, source: Ref<boolean>, opposite: Ref<boolean>) {

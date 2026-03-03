@@ -1,4 +1,5 @@
 import { ipcMain, shell } from "electron";
+import { toIpcErrorResponse } from "../error-utils.mjs";
 
 function removeShellHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.shellOpenExternal);
@@ -16,10 +17,7 @@ export function registerShellIpcHandlers({ IPC_CHANNELS }) {
       await shell.openExternal(url);
       return { ok: true };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to open external URL."
-      };
+      return toIpcErrorResponse(error, "Failed to open external URL.");
     }
   });
 }

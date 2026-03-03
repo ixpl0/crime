@@ -1,8 +1,6 @@
-import { inject, provide, type InjectionKey, type Ref } from "vue";
+import { inject, provide, type InjectionKey } from "vue";
+import { type MaybePromise, type ReadableRef } from "../types/utils";
 import { type TodoDraftViewItem } from "./use-todo-panel";
-
-type ReadableRef<T> = Readonly<Ref<T>>;
-type MaybePromise = void | Promise<void>;
 
 export interface AppTodoStore {
   isTodoPanelCollapsed: ReadableRef<boolean>;

@@ -104,8 +104,4 @@ function isActiveDropTarget(index: number) {
 .todo-list-scroll {
   overflow-anchor: none;
 }
-
-.textarea-autosize-native {
-  field-sizing: content;
-}
 </style>

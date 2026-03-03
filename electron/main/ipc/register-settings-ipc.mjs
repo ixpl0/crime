@@ -2,6 +2,7 @@ import { ipcMain } from "electron";
 import { watch } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { toIpcErrorResponse } from "../error-utils.mjs";
 import { isPathInsideBase } from "./path-utils.mjs";
 
 const SETTINGS_WATCH_DEBOUNCE_MS = 300;
@@ -86,10 +87,7 @@ async function readSettingsFile(projectPath, filename, settingsDirName) {
       return { ok: true, content: null };
     }
 
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Failed to read settings file."
-    };
+    return toIpcErrorResponse(error, "Failed to read settings file.");
   }
 }
 
@@ -109,10 +107,7 @@ async function writeSettingsFile(projectPath, filename, content, settingsDirName
     await writeFile(filePath, content, "utf-8");
     return { ok: true };
   } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Failed to write settings file."
-    };
+    return toIpcErrorResponse(error, "Failed to write settings file.");
   }
 }
 

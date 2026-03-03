@@ -1,5 +1,6 @@
 import { ipcMain } from "electron";
 import * as pty from "node-pty";
+import { toIpcErrorResponse } from "../error-utils.mjs";
 
 const DEFAULT_TERMINAL_SESSION_ID = "primary";
 
@@ -77,10 +78,7 @@ export function registerTerminalIpcHandlers(options) {
         env
       });
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to start terminal."
-      };
+      return toIpcErrorResponse(error, "Failed to start terminal.");
     }
 
     let sessionGroup = terminalSessions.get(webContentsId);
@@ -133,10 +131,7 @@ export function registerTerminalIpcHandlers(options) {
       session.process.write(data);
       return { ok: true };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to write input."
-      };
+      return toIpcErrorResponse(error, "Failed to write input.");
     }
   });
 
@@ -157,10 +152,7 @@ export function registerTerminalIpcHandlers(options) {
       session.process.resize(cols, rows);
       return { ok: true };
     } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : "Failed to resize terminal."
-      };
+      return toIpcErrorResponse(error, "Failed to resize terminal.");
     }
   });
 

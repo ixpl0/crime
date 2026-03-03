@@ -30,20 +30,6 @@ export function getPersistedTodoEntries(entries: string[]) {
   return entries.filter((entry) => entry.trim().length > 0);
 }
 
-export function areStringArraysEqual(first: string[], second: string[]) {
-  if (first.length !== second.length) {
-    return false;
-  }
-
-  for (let index = 0; index < first.length; index += 1) {
-    if (first[index] !== second[index]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 export function resizeTodoTextareas() {
   const textareas = document.querySelectorAll<HTMLTextAreaElement>(
     'textarea[data-todo-textarea="true"]'

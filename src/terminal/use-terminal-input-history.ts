@@ -1,4 +1,5 @@
 import { computed, nextTick, ref, watch, type Ref } from "vue";
+import { areStringArraysEqual } from "../utils/array-utils";
 import {
   createTerminalInputHistoryHandlers,
   type TerminalInputHistoryHandlers
@@ -60,20 +61,6 @@ function createTerminalInputHistoryState(
     terminalInputHistoryPersistQueue: Promise.resolve(),
     terminalInputHistoryReloadPending: false
   };
-}
-
-function areStringArraysEqual(first: string[], second: string[]) {
-  if (first.length !== second.length) {
-    return false;
-  }
-
-  for (let index = 0; index < first.length; index += 1) {
-    if (first[index] !== second[index]) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 function resizeTerminalInputTextareaElement(state: TerminalInputHistoryState) {

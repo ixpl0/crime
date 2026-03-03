@@ -107,6 +107,15 @@ export const applyToolbarActionTracking = (
   return updateResult.changed ? { elements: updateResult.elements } : null;
 };
 
+export const isLastUsedWithinOneDay = (
+  lastUsed: string,
+  now: Date
+): boolean => {
+  const parsed = new Date(lastUsed.replace(" ", "T"));
+  const diffMs = now.getTime() - parsed.getTime();
+  return diffMs >= 0 && diffMs < MILLISECONDS_PER_DAY;
+};
+
 export const computeDaysSinceLastUsed = (
   lastUsed: string,
   now: Date
