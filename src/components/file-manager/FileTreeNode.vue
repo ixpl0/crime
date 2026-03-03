@@ -58,7 +58,7 @@ import {
   mergeDirectoryEntries,
   type DeletedChildrenByParent
 } from "./file-tree-status-utils";
-import { isPathInsideBase, isSamePath } from "./file-tree-path-utils";
+import { isPathInsideBase, isSamePath } from "../../utils/path-utils";
 import { toErrorMessage } from "../../utils/fail-fast";
 
 const props = withDefaults(

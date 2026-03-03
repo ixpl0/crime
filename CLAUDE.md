@@ -1,6 +1,6 @@
 # Dream IDE
 
-Electron + Vue 3 desktop IDE with integrated terminal and configurable toolbar.
+General-purpose desktop IDE for projects in any language. Built with Electron + Vue 3, features integrated terminal and configurable toolbar.
 
 ## Tech Stack
 
@@ -91,6 +91,7 @@ src/
 
 ## Engineering Principles
 
+- **Language-agnostic IDE**: Dream IDE is used for projects in any programming language. Toolbar prompts (review, practices, etc.) must not assume a specific language or ecosystem — always detect the project's stack first.
 - **Terminal freedom first**: do not sanitize, rewrite, or filter PTY byte streams. Terminal behavior must remain fully controlled by shell and user actions.
 - **Fail-fast in development**: surface errors immediately in UI/logs instead of silently swallowing them.
 

@@ -81,7 +81,7 @@ export function restoreTodoFocus(snapshot: TodoFocusSnapshot | null) {
   textarea.scrollTop = snapshot.scrollTop;
 }
 
-export function focusTodoTextareaByIndex(index: number) {
+function focusTodoTextareaByIndex(index: number) {
   const selector = `textarea[data-todo-textarea="true"][data-todo-index="${String(index)}"]`;
   const textarea = document.querySelector<HTMLTextAreaElement>(selector);
   if (!textarea) {

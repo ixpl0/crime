@@ -1,4 +1,4 @@
-function normalizePathForComparison(path: string) {
+export function normalizePathForComparison(path: string) {
   const normalizedPath = path.replace(/[\\/]+/g, "/");
   if (normalizedPath === "/") {
     return normalizedPath;

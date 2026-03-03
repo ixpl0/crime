@@ -6,9 +6,6 @@ import {
   type DeletedChildrenByParent
 } from "./file-tree-status-utils";
 
-const CONTEXT_MENU_WIDTH = 220;
-const CONTEXT_MENU_HEIGHT = 44;
-
 export interface NormalizedGitState {
   statuses: Record<string, GitFileStatus>;
   deletedChildren: DeletedChildrenByParent;
@@ -23,12 +20,6 @@ export interface NextTreeState {
   loadError: string;
   stateSnapshot: string;
   structureSnapshot: string;
-}
-
-export function getGitUnavailableMessage(reason?: GitMutateResponse["reason"]) {
-  return reason === "git-not-installed"
-    ? "Git is not installed."
-    : "The selected folder is not a Git repository.";
 }
 
 export function normalizeGitState(projectPath: string, response: GitStatusResponse): NormalizedGitState {
@@ -99,19 +90,6 @@ function buildStructureSnapshot(
     buildEntryListSnapshot(entries),
     buildDeletedChildrenSnapshot(deletedChildren)
   ].join("\n---\n");
-}
-
-function clampCoordinate(value: number, availableSize: number) {
-  const maxValue = Math.max(8, availableSize - 8);
-  return Math.min(Math.max(value, 8), maxValue);
-}
-
-export function clampContextMenuX(value: number) {
-  return clampCoordinate(value, window.innerWidth - CONTEXT_MENU_WIDTH);
-}
-
-export function clampContextMenuY(value: number) {
-  return clampCoordinate(value, window.innerHeight - CONTEXT_MENU_HEIGHT);
 }
 
 export function buildNextTreeState(

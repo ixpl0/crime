@@ -2,9 +2,21 @@ import { onMounted, ref } from "vue";
 
 type Theme = "light" | "dark" | "cupcake" | "bumblebee" | "emerald" | "corporate" | "synthwave" | "retro" | "cyberpunk" | "valentine" | "halloween" | "garden" | "forest" | "aqua" | "lofi" | "pastel" | "fantasy" | "wireframe" | "black" | "luxury" | "dracula" | "cmyk" | "autumn" | "business" | "acid" | "lemonade" | "night" | "coffee" | "winter" | "dim" | "nord" | "sunset";
 
+const VALID_THEMES: readonly string[] = [
+  "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", "synthwave",
+  "retro", "cyberpunk", "valentine", "halloween", "garden", "forest", "aqua",
+  "lofi", "pastel", "fantasy", "wireframe", "black", "luxury", "dracula",
+  "cmyk", "autumn", "business", "acid", "lemonade", "night", "coffee",
+  "winter", "dim", "nord", "sunset"
+];
+
+const DEFAULT_THEME: Theme = "light";
 const STORAGE_KEY = "dream-ide-theme";
 
-const currentTheme = ref<Theme>((localStorage.getItem(STORAGE_KEY) ?? "light") as Theme);
+const toValidTheme = (value: string | null): Theme =>
+  value !== null && VALID_THEMES.includes(value) ? value as Theme : DEFAULT_THEME;
+
+const currentTheme = ref<Theme>(toValidTheme(localStorage.getItem(STORAGE_KEY)));
 
 export function useTheme() {
   const setTheme = (theme: Theme) => {
@@ -18,12 +30,7 @@ export function useTheme() {
   };
 
   onMounted(() => {
-    const storedTheme = localStorage.getItem(STORAGE_KEY);
-    if (storedTheme) {
-      setTheme(storedTheme as Theme);
-    } else {
-      setTheme("light");
-    }
+    setTheme(toValidTheme(localStorage.getItem(STORAGE_KEY)));
   });
 
   return {

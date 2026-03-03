@@ -13,6 +13,11 @@ export function registerShellIpcHandlers({ IPC_CHANNELS }) {
       return { ok: false, error: "URL must be a string." };
     }
 
+    const isAllowedProtocol = url.startsWith("https://") || url.startsWith("http://");
+    if (!isAllowedProtocol) {
+      return { ok: false, error: "Only HTTP and HTTPS URLs are allowed." };
+    }
+
     try {
       await shell.openExternal(url);
       return { ok: true };

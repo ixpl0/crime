@@ -10,7 +10,7 @@
     <div>
       <div
         :ref="setTerminalContainer"
-        class="terminal-host w-full overflow-hidden rounded-box border border-[#05070d] bg-[#05070d]"
+        class="terminal-host w-full overflow-hidden rounded-box border border-[var(--terminal-bg)] bg-[var(--terminal-bg)]"
         :style="{ height: `${terminalPanelHeight}px` }"
         @click="focusTerminal"
         @contextmenu="handleTerminalContextMenu"

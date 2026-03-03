@@ -68,7 +68,11 @@ function createTerminal(fontSize: number) {
     cursorWidth: 2,
     fontFamily: "Cascadia Mono, Consolas, monospace",
     fontSize,
-    theme: { background: "#05070d", foreground: "#e5e7eb", cursor: "#e5e7eb" }
+    theme: {
+      background: getComputedStyle(document.documentElement).getPropertyValue("--terminal-bg").trim() || "#05070d",
+      foreground: "#e5e7eb",
+      cursor: "#e5e7eb"
+    }
   });
 }
 

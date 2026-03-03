@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+:root {
+  --terminal-bg: #05070d;
+}
+
 html,
 body,
 #app {
@@ -33,7 +37,7 @@ body {
 .terminal-host .xterm,
 .terminal-host .xterm-viewport,
 .terminal-host .xterm-screen {
-  background-color: #05070d !important;
+  background-color: var(--terminal-bg) !important;
 }
 
 .terminal-host .xterm-viewport {
@@ -57,7 +61,7 @@ body {
 @keyframes xterm-bell-flash {
   0%,
   100% {
-    background-color: #05070d;
+    background-color: var(--terminal-bg);
   }
   50% {
     background-color: rgba(255, 255, 255, 0.1);

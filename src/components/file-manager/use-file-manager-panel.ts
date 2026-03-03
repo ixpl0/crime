@@ -1,11 +1,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
 import { type DeletedChildrenByParent } from "./file-tree-status-utils";
 import { toErrorMessage } from "../../utils/fail-fast";
+import { clampContextMenuX, clampContextMenuY, getGitUnavailableMessage } from "../../utils/context-menu-utils";
 import {
   buildNextTreeState,
-  clampContextMenuX,
-  clampContextMenuY,
-  getGitUnavailableMessage,
   type NextTreeState
 } from "./file-manager-panel-utils";
 import type { FileManagerContextMenuPayload, FileManagerContextMenuState } from "./file-manager-context-menu-types";

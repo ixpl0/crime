@@ -1,30 +1,8 @@
-const CONTEXT_MENU_WIDTH = 220;
-const CONTEXT_MENU_HEIGHT = 44;
-
 const STATUS_PRIORITY: Record<GitFileStatus, number> = {
   modified: 0,
   added: 1,
   deleted: 2
 };
-
-function clampCoordinate(value: number, maxSize: number) {
-  const maxValue = Math.max(8, maxSize - 8);
-  return Math.min(Math.max(value, 8), maxValue);
-}
-
-export function clampContextMenuX(value: number) {
-  return clampCoordinate(value, window.innerWidth - CONTEXT_MENU_WIDTH);
-}
-
-export function clampContextMenuY(value: number) {
-  return clampCoordinate(value, window.innerHeight - CONTEXT_MENU_HEIGHT);
-}
-
-export function getGitUnavailableMessage(reason?: GitMutateResponse["reason"]) {
-  return reason === "git-not-installed"
-    ? "Git is not installed."
-    : "The selected folder is not a Git repository.";
-}
 
 export function buildSnapshot(entries: GitStatusEntry[], info: string, error: string) {
   const sorted = entries.map((entry) => `${entry.path}:${entry.status}`).join("\n");

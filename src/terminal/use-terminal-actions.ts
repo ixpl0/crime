@@ -35,7 +35,6 @@ export function useTerminalActions({
 }: TerminalActionsDeps) {
   return {
     executeToolbarAction,
-    runTerminalCommand,
     sendQuickKey,
     sendTodoEntryToTerminal
   };

@@ -120,6 +120,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useAppConfigStore } from "../config/config-store";
+import { defaultSecretsContent } from "../settings/secrets-storage";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { useGitStatus } from "../composables/use-git-status";
@@ -165,7 +166,6 @@ const {
   closeSecretsEditor
 } = useAppConfigStore();
 
-const defaultSecretsContent = "GLM_API_KEY=";
 const navigationStore = useAppNavigationStore();
 const {
   activeTab,

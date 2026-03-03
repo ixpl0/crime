@@ -1,12 +1,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch, type ComputedRef } from "vue";
 import { toErrorMessage } from "../../utils/fail-fast";
+import { clampContextMenuX, clampContextMenuY, getGitUnavailableMessage } from "../../utils/context-menu-utils";
 import {
   buildSnapshot,
-  clampContextMenuX,
-  clampContextMenuY,
   entryDisplayName,
   entryPathDisplayForProject,
-  getGitUnavailableMessage,
   nameClasses,
   sortEntries,
   statusBadgeClasses,

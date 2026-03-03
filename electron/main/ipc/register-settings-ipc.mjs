@@ -117,8 +117,7 @@ function registerSettingsWatcher({
   settingsWatchers,
   stopSettingsWatcher,
   toErrorMessage,
-  toIpcFailure,
-  isFailFast
+  toIpcFailure
 }) {
   ipcMain.handle(IPC_CHANNELS.settingsWatch, async (event, projectPath, filename) => {
     if (typeof projectPath !== "string" || typeof filename !== "string") {
@@ -163,9 +162,6 @@ function registerSettingsWatcher({
         stopSettingsWatcher(webContentsId);
         const message = toErrorMessage(error, "Settings watcher failed.");
         console.error(message, error);
-        if (isFailFast) {
-          throw new Error(message);
-        }
       });
 
       settingsWatchers.set(webContentsId, fsWatcher);
