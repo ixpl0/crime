@@ -8,21 +8,10 @@ import {
   getGitUnavailableMessage,
   type NextTreeState
 } from "./file-manager-panel-utils";
+import type { FileManagerContextMenuPayload, FileManagerContextMenuState } from "./file-manager-context-menu-types";
+export type { FileManagerContextMenuPayload, FileManagerContextMenuState };
 
 const FILESYSTEM_REFRESH_INTERVAL_MS = 5000;
-
-export interface FileManagerContextMenuPayload {
-  event: MouseEvent;
-  path: string;
-  status: GitFileStatus;
-}
-
-export interface FileManagerContextMenuState {
-  x: number;
-  y: number;
-  path: string;
-  status: GitFileStatus;
-}
 
 interface UseFileManagerPanelOptions {
   projectPath: Ref<string>;
@@ -73,13 +62,13 @@ export function useFileManagerPanel({
     if (isActionInProgress.value) {
       return;
     }
-
     payload.event.preventDefault();
     contextMenu.value = {
       x: clampContextMenuX(payload.event.clientX),
       y: clampContextMenuY(payload.event.clientY),
       path: payload.path,
-      status: payload.status
+      status: payload.status,
+      isDirectory: payload.isDirectory
     };
     void nextTick(() => {
       contextMenuElement.value?.focus();
@@ -102,8 +91,7 @@ export function useFileManagerPanel({
     if (hasStructureChanged) {
       refreshToken.value += 1;
     }
-
-    if (contextMenu.value && !(contextMenu.value.path in nextState.statuses)) {
+    if (contextMenu.value && contextMenu.value.status !== null && !(contextMenu.value.path in nextState.statuses)) {
       closeContextMenu();
     }
   }
@@ -215,9 +203,39 @@ export function useFileManagerPanel({
     }
   }
 
+  async function deletePath(targetPath: string, isDirectory: boolean) {
+    const entityLabel = isDirectory ? "папку" : "файл";
+    if (isActionInProgress.value || !window.confirm(`Удалить ${entityLabel}?\n${targetPath}`)) {
+      return;
+    }
+
+    closeContextMenu();
+    revertingPath.value = targetPath;
+    loadError.value = "";
+    try {
+      const response = await window.projectApi.filesystem.deletePath(projectPath.value, targetPath);
+      if (!response.ok) {
+        loadError.value = response.error ?? "Failed to delete path.";
+      } else {
+        await refreshGitStatus();
+        await loadRootDirectory();
+      }
+    } catch (error) {
+      loadError.value = toErrorMessage(error, "Failed to delete path.");
+    } finally {
+      revertingPath.value = null;
+    }
+  }
+
   function handleContextMenuRevertClick() {
     if (contextMenu.value) {
       void revertPath(contextMenu.value.path);
+    }
+  }
+
+  function handleContextMenuDeleteClick() {
+    if (contextMenu.value) {
+      void deletePath(contextMenu.value.path, contextMenu.value.isDirectory);
     }
   }
 
@@ -312,6 +330,7 @@ export function useFileManagerPanel({
     isActionInProgress,
     openContextMenu,
     handleContextMenuRevertClick,
+    handleContextMenuDeleteClick,
     handleRevertAllClick
   };
 }

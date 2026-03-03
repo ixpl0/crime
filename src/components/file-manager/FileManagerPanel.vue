@@ -56,6 +56,7 @@
         @contextmenu.prevent
       >
         <button
+          v-if="contextMenu.status !== null"
           type="button"
           class="btn btn-ghost btn-sm w-full justify-start"
           :disabled="isActionInProgress"
@@ -63,6 +64,15 @@
         >
           <RotateCcw :size="14" />
           Revert changes
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start text-error"
+          :disabled="isActionInProgress"
+          @click="handleContextMenuDeleteClick"
+        >
+          <Trash2 :size="14" />
+          Delete
         </button>
       </div>
     </div>
@@ -83,7 +93,7 @@
 
 <script setup lang="ts">
 import { toRef } from "vue";
-import { RotateCcw } from "lucide-vue-next";
+import { RotateCcw, Trash2 } from "lucide-vue-next";
 import FileTreeNode from "./FileTreeNode.vue";
 import { useFileManagerPanel } from "./use-file-manager-panel";
 
@@ -124,6 +134,7 @@ const {
   isActionInProgress,
   openContextMenu,
   handleContextMenuRevertClick,
+  handleContextMenuDeleteClick,
   handleRevertAllClick
 } = useFileManagerPanel({
   projectPath: toRef(props, "projectPath"),

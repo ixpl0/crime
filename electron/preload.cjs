@@ -19,6 +19,7 @@ const IPC_CHANNELS = Object.freeze({
   "clipboardWriteText": "clipboard:write-text",
   "filesystemReadDirectory": "filesystem:read-directory",
   "filesystemReadFile": "filesystem:read-file",
+  "filesystemDeletePath": "filesystem:delete-path",
   "gitStatus": "git:status",
   "gitFileDiff": "git:file-diff",
   "gitRevertFile": "git:revert-file",
@@ -182,7 +183,9 @@ contextBridge.exposeInMainWorld("projectApi", {
   filesystem: {
     readDirectory: (dirPath) => ipcRenderer.invoke(IPC_CHANNELS.filesystemReadDirectory, dirPath),
     readFile: (projectPath, filePath) =>
-      ipcRenderer.invoke(IPC_CHANNELS.filesystemReadFile, projectPath, filePath)
+      ipcRenderer.invoke(IPC_CHANNELS.filesystemReadFile, projectPath, filePath),
+    deletePath: (projectPath, targetPath) =>
+      ipcRenderer.invoke(IPC_CHANNELS.filesystemDeletePath, projectPath, targetPath)
   },
   git: {
     getStatus: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, projectPath),

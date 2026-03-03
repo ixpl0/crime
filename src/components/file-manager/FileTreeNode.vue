@@ -81,7 +81,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   "select-file": [path: string];
-  "context-menu": [payload: { event: MouseEvent; path: string; status: GitFileStatus }];
+  "context-menu": [payload: { event: MouseEvent; path: string; status: GitFileStatus | null; isDirectory: boolean }];
 }>();
 
 const isExpanded = ref(false);
@@ -298,15 +298,12 @@ const handleClick = async () => {
 };
 
 function handleContextMenu(event: MouseEvent) {
-  if (props.entry.isDirectory || entryStatus.value === null) {
-    return;
-  }
-
   event.preventDefault();
   emit("context-menu", {
     event,
     path: props.entry.path,
-    status: entryStatus.value
+    status: entryStatus.value,
+    isDirectory: props.entry.isDirectory
   });
 }
 

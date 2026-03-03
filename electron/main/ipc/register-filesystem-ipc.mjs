@@ -1,11 +1,12 @@
 import { ipcMain } from "electron";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { isPathInsideBase } from "./path-utils.mjs";
 
 function removeFilesystemHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadDirectory);
   ipcMain.removeHandler(IPC_CHANNELS.filesystemReadFile);
+  ipcMain.removeHandler(IPC_CHANNELS.filesystemDeletePath);
 }
 
 function withIgnoredState(entries, ignoredEntryPathKeySet, toPathKey) {
@@ -76,6 +77,27 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
       return {
         ok: false,
         error: error instanceof Error ? error.message : "Failed to read file."
+      };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.filesystemDeletePath, async (_event, projectPath, targetPath) => {
+    if (typeof projectPath !== "string" || typeof targetPath !== "string") {
+      return { ok: false, error: "Project path and target path are required." };
+    }
+
+    const resolvedTargetPath = resolve(targetPath);
+    if (!isPathInsideBase(projectPath, resolvedTargetPath)) {
+      return { ok: false, error: "Invalid target path." };
+    }
+
+    try {
+      await rm(resolvedTargetPath, { recursive: true, force: true });
+      return { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to delete path."
       };
     }
   });
