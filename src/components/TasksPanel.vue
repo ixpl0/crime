@@ -57,7 +57,7 @@
                 :disabled="!isTerminalReady || !todoDraftView.value.trim()"
                 @click="sendTodoEntryToTerminal(todoDraftView.index)"
               >
-                Отправить
+                {{ todoDraftView.index === todoDraftViewItems.length - 1 ? "Создать задачу" : "Отправить" }}
               </button>
             </div>
           </div>
