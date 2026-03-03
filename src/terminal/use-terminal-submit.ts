@@ -208,17 +208,14 @@ async function waitForSlashCommandReadiness(
 async function sendTextareaTextInput(state: TerminalSubmitState, text: string) {
   const BRACKET_PASTE_START = "\x1b[200~";
   const BRACKET_PASTE_END = "\x1b[201~";
-  const isMultiline = text.includes("\n");
 
-  if (isMultiline) {
-    const startOk = await sendTerminalInput(
-      state,
-      BRACKET_PASTE_START,
-      "Failed to send bracket paste start."
-    );
-    if (!startOk) {
-      return false;
-    }
+  const startOk = await sendTerminalInput(
+    state,
+    BRACKET_PASTE_START,
+    "Failed to send bracket paste start."
+  );
+  if (!startOk) {
+    return false;
   }
 
   for (let index = 0; index < text.length; index += state.options.terminalInputChunkSize) {
@@ -227,10 +224,6 @@ async function sendTextareaTextInput(state: TerminalSubmitState, text: string) {
     if (!ok) {
       return false;
     }
-  }
-
-  if (!isMultiline) {
-    return true;
   }
 
   return sendTerminalInput(state, BRACKET_PASTE_END, "Failed to send bracket paste end.");
