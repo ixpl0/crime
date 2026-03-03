@@ -19,7 +19,10 @@
     "build": "vite build",
     "prestart": "bun run sync:preload-shared",
     "preview": "vite preview",
-    "start": "cross-env NODE_ENV=production electron ."
+    "start": "cross-env NODE_ENV=production electron .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.1",
@@ -41,6 +44,8 @@
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.2.0",
     "@vitejs/plugin-vue": "^6.0.4",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vue/test-utils": "^2.4.6",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "daisyui": "^5.5.18",
@@ -48,12 +53,14 @@
     "eslint": "^10.0.1",
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.3.0",
+    "happy-dom": "^20.8.3",
     "husky": "^9.1.7",
     "nodemon": "^3.1.11",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.0",
     "vite": "^7.3.1",
+    "vitest": "^4.0.18",
     "vue-eslint-parser": "^10.4.0",
     "vue-tsc": "^3.2.5",
     "wait-on": "^9.0.4"

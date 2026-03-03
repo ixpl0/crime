@@ -105,6 +105,13 @@ export default [
     }
   },
   {
+    files: ["**/*.test.ts", "**/*.test.mjs"],
+    rules: {
+      "max-lines": "off",
+      "max-lines-per-function": "off"
+    }
+  },
+  {
     files: ["electron/preload.cjs"],
     rules: {
       "no-restricted-syntax": [
