@@ -56,6 +56,7 @@ const props = defineProps<{
   filePath: string | null;
   targetLine?: number | null;
   targetRequestToken?: number;
+  refreshToken?: number;
   isActive: boolean;
 }>();
 
@@ -63,9 +64,11 @@ const emit = defineEmits<{ "file-not-found": [filePath: string]; "file-saved": [
 
 const isEditing = ref(false);
 
+const fileExistsOnDisk = ref(false);
+
 const canEdit = computed(() => {
   if (!props.filePath) { return false; }
-  return !isLoading.value && !loadError.value;
+  return !isLoading.value && !loadError.value && fileExistsOnDisk.value;
 });
 
 const toggleEditMode = () => {
@@ -96,6 +99,7 @@ function clearViewerContentState() {
   loadError.value = "";
   diffInfoMessage.value = "";
   displayLines.value = [];
+  fileExistsOnDisk.value = false;
 }
 
 function buildFallbackLines(fileResponse: FilesystemReadFileResponse): ViewerLine[] {
@@ -155,6 +159,8 @@ async function requestFilePreviewResponses(requestId: number, filePath: string):
   } catch (error) {
     if (requestId === loadRequestId) {
       isLoading.value = false;
+      fileExistsOnDisk.value = false;
+      if (isEditing.value) { isEditing.value = false; }
       if (isFileNotFoundError(error)) {
         emit("file-not-found", filePath);
         loadError.value = "File was removed or does not exist.";
@@ -177,10 +183,14 @@ async function loadFilePreview() {
   const responses = await requestFilePreviewResponses(requestId, filePath);
   if (!responses) return;
   isLoading.value = false;
+  fileExistsOnDisk.value = responses.fileResponse.ok;
+  if (!responses.fileResponse.ok && isEditing.value) {
+    isEditing.value = false;
+  }
   const fallbackLines = buildFallbackLines(responses.fileResponse);
   applyDiffResultState(responses.diffResponse, responses.fileResponse, fallbackLines);
 }
 
 watch(() => props.filePath, () => { isEditing.value = false; });
-watch(() => [props.projectPath, props.filePath, props.isActive], () => { void loadFilePreview(); }, { immediate: true });
+watch(() => [props.projectPath, props.filePath, props.refreshToken ?? 0, props.isActive], () => { void loadFilePreview(); }, { immediate: true });
 </script>

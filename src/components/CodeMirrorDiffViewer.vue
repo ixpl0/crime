@@ -11,6 +11,7 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import { loadLanguageExtension } from "../codemirror/language-detection";
 import {
   createDiffLineDecorations,
+  createDiffLineNumbers,
   createDiffPrefixGutter,
   setTargetLineEffect,
   targetLineHighlightField,
@@ -52,6 +53,7 @@ const buildDiffExtensions = (lines: readonly GitDiffLine[]): Extension[] => {
   if (!hasDiffContent(lines)) { return []; }
   return [
     EditorView.decorations.of(createDiffLineDecorations(lines)),
+    createDiffLineNumbers(lines),
     createDiffPrefixGutter(lines),
   ];
 };
@@ -64,12 +66,13 @@ const createEditor = async () => {
 
   const document = buildDocument(props.displayLines);
   const languageExtensions = await loadLanguageExtension(props.filePath);
-  const diffExtensions = buildDiffExtensions(props.displayLines);
+  const isDiff = hasDiffContent(props.displayLines);
+  const diffExtensions = isDiff ? buildDiffExtensions(props.displayLines) : [];
 
   const state = EditorState.create({
     doc: document,
     extensions: [
-      lineNumbers(),
+      ...(isDiff ? [] : [lineNumbers()]),
       EditorView.editable.of(false),
       EditorState.readOnly.of(true),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),

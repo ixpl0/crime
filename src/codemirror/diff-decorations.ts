@@ -41,6 +41,51 @@ class DiffPrefixMarker extends GutterMarker {
 const addedMarker = new DiffPrefixMarker("+", "cm-diff-prefix-added");
 const removedMarker = new DiffPrefixMarker("-", "cm-diff-prefix-removed");
 
+class LineNumberMarker extends GutterMarker {
+  readonly text: string;
+
+  constructor(text: string) {
+    super();
+    this.text = text;
+  }
+
+  override toDOM(): Text {
+    return document.createTextNode(this.text);
+  }
+
+  override eq(other: GutterMarker): boolean {
+    return other instanceof LineNumberMarker && other.text === this.text;
+  }
+}
+
+const emptyMarker = new LineNumberMarker(" ");
+
+const buildLineNumberMap = (lines: readonly GitDiffLine[]): ReadonlyMap<number, GutterMarker> => {
+  const map = new Map<number, GutterMarker>();
+  let fileLineNumber = 0;
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index] as GitDiffLine | undefined;
+    if (line?.type === "removed") {
+      map.set(index, emptyMarker);
+    } else {
+      fileLineNumber++;
+      map.set(index, new LineNumberMarker(String(fileLineNumber)));
+    }
+  }
+  return map;
+};
+
+export const createDiffLineNumbers = (lines: readonly GitDiffLine[]) => {
+  const markerMap = buildLineNumberMap(lines);
+  return gutter({
+    class: "cm-lineNumbers",
+    lineMarker: (view, line) => {
+      const lineIndex = view.state.doc.lineAt(line.from).number - 1;
+      return markerMap.get(lineIndex) ?? null;
+    },
+  });
+};
+
 export const createDiffPrefixGutter = (lines: readonly GitDiffLine[]) =>
   gutter({
     class: "cm-diff-prefix-gutter",

@@ -167,7 +167,7 @@ export function useFileManagerPanel({
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
         await refreshGitStatus();
-        await loadRootDirectory();
+        await loadRootDirectory(true);
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert file changes.");
@@ -194,7 +194,7 @@ export function useFileManagerPanel({
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
         await refreshGitStatus();
-        await loadRootDirectory();
+        await loadRootDirectory(true);
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert all changes.");
@@ -218,7 +218,7 @@ export function useFileManagerPanel({
         loadError.value = response.error ?? "Failed to delete path.";
       } else {
         await refreshGitStatus();
-        await loadRootDirectory();
+        await loadRootDirectory(true);
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to delete path.");

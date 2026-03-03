@@ -79,6 +79,7 @@
             :file-path="selectedFilePath"
             :target-line="selectedFileTargetLine"
             :target-request-token="selectedFileTargetRequestToken"
+            :refresh-token="gitStatusRefreshToken"
             :is-active="activeTab === 'files'"
           />
         </div>
@@ -102,6 +103,7 @@
             class="h-full min-h-0"
             :project-path="projectPath"
             :file-path="changesSelectedFilePath"
+            :refresh-token="gitStatusRefreshToken"
             :is-active="activeTab === 'changes'"
             @file-not-found="resetChangesSelectedFile"
           />
