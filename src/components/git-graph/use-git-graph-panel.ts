@@ -232,7 +232,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     }
 
     const entries = response.entries ?? [];
-    const snapshot = entries.map((e) => e.hash).join(",");
+    const snapshot = entries.map((e) => `${e.hash}:${e.refs.join(";")}`).join(",");
     if (snapshot === lastCommitsSnapshot) {
       return;
     }
