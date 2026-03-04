@@ -48,7 +48,7 @@
         :key="session.id"
         class="card min-h-[18rem] overflow-hidden border border-base-300 bg-base-100 shadow-sm"
       >
-        <div class="flex items-start justify-between gap-3 border-b border-base-300 px-4 py-3">
+        <div class="flex items-center justify-between gap-3 border-b border-base-300 px-4 py-3">
           <div class="min-w-0 flex-1 truncate text-sm font-semibold">{{ session.title }}</div>
 
           <div class="flex items-center gap-2">
