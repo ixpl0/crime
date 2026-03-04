@@ -243,7 +243,8 @@ function handleTodoTextareaInput(state: TodoPanelState, index: number, event: Ev
   const hadPlaceholder = hasTodoDraftPlaceholder(state.todoDrafts.value);
   nextDrafts[index] = textarea.value;
   const isCompletedPlaceholder = previousValue.trim().length === 0 && textarea.value.trim().length > 0;
-  const includePlaceholder = hadPlaceholder && !isCompletedPlaceholder;
+  const isEntryCleared = previousValue.trim().length > 0 && textarea.value.trim().length === 0;
+  const includePlaceholder = (hadPlaceholder && !isCompletedPlaceholder) || isEntryCleared;
   updateTodoDrafts(state, getNormalizedTodoDrafts(nextDrafts, { includePlaceholder }));
 }
 
