@@ -12,7 +12,7 @@
         @open-config-editor="openTerminalToolbarConfigEditor"
       />
 
-      <button class="btn btn-sm btn-outline" type="button" @click="createBlankTerminal">
+      <button class="btn btn-sm btn-outline" type="button" tabindex="-1" @click="createBlankTerminal">
         New terminal
       </button>
 
@@ -20,6 +20,7 @@
         v-if="sessions.length > 0"
         class="btn btn-sm btn-ghost"
         type="button"
+        tabindex="-1"
         @click="closeAllSessions"
       >
         Clear
@@ -54,6 +55,7 @@
             <button
               v-if="session.initialCommandText"
               class="btn btn-xs"
+              tabindex="-1"
               :class="getToolbarButtonColorClass(session.repeatButtonColor)"
               :style="getToolbarButtonCustomStyle(session.repeatButtonColor)"
               type="button"
@@ -62,7 +64,7 @@
               {{ session.title }}
               <RotateCw :size="12" />
             </button>
-            <button class="btn btn-xs btn-ghost" type="button" @click="closeSession(session.id)">
+            <button class="btn btn-xs btn-ghost" type="button" tabindex="-1" @click="closeSession(session.id)">
               Close
             </button>
           </div>

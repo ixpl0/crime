@@ -1,5 +1,5 @@
 <template>
-  <main class="h-screen overflow-hidden bg-base-200 p-6 text-base-content">
+  <main class="h-screen overflow-hidden bg-base-200 p-6 text-base-content" @mousedown="handleGlobalMousedown">
     <section
       class="flex h-full min-h-0 flex-col gap-6"
       :class="projectPath ? 'w-full' : 'mx-auto w-full max-w-5xl'"
@@ -12,6 +12,7 @@
             <div class="card-actions justify-end">
               <button
                 class="btn btn-primary"
+                tabindex="-1"
                 :class="{ loading: isOpening }"
                 :disabled="isOpening"
                 @click="openProjectFolder"
@@ -49,6 +50,26 @@ import TasksPanel from "./components/TasksPanel.vue";
 const { errorMessage, isOpening, isTodoPanelCollapsed, openProjectFolder, projectPath } =
   useAppShell();
 
+const FOCUSABLE_SELECTOR = "button, label, [tabindex], [role='tab']";
+
+const handleGlobalMousedown = (event: MouseEvent) => {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+
+  if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
+    return;
+  }
+
+  if (target.closest(".cm-editor")) {
+    return;
+  }
+
+  if (target.closest(FOCUSABLE_SELECTOR) || target.matches(FOCUSABLE_SELECTOR)) {
+    event.preventDefault();
+  }
+};
 </script>
 
 <style scoped>

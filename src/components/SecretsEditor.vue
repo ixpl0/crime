@@ -20,17 +20,17 @@
       </div>
 
       <div class="modal-action">
-        <button class="btn btn-ghost" @click="resetToDefault">Сброс</button>
+        <button class="btn btn-ghost" tabindex="-1" @click="resetToDefault">Сброс</button>
         <div class="flex-1" />
-        <button class="btn" @click="$emit('close')">Отмена</button>
-        <button class="btn btn-primary" :disabled="!isDirty" @click="save">
+        <button class="btn" tabindex="-1" @click="$emit('close')">Отмена</button>
+        <button class="btn btn-primary" tabindex="-1" :disabled="!isDirty" @click="save">
           Сохранить
         </button>
       </div>
     </div>
 
     <form method="dialog" class="modal-backdrop">
-      <button>close</button>
+      <button tabindex="-1">close</button>
     </form>
   </dialog>
 </template>

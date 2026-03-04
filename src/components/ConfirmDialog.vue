@@ -1,17 +1,17 @@
 <template>
-  <dialog ref="dialogElement" class="modal" @close="handleDialogClose">
+  <dialog ref="dialogElement" class="modal" @close="handleDialogClose" @keydown="handleDialogKeydown">
     <div class="modal-box max-w-md text-center">
       <h3 class="text-lg font-semibold">{{ pendingState?.title }}</h3>
       <p v-if="pendingState?.body" class="my-4 whitespace-pre-line text-sm text-base-content/70">
         {{ pendingState.body }}
       </p>
       <div class="modal-action justify-center">
-        <button class="btn btn-ghost" @click="handleCancel">Отмена</button>
-        <button class="btn btn-error" @click="handleConfirm">Подтвердить</button>
+        <button class="btn btn-ghost" tabindex="-1" @click="handleCancel">Отмена</button>
+        <button class="btn btn-error" tabindex="-1" @click="handleConfirm">Подтвердить</button>
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
-      <button>close</button>
+      <button tabindex="-1">close</button>
     </form>
   </dialog>
 </template>
@@ -43,6 +43,13 @@ const handleCancel = () => {
 const handleDialogClose = () => {
   if (pendingState.value !== null) {
     resolveConfirm(false);
+  }
+};
+
+const handleDialogKeydown = (event: KeyboardEvent) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    handleConfirm();
   }
 };
 </script>

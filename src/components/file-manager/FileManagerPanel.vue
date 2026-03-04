@@ -59,6 +59,7 @@
           v-if="contextMenu.status !== null"
           type="button"
           class="btn btn-ghost btn-sm w-full justify-start"
+          tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuRevertClick"
         >
@@ -69,6 +70,7 @@
           v-if="contextMenu.status !== 'deleted'"
           type="button"
           class="btn btn-ghost btn-sm w-full justify-start text-error"
+          tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuDeleteClick"
         >
@@ -82,6 +84,7 @@
       <button
         type="button"
         class="btn btn-error btn-xs btn-outline"
+        tabindex="-1"
         :disabled="!hasChanges || isLoading || isActionInProgress"
         @click="handleRevertAllClick"
       >

@@ -62,6 +62,7 @@
             <span class="min-w-0 truncate text-sm">{{ row.commit.subject }}</span>
             <button
               class="ml-auto shrink-0 cursor-pointer rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
+              tabindex="-1"
               :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
               @click.stop="copyHash(row.commit.hash)"
             >
@@ -86,6 +87,7 @@
         <span class="text-xs font-semibold text-base-content/70">Commit details</span>
         <button
           class="btn btn-ghost btn-sm btn-square ml-auto"
+          tabindex="-1"
           title="Закрыть"
           @click="closeDetails"
         >
@@ -107,6 +109,7 @@
             <span class="shrink-0 text-xs text-base-content/50 w-16">Hash</span>
             <button
               class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-xs text-base-content/80 transition-colors hover:bg-base-content/10"
+              tabindex="-1"
               :title="copiedHash === selectedCommitDetails.hash ? 'Скопировано!' : 'Скопировать полный хеш'"
               @click="copyHash(selectedCommitDetails.hash)"
             >
@@ -123,6 +126,7 @@
                 v-for="parentHash in selectedCommitDetails.parentHashes"
                 :key="parentHash"
                 class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-xs text-base-content/60 transition-colors hover:bg-base-content/10"
+                tabindex="-1"
                 :title="copiedHash === parentHash ? 'Скопировано!' : 'Скопировать хеш'"
                 @click="copyHash(parentHash)"
               >

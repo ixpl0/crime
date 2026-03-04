@@ -94,6 +94,7 @@ src/
 - **Language-agnostic IDE**: Dream IDE is used for projects in any programming language. Toolbar prompts (review, practices, etc.) must not assume a specific language or ecosystem — always detect the project's stack first.
 - **Terminal freedom first**: do not sanitize, rewrite, or filter PTY byte streams. Terminal behavior must remain fully controlled by shell and user actions.
 - **Fail-fast in development**: surface errors immediately in UI/logs instead of silently swallowing them.
+- **Focus management**: Tab-навигация отключена для всех UI-элементов. Основной фокус — textarea терминала. Обеспечивается: (1) глобальный mousedown handler в App.vue предотвращает фокус на кнопках, (2) CSS убирает focus outline, (3) tabindex="-1" на всех кнопках. При добавлении новых кнопок — всегда ставить tabindex="-1".
 
 ## Preload Caveat
 

@@ -28,17 +28,17 @@
       </div>
 
       <div class="modal-action">
-        <button class="btn btn-ghost" @click="resetToDefault">{{ resetLabel }}</button>
+        <button class="btn btn-ghost" tabindex="-1" @click="resetToDefault">{{ resetLabel }}</button>
         <div class="flex-1" />
-        <button class="btn" @click="$emit('close')">{{ cancelLabel }}</button>
-        <button class="btn btn-primary" :disabled="!!validationError || !isDirty" @click="save">
+        <button class="btn" tabindex="-1" @click="$emit('close')">{{ cancelLabel }}</button>
+        <button class="btn btn-primary" tabindex="-1" :disabled="!!validationError || !isDirty" @click="save">
           {{ saveLabel }}
         </button>
       </div>
     </div>
 
     <form method="dialog" class="modal-backdrop">
-      <button>close</button>
+      <button tabindex="-1">close</button>
     </form>
   </dialog>
 </template>

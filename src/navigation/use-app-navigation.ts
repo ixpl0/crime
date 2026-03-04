@@ -1,5 +1,5 @@
 ﻿import { computed, nextTick, ref, type Ref } from "vue";
-import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem } from "../utils/dropdown-utils";
+import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, useDropdownClickOutside } from "../utils/dropdown-utils";
 
 export type AppTab = "agent" | "terminal" | "files" | "changes" | "git";
 export type HiddenPanelId = "todo";
@@ -25,16 +25,6 @@ interface TabState {
   activeTab: Ref<AppTab>;
   tabBackHistory: AppTab[];
   tabForwardHistory: AppTab[];
-}
-
-function shouldKeepDropdownFocus(event: FocusEvent) {
-  const currentDropdown = event.currentTarget;
-  if (!(currentDropdown instanceof HTMLElement)) {
-    return false;
-  }
-
-  const nextFocused = event.relatedTarget;
-  return nextFocused instanceof Node && currentDropdown.contains(nextFocused);
 }
 
 function updateDropdownState(shouldOpen: boolean, source: Ref<boolean>, opposite: Ref<boolean>) {
@@ -80,18 +70,6 @@ function handleDropdownTriggerKeydown(
   }
 }
 
-function handleProjectDropdownFocusOut(event: FocusEvent, state: DropdownState) {
-  if (!shouldKeepDropdownFocus(event)) {
-    setProjectDropdownOpen(false, state);
-  }
-}
-
-function handleHiddenPanelsDropdownFocusOut(event: FocusEvent, state: DropdownState) {
-  if (!shouldKeepDropdownFocus(event)) {
-    setHiddenPanelsDropdownOpen(false, state);
-  }
-}
-
 function createDropdownState() {
   return {
     isProjectDropdownOpen: ref(false),
@@ -133,15 +111,13 @@ function createDropdownKeyboardApi(state: DropdownState) {
   };
 }
 
-function createDropdownFocusApi(state: DropdownState) {
-  return {
-    handleProjectDropdownFocusOut: (event: FocusEvent) => {
-      handleProjectDropdownFocusOut(event, state);
-    },
-    handleHiddenPanelsDropdownFocusOut: (event: FocusEvent) => {
-      handleHiddenPanelsDropdownFocusOut(event, state);
-    }
-  };
+function setupDropdownClickOutside(state: DropdownState) {
+  useDropdownClickOutside(state.isProjectDropdownOpen, () => {
+    setProjectDropdownOpen(false, state);
+  });
+  useDropdownClickOutside(state.isHiddenPanelsDropdownOpen, () => {
+    setHiddenPanelsDropdownOpen(false, state);
+  });
 }
 
 function createDropdownActionApi(options: UseAppNavigationOptions, state: DropdownState) {
@@ -168,10 +144,11 @@ function createDropdownActionApi(options: UseAppNavigationOptions, state: Dropdo
 }
 
 function createDropdownNavigationApi(options: UseAppNavigationOptions, state: DropdownState) {
+  setupDropdownClickOutside(state);
+
   return {
     ...createDropdownStateApi(state),
     ...createDropdownKeyboardApi(state),
-    ...createDropdownFocusApi(state),
     ...createDropdownActionApi(options, state)
   };
 }

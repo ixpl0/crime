@@ -24,10 +24,23 @@ body {
   field-sizing: content;
 }
 
+button:focus,
+label:focus,
+[role="tab"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 .manual-dropdown:not(.dropdown-open):focus-within .dropdown-content {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
+}
+
+/* daisyUI sets pointer-events:none on the trigger when dropdown is open,
+   which blocks clicks on the trigger button to close the dropdown */
+.manual-dropdown.dropdown-open > [tabindex]:first-child {
+  pointer-events: auto;
 }
 
 .terminal-host {

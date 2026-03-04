@@ -2,6 +2,7 @@
   <div>
     <button
       class="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm hover:border-base-300 hover:bg-base-300/65"
+      tabindex="-1"
       :class="buttonClasses"
       :style="{ paddingLeft: `${NODE_BASE_PADDING_REM + depth * NODE_INDENT_REM}rem` }"
       @click="handleClick"

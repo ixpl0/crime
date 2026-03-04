@@ -47,6 +47,7 @@
           <button
             v-for="entry in changeEntries"
             :key="entry.path"
+            tabindex="-1"
             class="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm hover:border-base-300 hover:bg-base-300/65"
             :class="{
               'border-primary/40 bg-primary/10': entry.path === selectedPath,
@@ -98,6 +99,7 @@
         <button
           type="button"
           class="btn btn-ghost btn-sm w-full justify-start"
+          tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuRevertClick"
         >
@@ -111,6 +113,7 @@
       <button
         type="button"
         class="btn btn-error btn-xs btn-outline"
+        tabindex="-1"
         :disabled="!hasChanges || isLoading || isActionInProgress"
         @click="handleRevertAllClick"
       >

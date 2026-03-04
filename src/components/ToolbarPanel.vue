@@ -5,11 +5,11 @@
         v-if="'items' in element"
         class="dropdown manual-dropdown"
         :class="{ 'dropdown-open': openDropdownIndex === elementIndex }"
-        @focusout="handleDropdownFocusOut($event, elementIndex)"
       >
         <button
           type="button"
           class="btn btn-sm"
+          tabindex="-1"
           :class="getToolbarButtonColorClass(element.color)"
           :style="getToolbarButtonCustomStyle(element.color)"
           :aria-expanded="openDropdownIndex === elementIndex"
@@ -26,7 +26,7 @@
           <li v-for="(item, itemIndex) in element.items" :key="`item-${elementIndex}-${itemIndex}`">
             <button
               :disabled="isActionDisabled(item, isTerminalReady)"
-              :tabindex="openDropdownIndex === elementIndex ? 0 : -1"
+              tabindex="-1"
               :title="getActionTitle(item)"
               class="flex justify-between whitespace-nowrap"
               @click="handleDropdownActionClick(item)"
@@ -48,6 +48,7 @@
       <button
         v-else
         class="btn btn-sm"
+        tabindex="-1"
         :class="getToolbarButtonColorClass(element.color)"
         :style="getToolbarButtonCustomStyle(element.color)"
         :disabled="isActionDisabled(element, isTerminalReady)"
@@ -62,6 +63,7 @@
     <button
       type="button"
       class="btn btn-sm btn-square btn-ghost h-8 min-h-8"
+      tabindex="-1"
       title="Edit toolbar"
       @click="$emit('open-config-editor')"
     >
@@ -71,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import {
   type ToolbarConfig,
   type ToolbarAction
@@ -82,7 +84,7 @@ import {
 } from "../toolbar/toolbar-button-styles";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
 import { computeDaysSinceLastUsed, isLastUsedWithinOneDay } from "../toolbar/toolbar-tracking";
-import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem } from "../utils/dropdown-utils";
+import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, useDropdownClickOutside } from "../utils/dropdown-utils";
 import { ChevronDown, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";
 
 defineProps<{
@@ -96,6 +98,8 @@ const emit = defineEmits<{
 }>();
 
 const openDropdownIndex = ref<number | null>(null);
+const isAnyDropdownOpen = computed(() => openDropdownIndex.value !== null);
+useDropdownClickOutside(isAnyDropdownOpen, () => { openDropdownIndex.value = null; });
 
 function isTrackingAlert(action: ToolbarAction): boolean {
   if (action.done === false) {
@@ -147,25 +151,6 @@ function handleDropdownTriggerKeydown(event: KeyboardEvent, index: number) {
   if (event.key === "ArrowDown") {
     focusFirstDropdownItem(event.currentTarget);
   }
-}
-
-function handleDropdownFocusOut(event: FocusEvent, index: number) {
-  if (openDropdownIndex.value !== index) {
-    return;
-  }
-
-  const currentDropdown = event.currentTarget;
-  if (!(currentDropdown instanceof HTMLElement)) {
-    openDropdownIndex.value = null;
-    return;
-  }
-
-  const nextFocused = event.relatedTarget;
-  if (nextFocused instanceof Node && currentDropdown.contains(nextFocused)) {
-    return;
-  }
-
-  openDropdownIndex.value = null;
 }
 
 function handleDropdownActionClick(action: ToolbarAction) {

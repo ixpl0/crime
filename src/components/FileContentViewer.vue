@@ -6,7 +6,7 @@
         <span v-if="filePath && !isLoading && !isEditing" class="ml-auto text-[11px] text-base-content/45">
           {{ `${String(displayLines.length)} lines` }}
         </span>
-        <button v-if="filePath && canEdit" class="ml-auto btn btn-ghost btn-xs btn-square" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
+        <button v-if="filePath && canEdit" class="ml-auto btn btn-ghost btn-xs btn-square" tabindex="-1" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
           <component :is="isEditing ? Eye : Pencil" :size="14" />
         </button>
       </div>

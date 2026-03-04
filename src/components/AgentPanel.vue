@@ -59,6 +59,7 @@
             <button
               class="btn btn-sm"
               type="submit"
+              tabindex="-1"
               :disabled="!isTerminalReady || !terminalInputText.trim()"
             >
               &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
@@ -76,7 +77,6 @@
             class="btn btn-sm min-w-0 px-2"
             :disabled="!isTerminalReady"
             :title="quickKey.accelerator"
-            @mousedown.prevent="focusTextarea"
             @click="sendQuickKey(quickKey.input)"
           >
             <ArrowUp v-if="quickKey.icon === 'arrow-up'" :size="14" />
@@ -132,8 +132,7 @@ const {
   handleTextareaInput,
   handleTextareaPaste,
   sendTextareaToTerminal,
-  sendQuickKey,
-  focusTextarea
+  sendQuickKey
 } = useAppTerminalStore();
 
 function handleTerminalInput(event: Event) {

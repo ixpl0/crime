@@ -4,6 +4,7 @@
       <button
         role="tab"
         class="tab"
+        tabindex="-1"
         :class="{ 'tab-active': activeTab === 'agent' }"
         @click="setActiveTab('agent')"
       >
@@ -12,6 +13,7 @@
       <button
         role="tab"
         class="tab"
+        tabindex="-1"
         :class="{ 'tab-active': activeTab === 'terminal' }"
         @click="setActiveTab('terminal')"
       >
@@ -20,6 +22,7 @@
       <button
         role="tab"
         class="tab"
+        tabindex="-1"
         :class="{ 'tab-active': activeTab === 'files' }"
         @click="setActiveTab('files')"
       >
@@ -28,6 +31,7 @@
       <button
         role="tab"
         class="tab"
+        tabindex="-1"
         :class="{ 'tab-active': activeTab === 'changes' }"
         @click="setActiveTab('changes')"
       >
@@ -37,6 +41,7 @@
       <button
         role="tab"
         class="tab"
+        tabindex="-1"
         :class="{ 'tab-active': activeTab === 'git' }"
         @click="setActiveTab('git')"
       >
@@ -45,12 +50,12 @@
       <div
         class="dropdown dropdown-bottom manual-dropdown"
         :class="{ 'dropdown-open': isProjectDropdownOpen }"
-        @focusout="handleProjectDropdownFocusOut"
       >
         <button
           type="button"
           role="tab"
           class="tab"
+          tabindex="-1"
           :aria-expanded="isProjectDropdownOpen"
           @click="toggleProjectDropdown"
           @keydown="handleProjectDropdownTriggerKeydown"
@@ -65,7 +70,7 @@
           <li>
             <button
               :disabled="isOpening"
-              :tabindex="isProjectDropdownOpen ? 0 : -1"
+              tabindex="-1"
               @click="openProjectFolder"
             >
               &#1054;&#1090;&#1082;&#1088;&#1099;&#1090;&#1100;...
@@ -76,7 +81,7 @@
             <li v-for="recent in recentProjects" :key="recent">
               <button
                 :disabled="isOpening"
-                :tabindex="isProjectDropdownOpen ? 0 : -1"
+                tabindex="-1"
                 class="flex flex-col items-start gap-0 py-2"
                 @click="openRecentProject(recent)"
               >
@@ -92,6 +97,7 @@
         type="button"
         role="tab"
         class="tab"
+        tabindex="-1"
         title="Секреты проекта (.env)"
         @click="openSecretsEditor"
       >
@@ -101,6 +107,7 @@
 
     <button
       class="btn btn-sm btn-ghost"
+      tabindex="-1"
       :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
       @click="toggleTheme"
     >
@@ -112,11 +119,11 @@
       v-if="hiddenPanelOptions.length > 0"
       class="dropdown dropdown-end manual-dropdown"
       :class="{ 'dropdown-open': isHiddenPanelsDropdownOpen }"
-      @focusout="handleHiddenPanelsDropdownFocusOut"
     >
       <button
         type="button"
         class="btn btn-sm btn-ghost"
+        tabindex="-1"
         :aria-expanded="isHiddenPanelsDropdownOpen"
         title="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1089;&#1082;&#1088;&#1099;&#1090;&#1099;&#1077; &#1087;&#1072;&#1085;&#1077;&#1083;&#1080;"
         @click="toggleHiddenPanelsDropdown"
@@ -132,7 +139,7 @@
         <li v-for="panelOption in hiddenPanelOptions" :key="panelOption.id">
           <button
             type="button"
-            :tabindex="isHiddenPanelsDropdownOpen ? 0 : -1"
+            tabindex="-1"
             @click="showHiddenPanel(panelOption.id)"
           >
             {{ panelOption.title }}
@@ -143,6 +150,7 @@
 
     <button
       class="btn btn-sm btn-ghost"
+      tabindex="-1"
       title="&#1053;&#1072;&#1089;&#1090;&#1088;&#1086;&#1081;&#1082;&#1080; &#1087;&#1088;&#1086;&#1077;&#1082;&#1090;&#1072;"
       @click="openProjectSettings"
     >
@@ -173,13 +181,11 @@ const {
   getProjectNameFromPath,
   setActiveTab,
   toggleProjectDropdown,
-  handleProjectDropdownFocusOut,
   handleProjectDropdownTriggerKeydown,
   setProjectDropdownOpen,
   openProjectFolder,
   openRecentProject,
   toggleHiddenPanelsDropdown,
-  handleHiddenPanelsDropdownFocusOut,
   handleHiddenPanelsDropdownTriggerKeydown,
   setHiddenPanelsDropdownOpen,
   showHiddenPanel

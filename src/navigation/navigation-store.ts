@@ -17,13 +17,11 @@ export interface AppNavigationStore {
   getProjectNameFromPath: (path: string) => string;
   setActiveTab: (tab: AppTab) => void;
   toggleProjectDropdown: () => void;
-  handleProjectDropdownFocusOut: (event: FocusEvent) => void;
   handleProjectDropdownTriggerKeydown: (event: KeyboardEvent) => void;
   setProjectDropdownOpen: (shouldOpen: boolean) => void;
   openProjectFolder: () => void;
   openRecentProject: (path: string) => void;
   toggleHiddenPanelsDropdown: () => void;
-  handleHiddenPanelsDropdownFocusOut: (event: FocusEvent) => void;
   handleHiddenPanelsDropdownTriggerKeydown: (event: KeyboardEvent) => void;
   setHiddenPanelsDropdownOpen: (shouldOpen: boolean) => void;
   showHiddenPanel: (panelId: HiddenPanelId) => void;

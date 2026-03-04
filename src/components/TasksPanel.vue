@@ -54,6 +54,7 @@
               <button
                 class="btn btn-ghost btn-xs normal-case text-base-content/70"
                 type="button"
+                tabindex="-1"
                 :disabled="!isTerminalReady || !todoDraftView.value.trim()"
                 @click="sendTodoEntryToTerminal(todoDraftView.index)"
               >

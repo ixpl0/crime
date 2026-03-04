@@ -3,7 +3,7 @@
     <label
       v-for="(item, index) in suffixConfig.items"
       :key="`suffix-${index}`"
-      tabindex="0"
+      tabindex="-1"
       class="label inline-flex h-8 cursor-pointer select-none items-center gap-2 rounded-btn px-2 py-0 whitespace-nowrap hover:bg-base-100/60"
       :title="item.value"
       @click.prevent="$emit('toggle-suffix', index)"
@@ -24,6 +24,7 @@
     <button
       type="button"
       class="btn btn-sm btn-square btn-ghost h-8 min-h-8"
+      tabindex="-1"
       title="Edit suffixes"
       @click="$emit('open-config-editor')"
     >
