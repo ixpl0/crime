@@ -105,16 +105,6 @@
       </button>
     </div>
 
-    <button
-      class="btn btn-sm btn-ghost"
-      tabindex="-1"
-      :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
-      @click="toggleTheme"
-    >
-      <Sun v-if="currentTheme === 'dark'" :size="16" />
-      <Moon v-else :size="16" />
-    </button>
-
     <div
       v-if="hiddenPanelOptions.length > 0"
       class="dropdown dropdown-end manual-dropdown"
@@ -147,6 +137,16 @@
         </li>
       </ul>
     </div>
+
+    <button
+      class="btn btn-sm btn-ghost"
+      tabindex="-1"
+      :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
+      @click="toggleTheme"
+    >
+      <Sun v-if="currentTheme === 'dark'" :size="16" />
+      <Moon v-else :size="16" />
+    </button>
 
     <button
       class="btn btn-sm btn-ghost"
