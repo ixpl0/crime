@@ -53,67 +53,128 @@
         @close="closeSecretsEditor"
       />
 
-      <AgentPanel v-show="activeTab === 'agent'" />
+      <!-- Content: flex-row when detached (agent left, tabs right), flex-col when normal -->
+      <div
+        class="flex min-h-0 flex-1"
+        :class="isAgentDetached ? 'gap-4' : 'flex-col'"
+      >
+        <!-- Agent section -->
+        <AgentPanel
+          v-show="isAgentDetached || activeTab === 'agent'"
+          :class="{ 'min-w-0': isAgentDetached }"
+        />
 
-      <TerminalWorkspacePanel
-        v-show="activeTab === 'terminal'"
-        :project-path="projectPath"
-        :is-active="activeTab === 'terminal'"
-      />
+        <!-- Vertical divider when detached -->
+        <div v-if="isAgentDetached" class="w-px shrink-0 bg-base-300" />
 
-      <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
-        <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
-          <FileManagerPanel
-            class="h-full min-h-0"
+        <!-- Other tabs section -->
+        <div
+          v-show="isAgentDetached || activeTab !== 'agent'"
+          class="flex min-h-0 flex-1 flex-col gap-4"
+          :class="{ 'min-w-0': isAgentDetached }"
+        >
+          <!-- Secondary tab bar (only visible when detached) -->
+          <div v-if="isAgentDetached" role="tablist" class="tabs tabs-bordered shrink-0">
+            <button
+              role="tab"
+              class="tab"
+              tabindex="-1"
+              :class="{ 'tab-active': activeTab === 'terminal' }"
+              @click="setActiveTab('terminal')"
+            >
+              Терминал
+            </button>
+            <button
+              role="tab"
+              class="tab"
+              tabindex="-1"
+              :class="{ 'tab-active': activeTab === 'files' }"
+              @click="setActiveTab('files')"
+            >
+              Файлы
+            </button>
+            <button
+              role="tab"
+              class="tab"
+              tabindex="-1"
+              :class="{ 'tab-active': activeTab === 'changes' }"
+              @click="setActiveTab('changes')"
+            >
+              Изменения
+              <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
+            </button>
+            <button
+              role="tab"
+              class="tab"
+              tabindex="-1"
+              :class="{ 'tab-active': activeTab === 'git' }"
+              @click="setActiveTab('git')"
+            >
+              Гит
+            </button>
+          </div>
+
+          <TerminalWorkspacePanel
+            v-show="activeTab === 'terminal'"
             :project-path="projectPath"
-            :selected-path="filesDisplayPath"
-            :reveal-path="fileTreeRevealPath"
-            :reveal-request-token="fileTreeRevealRequestToken"
-            :git-status-response="gitStatusResponse"
-            :git-refresh-token="gitStatusRefreshToken"
-            :refresh-git-status="refreshGitStatus"
-            @select-file="handleFileSelect"
+            :is-active="activeTab === 'terminal'"
           />
 
-          <FileContentViewer
-            class="h-full min-h-0"
-            :project-path="projectPath"
-            :file-path="selectedFilePath"
-            :target-line="selectedFileTargetLine"
-            :target-request-token="selectedFileTargetRequestToken"
-            :refresh-token="gitStatusRefreshToken"
-            :is-active="activeTab === 'files'"
-          />
+          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
+            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
+              <FileManagerPanel
+                class="h-full min-h-0"
+                :project-path="projectPath"
+                :selected-path="filesDisplayPath"
+                :reveal-path="fileTreeRevealPath"
+                :reveal-request-token="fileTreeRevealRequestToken"
+                :git-status-response="gitStatusResponse"
+                :git-refresh-token="gitStatusRefreshToken"
+                :refresh-git-status="refreshGitStatus"
+                @select-file="handleFileSelect"
+              />
+
+              <FileContentViewer
+                class="h-full min-h-0"
+                :project-path="projectPath"
+                :file-path="selectedFilePath"
+                :target-line="selectedFileTargetLine"
+                :target-request-token="selectedFileTargetRequestToken"
+                :refresh-token="gitStatusRefreshToken"
+                :is-active="activeTab === 'files'"
+              />
+            </div>
+          </div>
+
+          <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
+            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
+              <ChangesPanel
+                class="h-full min-h-0"
+                :project-path="projectPath"
+                :selected-path="changesSelectedFilePath"
+                :git-status-response="gitStatusResponse"
+                :git-refresh-token="gitStatusRefreshToken"
+                :refresh-git-status="refreshGitStatus"
+                @select-file="handleChangesFileSelect"
+                @open-path="handleChangesPathOpen"
+                @reset-selected-file="resetChangesSelectedFile"
+              />
+
+              <FileContentViewer
+                class="h-full min-h-0"
+                :project-path="projectPath"
+                :file-path="changesSelectedFilePath"
+                :refresh-token="gitStatusRefreshToken"
+                :is-active="activeTab === 'changes'"
+                @file-not-found="resetChangesSelectedFile"
+              />
+            </div>
+          </div>
+
+          <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
+            <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" />
+          </div>
         </div>
-      </div>
-
-      <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
-        <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
-          <ChangesPanel
-            class="h-full min-h-0"
-            :project-path="projectPath"
-            :selected-path="changesSelectedFilePath"
-            :git-status-response="gitStatusResponse"
-            :git-refresh-token="gitStatusRefreshToken"
-            :refresh-git-status="refreshGitStatus"
-            @select-file="handleChangesFileSelect"
-            @open-path="handleChangesPathOpen"
-            @reset-selected-file="resetChangesSelectedFile"
-          />
-
-          <FileContentViewer
-            class="h-full min-h-0"
-            :project-path="projectPath"
-            :file-path="changesSelectedFilePath"
-            :refresh-token="gitStatusRefreshToken"
-            :is-active="activeTab === 'changes'"
-            @file-not-found="resetChangesSelectedFile"
-          />
-        </div>
-      </div>
-
-      <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
-        <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" />
       </div>
     </div>
   </div>
@@ -172,6 +233,8 @@ const {
 const navigationStore = useAppNavigationStore();
 const {
   activeTab,
+  isAgentDetached,
+  setActiveTab,
   filesDisplayPath,
   fileTreeRevealPath,
   fileTreeRevealRequestToken,

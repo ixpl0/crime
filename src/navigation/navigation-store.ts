@@ -9,6 +9,7 @@ import {
 export interface AppNavigationStore {
   projectPath: ReadableRef<string | null>;
   activeTab: ReadableRef<AppTab>;
+  isAgentDetached: ReadableRef<boolean>;
   isOpening: ReadableRef<boolean>;
   isProjectDropdownOpen: ReadableRef<boolean>;
   isHiddenPanelsDropdownOpen: ReadableRef<boolean>;
@@ -16,6 +17,8 @@ export interface AppNavigationStore {
   recentProjects: ReadableRef<string[]>;
   getProjectNameFromPath: (path: string) => string;
   setActiveTab: (tab: AppTab) => void;
+  detachAgent: () => void;
+  dockAgent: () => void;
   toggleProjectDropdown: () => void;
   handleProjectDropdownTriggerKeydown: (event: KeyboardEvent) => void;
   setProjectDropdownOpen: (shouldOpen: boolean) => void;

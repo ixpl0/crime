@@ -1,52 +1,75 @@
 <template>
   <div class="flex items-center gap-2">
     <div role="tablist" class="tabs tabs-bordered">
-      <button
-        role="tab"
-        class="tab"
-        tabindex="-1"
-        :class="{ 'tab-active': activeTab === 'agent' }"
-        @click="setActiveTab('agent')"
-      >
-        &#1040;&#1075;&#1077;&#1085;&#1090;
-      </button>
-      <button
-        role="tab"
-        class="tab"
-        tabindex="-1"
-        :class="{ 'tab-active': activeTab === 'terminal' }"
-        @click="setActiveTab('terminal')"
-      >
-        &#1058;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;
-      </button>
-      <button
-        role="tab"
-        class="tab"
-        tabindex="-1"
-        :class="{ 'tab-active': activeTab === 'files' }"
-        @click="setActiveTab('files')"
-      >
-        &#1060;&#1072;&#1081;&#1083;&#1099;
-      </button>
-      <button
-        role="tab"
-        class="tab"
-        tabindex="-1"
-        :class="{ 'tab-active': activeTab === 'changes' }"
-        @click="setActiveTab('changes')"
-      >
-        &#1048;&#1079;&#1084;&#1077;&#1085;&#1077;&#1085;&#1080;&#1103;
-        <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
-      </button>
-      <button
-        role="tab"
-        class="tab"
-        tabindex="-1"
-        :class="{ 'tab-active': activeTab === 'git' }"
-        @click="setActiveTab('git')"
-      >
-        &#1043;&#1080;&#1090;
-      </button>
+      <template v-if="isAgentDetached">
+        <span class="tab tab-active">Агент</span>
+        <button
+          type="button"
+          class="tab px-1"
+          tabindex="-1"
+          title="Вернуть во вкладку"
+          @click="dockAgent"
+        >
+          <PanelLeftClose :size="14" />
+        </button>
+      </template>
+      <template v-else>
+        <button
+          role="tab"
+          class="tab"
+          tabindex="-1"
+          :class="{ 'tab-active': activeTab === 'agent' }"
+          @click="setActiveTab('agent')"
+        >
+          Агент
+        </button>
+        <button
+          type="button"
+          class="tab px-1"
+          tabindex="-1"
+          title="Открепить вкладки в отдельную панель"
+          @click="detachAgent"
+        >
+          <PanelRightOpen :size="14" />
+        </button>
+        <button
+          role="tab"
+          class="tab"
+          tabindex="-1"
+          :class="{ 'tab-active': activeTab === 'terminal' }"
+          @click="setActiveTab('terminal')"
+        >
+          Терминал
+        </button>
+        <button
+          role="tab"
+          class="tab"
+          tabindex="-1"
+          :class="{ 'tab-active': activeTab === 'files' }"
+          @click="setActiveTab('files')"
+        >
+          Файлы
+        </button>
+        <button
+          role="tab"
+          class="tab"
+          tabindex="-1"
+          :class="{ 'tab-active': activeTab === 'changes' }"
+          @click="setActiveTab('changes')"
+        >
+          Изменения
+          <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
+        </button>
+        <button
+          role="tab"
+          class="tab"
+          tabindex="-1"
+          :class="{ 'tab-active': activeTab === 'git' }"
+          @click="setActiveTab('git')"
+        >
+          Гит
+        </button>
+      </template>
       <div
         class="dropdown dropdown-bottom manual-dropdown"
         :class="{ 'dropdown-open': isProjectDropdownOpen }"
@@ -160,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, Eye, Moon, Settings, Sun } from "lucide-vue-next";
+import { ChevronDown, Eye, Moon, PanelLeftClose, PanelRightOpen, Settings, Sun } from "lucide-vue-next";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
@@ -173,6 +196,7 @@ const { currentTheme, toggleTheme } = useTheme();
 
 const {
   activeTab,
+  isAgentDetached,
   isOpening,
   isProjectDropdownOpen,
   isHiddenPanelsDropdownOpen,
@@ -180,6 +204,8 @@ const {
   recentProjects,
   getProjectNameFromPath,
   setActiveTab,
+  detachAgent,
+  dockAgent,
   toggleProjectDropdown,
   handleProjectDropdownTriggerKeydown,
   setProjectDropdownOpen,

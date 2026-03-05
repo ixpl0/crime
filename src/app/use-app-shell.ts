@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import { ref, type ComponentPublicInstance } from "vue";
+import { nextTick, ref, type ComponentPublicInstance } from "vue";
 import { type ProjectSettings } from "../types/project-settings";
 import { type ToolbarAction } from "../types/toolbar";
 import {
@@ -69,6 +69,11 @@ export function useAppShell() {
   const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
   const RECENT_PROJECTS_STORAGE_KEY = "dream-ide:recent-projects";
   const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
+  const AGENT_DETACHED_STORAGE_KEY = "dream-ide:agent-detached";
+
+  const isAgentDetached = ref(
+    localStorage.getItem(AGENT_DETACHED_STORAGE_KEY) === "true"
+  );
 
   const {
     recentProjects,
@@ -211,9 +216,12 @@ export function useAppShell() {
     handleHiddenPanelOptionClick,
     setActiveTab,
     clearTabNavigationHistory,
-    handleHistoryNavigationMouseButton
+    handleHistoryNavigationMouseButton,
+    detachAgent,
+    dockAgent
   } = useAppNavigation({
     isTodoPanelCollapsed,
+    isAgentDetached,
     onOpenProjectFolder: () => {
       void openProjectFolder();
     },
@@ -372,6 +380,7 @@ export function useAppShell() {
   provideAppNavigationStore({
     projectPath,
     activeTab,
+    isAgentDetached,
     isOpening,
     isProjectDropdownOpen,
     isHiddenPanelsDropdownOpen,
@@ -379,6 +388,8 @@ export function useAppShell() {
     recentProjects,
     getProjectNameFromPath,
     setActiveTab,
+    detachAgent: handleDetachAgent,
+    dockAgent: handleDockAgent,
     toggleProjectDropdown,
     handleProjectDropdownTriggerKeydown,
     setProjectDropdownOpen,
@@ -483,6 +494,22 @@ export function useAppShell() {
     openProjectFolder,
     projectPath
   };
+
+  function handleDetachAgent() {
+    detachAgent();
+    localStorage.setItem(AGENT_DETACHED_STORAGE_KEY, "true");
+    void nextTick(() => {
+      void resizeTerminalBackend();
+    });
+  }
+
+  function handleDockAgent() {
+    dockAgent();
+    localStorage.removeItem(AGENT_DETACHED_STORAGE_KEY);
+    void nextTick(() => {
+      void resizeTerminalBackend();
+    });
+  }
 
   function reportUiError(
     context: string,

@@ -11,6 +11,7 @@ export interface HiddenPanelOption {
 
 interface UseAppNavigationOptions {
   isTodoPanelCollapsed: Ref<boolean>;
+  isAgentDetached: Ref<boolean>;
   onOpenProjectFolder: () => void;
   onOpenRecentProject: (path: string) => void;
   onAgentTabActivated: () => void;
@@ -118,6 +119,32 @@ function setupDropdownClickOutside(state: DropdownState) {
   useDropdownClickOutside(state.isHiddenPanelsDropdownOpen, () => {
     setHiddenPanelsDropdownOpen(false, state);
   });
+}
+
+function detachAgent(
+  tabState: TabState,
+  isAgentDetached: Ref<boolean>,
+  onAgentTabActivated: () => void
+) {
+  if (isAgentDetached.value) {
+    return;
+  }
+  isAgentDetached.value = true;
+  if (tabState.activeTab.value === "agent") {
+    setActiveTab("terminal", tabState, onAgentTabActivated);
+  }
+}
+
+function dockAgent(
+  tabState: TabState,
+  isAgentDetached: Ref<boolean>,
+  onAgentTabActivated: () => void
+) {
+  if (!isAgentDetached.value) {
+    return;
+  }
+  isAgentDetached.value = false;
+  setActiveTab("agent", tabState, onAgentTabActivated);
 }
 
 function createDropdownActionApi(options: UseAppNavigationOptions, state: DropdownState) {
@@ -238,6 +265,13 @@ export function useAppNavigation(options: UseAppNavigationOptions) {
 
   return {
     ...createDropdownNavigationApi(options, dropdownState),
-    ...createTabNavigationApi(tabState, options.onAgentTabActivated)
+    ...createTabNavigationApi(tabState, options.onAgentTabActivated),
+    isAgentDetached: options.isAgentDetached,
+    detachAgent: () => {
+      detachAgent(tabState, options.isAgentDetached, options.onAgentTabActivated);
+    },
+    dockAgent: () => {
+      dockAgent(tabState, options.isAgentDetached, options.onAgentTabActivated);
+    }
   };
 }
