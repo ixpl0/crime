@@ -6,7 +6,7 @@
   >
     <!-- Left card (agent + header), or the only card when not detached -->
     <div
-      class="card min-h-0 overflow-hidden bg-base-100 shadow-xl"
+      class="card min-h-0 min-w-0 overflow-hidden bg-base-100 shadow-xl"
       :class="agentCardClass"
       :style="agentCardStyle"
     >
@@ -227,11 +227,14 @@ const mainContainer = ref<HTMLElement | null>(null);
 
 const {
   panelWidth: agentPanelWidth,
+  panelMaxWidth: agentPanelMaxWidth,
   isResizeActive: isAgentPanelResizeActive,
   handleResizePointerDown: handleAgentPanelResizePointerDown
 } = usePanelWidthResize({
   storageKey: "dream-ide:agent-panel-width",
-  defaultWidth: 0
+  defaultWidth: 0,
+  minWidth: 200,
+  minOppositeWidth: 200
 });
 
 const agentCardClass = computed(() => {
@@ -243,7 +246,10 @@ const agentCardClass = computed(() => {
 
 const agentCardStyle = computed(() => {
   if (isAgentDetached.value && agentPanelWidth.value > 0) {
-    return { "--panel-w": String(agentPanelWidth.value) + "px" };
+    return {
+      "--panel-w": String(agentPanelWidth.value) + "px",
+      "--panel-max-w": agentPanelMaxWidth
+    };
   }
   return undefined;
 });

@@ -37,7 +37,7 @@
         <template v-if="!isTodoPanelCollapsed">
           <TasksPanel
             class="panel-w-resizable"
-            :style="{ '--panel-w': tasksPanelWidth + 'px' }"
+            :style="{ '--panel-w': tasksPanelWidth + 'px', '--panel-max-w': tasksPanelMaxWidth }"
           />
           <PanelResizeHandle
             :is-active="isTasksPanelResizeActive"
@@ -45,7 +45,7 @@
           />
         </template>
 
-        <MainPanel />
+        <MainPanel class="min-w-0" />
       </div>
     </section>
   </main>
@@ -69,11 +69,13 @@ const outerContainer = ref<HTMLElement | null>(null);
 
 const {
   panelWidth: tasksPanelWidth,
+  panelMaxWidth: tasksPanelMaxWidth,
   isResizeActive: isTasksPanelResizeActive,
   handleResizePointerDown: handleTasksPanelResizePointerDown
 } = usePanelWidthResize({
   storageKey: "dream-ide:tasks-panel-width",
-  defaultWidth: TASKS_PANEL_DEFAULT_WIDTH
+  defaultWidth: TASKS_PANEL_DEFAULT_WIDTH,
+  minOppositeWidth: 400
 });
 
 const handleTasksPanelResize = (event: PointerEvent) => {

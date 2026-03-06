@@ -1,13 +1,13 @@
 import { ref, type Ref } from "vue";
 
 const DEFAULT_MIN_PANEL_WIDTH = 160;
-const DEFAULT_MAX_PANEL_WIDTH_FRACTION = 0.7;
+const HANDLE_WIDTH = 16;
 
 interface UsePanelWidthResizeOptions {
   storageKey: string;
   defaultWidth: number;
   minWidth?: number;
-  maxWidthFraction?: number;
+  minOppositeWidth?: number;
 }
 
 interface PanelWidthResizeState {
@@ -24,8 +24,13 @@ function getMinWidth(options: UsePanelWidthResizeOptions): number {
   return options.minWidth ?? DEFAULT_MIN_PANEL_WIDTH;
 }
 
-function getMaxWidthFraction(options: UsePanelWidthResizeOptions): number {
-  return options.maxWidthFraction ?? DEFAULT_MAX_PANEL_WIDTH_FRACTION;
+function getMinOppositeWidth(options: UsePanelWidthResizeOptions): number {
+  return options.minOppositeWidth ?? DEFAULT_MIN_PANEL_WIDTH;
+}
+
+function computePanelMaxWidth(options: UsePanelWidthResizeOptions): string {
+  const reserved = HANDLE_WIDTH + getMinOppositeWidth(options);
+  return `calc(100% - ${String(reserved)}px)`;
 }
 
 function parseStoredWidth(storageKey: string, defaultWidth: number, minWidth: number): number {
@@ -39,7 +44,7 @@ function parseStoredWidth(storageKey: string, defaultWidth: number, minWidth: nu
 
 function clampWidth(width: number, containerWidth: number, options: UsePanelWidthResizeOptions): number {
   const minWidth = getMinWidth(options);
-  const maxWidth = Math.floor(containerWidth * getMaxWidthFraction(options));
+  const maxWidth = containerWidth - HANDLE_WIDTH - getMinOppositeWidth(options);
   return Math.max(minWidth, Math.min(width, maxWidth));
 }
 
@@ -98,10 +103,7 @@ function bindResizeListeners(state: PanelWidthResizeState) {
   };
 }
 
-function initializePanelWidth(state: PanelWidthResizeState, handle: HTMLElement) {
-  if (state.panelWidth.value > 0) {
-    return;
-  }
+function syncPanelWidthFromDom(state: PanelWidthResizeState, handle: HTMLElement) {
   const leftPanel = handle.previousElementSibling;
   if (leftPanel instanceof HTMLElement) {
     state.panelWidth.value = Math.round(leftPanel.getBoundingClientRect().width);
@@ -118,7 +120,7 @@ function handleResizePointerDown(
   }
   event.preventDefault();
   stopResize(state);
-  initializePanelWidth(state, event.currentTarget as HTMLElement);
+  syncPanelWidthFromDom(state, event.currentTarget as HTMLElement);
   state.startX = event.clientX;
   state.startWidth = state.panelWidth.value;
   state.containerWidth = container.clientWidth;
@@ -132,6 +134,7 @@ export function usePanelWidthResize(options: UsePanelWidthResizeOptions) {
   const state = createState(options);
   return {
     panelWidth: state.panelWidth,
+    panelMaxWidth: computePanelMaxWidth(options),
     isResizeActive: state.isResizeActive,
     handleResizePointerDown: (event: PointerEvent, container: HTMLElement) => {
       handleResizePointerDown(state, event, container);
