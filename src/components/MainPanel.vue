@@ -1,10 +1,15 @@
 <template>
   <div
+    ref="mainContainer"
     class="min-h-0 flex-1 overflow-hidden"
-    :class="isAgentDetached ? 'grid grid-rows-2 gap-4 lg:grid-cols-2 lg:grid-rows-1' : 'flex'"
+    :class="isAgentDetached ? 'flex flex-col gap-4 lg:flex-row lg:gap-0' : 'flex'"
   >
     <!-- Left card (agent + header), or the only card when not detached -->
-    <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-xl">
+    <div
+      class="card min-h-0 overflow-hidden bg-base-100 shadow-xl"
+      :class="agentCardClass"
+      :style="agentCardStyle"
+    >
       <div class="card-body flex min-h-0 flex-col gap-4">
         <div v-if="errorMessage" class="alert alert-error">
           <span>{{ errorMessage }}</span>
@@ -127,9 +132,17 @@
       </div>
     </div>
 
+    <!-- Resize handle between agent and secondary panels (only when detached) -->
+    <PanelResizeHandle
+      v-if="isAgentDetached"
+      :is-active="isAgentPanelResizeActive"
+      @pointerdown="handleAgentPanelResize"
+    />
+
     <!-- Right card: separate panel with non-agent tabs (only when detached) -->
     <SecondaryTabsPanel
       v-if="isAgentDetached"
+      class="min-w-0"
       :project-path="projectPath"
       :changes-count="changesCount"
       :git-status-response="gitStatusResponse"
@@ -141,8 +154,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useAppConfigStore } from "../config/config-store";
+import { usePanelWidthResize } from "../composables/use-panel-width-resize";
 import { defaultSecretsContent } from "../settings/secrets-storage";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
@@ -154,6 +168,7 @@ import FileContentViewer from "./FileContentViewer.vue";
 import FileManagerPanel from "./file-manager/FileManagerPanel.vue";
 import GitGraphPanel from "./git-graph/GitGraphPanel.vue";
 import MainPanelHeader from "./MainPanelHeader.vue";
+import PanelResizeHandle from "./PanelResizeHandle.vue";
 import ProjectSettingsEditor from "./ProjectSettingsEditor.vue";
 import PromptSuffixConfigEditor from "./PromptSuffixConfigEditor.vue";
 import SecondaryTabsPanel from "./SecondaryTabsPanel.vue";
@@ -207,6 +222,37 @@ const {
   resetChangesSelectedFile,
   handleChangesPathOpen
 } = navigationStore;
+
+const mainContainer = ref<HTMLElement | null>(null);
+
+const {
+  panelWidth: agentPanelWidth,
+  isResizeActive: isAgentPanelResizeActive,
+  handleResizePointerDown: handleAgentPanelResizePointerDown
+} = usePanelWidthResize({
+  storageKey: "dream-ide:agent-panel-width",
+  defaultWidth: 0
+});
+
+const agentCardClass = computed(() => {
+  if (isAgentDetached.value && agentPanelWidth.value > 0) {
+    return "panel-w-resizable";
+  }
+  return "flex-1";
+});
+
+const agentCardStyle = computed(() => {
+  if (isAgentDetached.value && agentPanelWidth.value > 0) {
+    return { "--panel-w": String(agentPanelWidth.value) + "px" };
+  }
+  return undefined;
+});
+
+const handleAgentPanelResize = (event: PointerEvent) => {
+  if (mainContainer.value) {
+    handleAgentPanelResizePointerDown(event, mainContainer.value);
+  }
+};
 
 const projectPath = computed(() => {
   const currentProjectPath = navigationStore.projectPath.value;

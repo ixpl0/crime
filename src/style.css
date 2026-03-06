@@ -24,6 +24,13 @@ body {
   field-sizing: content;
 }
 
+.panel-w-resizable {
+  @media (min-width: 1024px) {
+    width: var(--panel-w);
+    flex-shrink: 0;
+  }
+}
+
 button:focus,
 label:focus,
 [role="tab"]:focus {

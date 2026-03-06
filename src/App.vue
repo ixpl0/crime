@@ -30,10 +30,20 @@
 
       <div
         v-if="projectPath"
-        class="grid min-h-0 flex-1 gap-4"
-        :class="{ 'lg:grid-cols-[18rem_minmax(0,1fr)]': !isTodoPanelCollapsed }"
+        ref="outerContainer"
+        class="flex min-h-0 flex-1 flex-col gap-4"
+        :class="{ 'lg:flex-row lg:gap-0': !isTodoPanelCollapsed }"
       >
-        <TasksPanel v-if="!isTodoPanelCollapsed" />
+        <template v-if="!isTodoPanelCollapsed">
+          <TasksPanel
+            class="panel-w-resizable"
+            :style="{ '--panel-w': tasksPanelWidth + 'px' }"
+          />
+          <PanelResizeHandle
+            :is-active="isTasksPanelResizeActive"
+            @pointerdown="handleTasksPanelResize"
+          />
+        </template>
 
         <MainPanel />
       </div>
@@ -43,12 +53,34 @@
 
 <script setup lang="ts">
 import "@xterm/xterm/css/xterm.css";
+import { ref } from "vue";
 import { useAppShell } from "./app/use-app-shell";
+import { usePanelWidthResize } from "./composables/use-panel-width-resize";
 import MainPanel from "./components/MainPanel.vue";
+import PanelResizeHandle from "./components/PanelResizeHandle.vue";
 import TasksPanel from "./components/TasksPanel.vue";
+
+const TASKS_PANEL_DEFAULT_WIDTH = 288;
 
 const { errorMessage, isOpening, isTodoPanelCollapsed, openProjectFolder, projectPath } =
   useAppShell();
+
+const outerContainer = ref<HTMLElement | null>(null);
+
+const {
+  panelWidth: tasksPanelWidth,
+  isResizeActive: isTasksPanelResizeActive,
+  handleResizePointerDown: handleTasksPanelResizePointerDown
+} = usePanelWidthResize({
+  storageKey: "dream-ide:tasks-panel-width",
+  defaultWidth: TASKS_PANEL_DEFAULT_WIDTH
+});
+
+const handleTasksPanelResize = (event: PointerEvent) => {
+  if (outerContainer.value) {
+    handleTasksPanelResizePointerDown(event, outerContainer.value);
+  }
+};
 
 const FOCUSABLE_SELECTOR = "button, label, [tabindex], [role='tab']";
 
