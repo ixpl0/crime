@@ -1,119 +1,68 @@
 <template>
-  <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-xl">
-    <div class="card-body flex min-h-0 flex-col gap-4">
-      <div v-if="errorMessage" class="alert alert-error">
-        <span>{{ errorMessage }}</span>
-      </div>
+  <div
+    class="min-h-0 flex-1 overflow-hidden"
+    :class="isAgentDetached ? 'grid grid-rows-2 gap-4 lg:grid-cols-2 lg:grid-rows-1' : 'flex'"
+  >
+    <!-- Left card (agent + header), or the only card when not detached -->
+    <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-xl">
+      <div class="card-body flex min-h-0 flex-col gap-4">
+        <div v-if="errorMessage" class="alert alert-error">
+          <span>{{ errorMessage }}</span>
+        </div>
 
-      <MainPanelHeader :changes-count="changesCount" />
+        <MainPanelHeader :changes-count="changesCount" />
 
-      <ToolbarConfigEditor
-        :current-config="toolbarConfig"
-        :config-file-path="toolbarConfigFilePath"
-        :open="isToolbarConfigEditorOpen"
-        @save="handleToolbarConfigSave"
-        @close="closeToolbarConfigEditor"
-      />
-
-      <ToolbarConfigEditor
-        :current-config="terminalToolbarConfig"
-        :config-file-path="terminalToolbarConfigFilePath"
-        :open="isTerminalToolbarConfigEditorOpen"
-        title="Terminal Toolbar Settings"
-        :default-config="defaultTerminalToolbarConfig"
-        @save="handleTerminalToolbarConfigSave"
-        @close="closeTerminalToolbarConfigEditor"
-      />
-
-      <PromptSuffixConfigEditor
-        :current-config="promptSuffixConfig"
-        :config-file-path="promptSuffixConfigFilePath"
-        :open="isPromptSuffixConfigEditorOpen"
-        @save="handlePromptSuffixConfigSave"
-        @close="closePromptSuffixConfigEditor"
-      />
-
-      <ProjectSettingsEditor
-        :current-settings="projectSettings"
-        :config-file-path="projectSettingsFilePath"
-        :open="isProjectSettingsEditorOpen"
-        @save="handleProjectSettingsSave"
-        @close="closeProjectSettingsEditor"
-      />
-
-      <ConfirmDialog />
-
-      <SecretsEditor
-        title="Секреты проекта"
-        :file-path="secretsConfigFilePath"
-        :current-value="secretsConfig"
-        :default-value="defaultSecretsContent"
-        :open="isSecretsEditorOpen"
-        @save="handleSecretsSave"
-        @close="closeSecretsEditor"
-      />
-
-      <!-- Content: flex-row when detached (agent left, tabs right), flex-col when normal -->
-      <div
-        class="flex min-h-0 flex-1"
-        :class="isAgentDetached ? 'gap-4' : 'flex-col'"
-      >
-        <!-- Agent section -->
-        <AgentPanel
-          v-show="isAgentDetached || activeTab === 'agent'"
-          :class="{ 'min-w-0': isAgentDetached }"
+        <ToolbarConfigEditor
+          :current-config="toolbarConfig"
+          :config-file-path="toolbarConfigFilePath"
+          :open="isToolbarConfigEditorOpen"
+          @save="handleToolbarConfigSave"
+          @close="closeToolbarConfigEditor"
         />
 
-        <!-- Vertical divider when detached -->
-        <div v-if="isAgentDetached" class="w-px shrink-0 bg-base-300" />
+        <ToolbarConfigEditor
+          :current-config="terminalToolbarConfig"
+          :config-file-path="terminalToolbarConfigFilePath"
+          :open="isTerminalToolbarConfigEditorOpen"
+          title="Terminal Toolbar Settings"
+          :default-config="defaultTerminalToolbarConfig"
+          @save="handleTerminalToolbarConfigSave"
+          @close="closeTerminalToolbarConfigEditor"
+        />
 
-        <!-- Other tabs section -->
-        <div
-          v-show="isAgentDetached || activeTab !== 'agent'"
-          class="flex min-h-0 flex-1 flex-col gap-4"
-          :class="{ 'min-w-0': isAgentDetached }"
-        >
-          <!-- Secondary tab bar (only visible when detached) -->
-          <div v-if="isAgentDetached" role="tablist" class="tabs tabs-bordered shrink-0">
-            <button
-              role="tab"
-              class="tab"
-              tabindex="-1"
-              :class="{ 'tab-active': activeTab === 'terminal' }"
-              @click="setActiveTab('terminal')"
-            >
-              Терминал
-            </button>
-            <button
-              role="tab"
-              class="tab"
-              tabindex="-1"
-              :class="{ 'tab-active': activeTab === 'files' }"
-              @click="setActiveTab('files')"
-            >
-              Файлы
-            </button>
-            <button
-              role="tab"
-              class="tab"
-              tabindex="-1"
-              :class="{ 'tab-active': activeTab === 'changes' }"
-              @click="setActiveTab('changes')"
-            >
-              Изменения
-              <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
-            </button>
-            <button
-              role="tab"
-              class="tab"
-              tabindex="-1"
-              :class="{ 'tab-active': activeTab === 'git' }"
-              @click="setActiveTab('git')"
-            >
-              Гит
-            </button>
-          </div>
+        <PromptSuffixConfigEditor
+          :current-config="promptSuffixConfig"
+          :config-file-path="promptSuffixConfigFilePath"
+          :open="isPromptSuffixConfigEditorOpen"
+          @save="handlePromptSuffixConfigSave"
+          @close="closePromptSuffixConfigEditor"
+        />
 
+        <ProjectSettingsEditor
+          :current-settings="projectSettings"
+          :config-file-path="projectSettingsFilePath"
+          :open="isProjectSettingsEditorOpen"
+          @save="handleProjectSettingsSave"
+          @close="closeProjectSettingsEditor"
+        />
+
+        <ConfirmDialog />
+
+        <SecretsEditor
+          title="Секреты проекта"
+          :file-path="secretsConfigFilePath"
+          :current-value="secretsConfig"
+          :default-value="defaultSecretsContent"
+          :open="isSecretsEditorOpen"
+          @save="handleSecretsSave"
+          @close="closeSecretsEditor"
+        />
+
+        <!-- Agent: always in left card -->
+        <AgentPanel v-show="isAgentDetached || activeTab === 'agent'" />
+
+        <!-- Non-agent tabs: in left card only when NOT detached -->
+        <template v-if="!isAgentDetached">
           <TerminalWorkspacePanel
             v-show="activeTab === 'terminal'"
             :project-path="projectPath"
@@ -174,9 +123,20 @@
           <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
             <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" />
           </div>
-        </div>
+        </template>
       </div>
     </div>
+
+    <!-- Right card: separate panel with non-agent tabs (only when detached) -->
+    <SecondaryTabsPanel
+      v-if="isAgentDetached"
+      :project-path="projectPath"
+      :changes-count="changesCount"
+      :git-status-response="gitStatusResponse"
+      :git-refresh-token="gitStatusRefreshToken"
+      :git-repository-refresh-token="gitRepositoryRefreshToken"
+      :refresh-git-status="refreshGitStatus"
+    />
   </div>
 </template>
 
@@ -196,6 +156,7 @@ import GitGraphPanel from "./git-graph/GitGraphPanel.vue";
 import MainPanelHeader from "./MainPanelHeader.vue";
 import ProjectSettingsEditor from "./ProjectSettingsEditor.vue";
 import PromptSuffixConfigEditor from "./PromptSuffixConfigEditor.vue";
+import SecondaryTabsPanel from "./SecondaryTabsPanel.vue";
 import SecretsEditor from "./SecretsEditor.vue";
 import TerminalWorkspacePanel from "./TerminalWorkspacePanel.vue";
 import ToolbarConfigEditor from "./ToolbarConfigEditor.vue";
@@ -234,7 +195,6 @@ const navigationStore = useAppNavigationStore();
 const {
   activeTab,
   isAgentDetached,
-  setActiveTab,
   filesDisplayPath,
   fileTreeRevealPath,
   fileTreeRevealRequestToken,

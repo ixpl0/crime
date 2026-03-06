@@ -263,6 +263,10 @@ export function useAppNavigation(options: UseAppNavigationOptions) {
   const dropdownState = createDropdownState();
   const tabState = createTabState();
 
+  if (options.isAgentDetached.value && tabState.activeTab.value === "agent") {
+    tabState.activeTab.value = "terminal";
+  }
+
   return {
     ...createDropdownNavigationApi(options, dropdownState),
     ...createTabNavigationApi(tabState, options.onAgentTabActivated),
