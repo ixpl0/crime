@@ -1,11 +1,11 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col gap-3">
     <div class="relative flex min-h-0 flex-1 flex-col rounded-box border border-base-300 bg-base-200/70 shadow-sm">
-      <div class="flex items-center gap-2 border-b border-base-300/80 px-3 py-2">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-base-300/80 px-3 py-2">
         <span class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Files
         </span>
-        <span class="ml-auto text-[11px] text-base-content/45">
+        <span class="ml-auto whitespace-nowrap text-[11px] text-base-content/45">
           {{ headerSummary }}
         </span>
       </div>

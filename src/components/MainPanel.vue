@@ -75,9 +75,10 @@
           />
 
           <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
-            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
+            <div ref="filesContainer" class="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:gap-0">
               <FileManagerPanel
-                class="h-full min-h-0"
+                class="panel-w-resizable h-full min-h-[14rem] flex-1 lg:min-h-0 lg:flex-none"
+                :style="sidebarStyle"
                 :project-path="projectPath"
                 :selected-path="filesDisplayPath"
                 :reveal-path="fileTreeRevealPath"
@@ -88,8 +89,13 @@
                 @select-file="handleFileSelect"
               />
 
+              <PanelResizeHandle
+                :is-active="isSidebarResizeActive"
+                @pointerdown="handleSidebarResize($event, filesContainer)"
+              />
+
               <FileContentViewer
-                class="h-full min-h-0"
+                class="h-full min-h-0 min-w-0 flex-[2] lg:flex-1"
                 :project-path="projectPath"
                 :file-path="selectedFilePath"
                 :target-line="selectedFileTargetLine"
@@ -101,9 +107,10 @@
           </div>
 
           <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
-            <div class="grid h-full min-h-0 grid-rows-[minmax(14rem,1fr)_minmax(0,2fr)] gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-1">
+            <div ref="changesContainer" class="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:gap-0">
               <ChangesPanel
-                class="h-full min-h-0"
+                class="panel-w-resizable h-full min-h-[14rem] flex-1 lg:min-h-0 lg:flex-none"
+                :style="sidebarStyle"
                 :project-path="projectPath"
                 :selected-path="changesSelectedFilePath"
                 :git-status-response="gitStatusResponse"
@@ -114,8 +121,13 @@
                 @reset-selected-file="resetChangesSelectedFile"
               />
 
+              <PanelResizeHandle
+                :is-active="isSidebarResizeActive"
+                @pointerdown="handleSidebarResize($event, changesContainer)"
+              />
+
               <FileContentViewer
-                class="h-full min-h-0"
+                class="h-full min-h-0 min-w-0 flex-[2] lg:flex-1"
                 :project-path="projectPath"
                 :file-path="changesSelectedFilePath"
                 :refresh-token="gitStatusRefreshToken"
@@ -224,6 +236,8 @@ const {
 } = navigationStore;
 
 const mainContainer = ref<HTMLElement | null>(null);
+const filesContainer = ref<HTMLElement | null>(null);
+const changesContainer = ref<HTMLElement | null>(null);
 
 const {
   panelWidth: agentPanelWidth,
@@ -257,6 +271,29 @@ const agentCardStyle = computed(() => {
 const handleAgentPanelResize = (event: PointerEvent) => {
   if (mainContainer.value) {
     handleAgentPanelResizePointerDown(event, mainContainer.value);
+  }
+};
+
+const {
+  panelWidth: sidebarPanelWidth,
+  panelMaxWidth: sidebarPanelMaxWidth,
+  isResizeActive: isSidebarResizeActive,
+  handleResizePointerDown: handleSidebarResizePointerDown
+} = usePanelWidthResize({
+  storageKey: "dream-ide:sidebar-panel-width",
+  defaultWidth: 352,
+  minWidth: 50,
+  minOppositeWidth: 50
+});
+
+const sidebarStyle = computed(() => ({
+  "--panel-w": String(sidebarPanelWidth.value) + "px",
+  "--panel-max-w": sidebarPanelMaxWidth
+}));
+
+const handleSidebarResize = (event: PointerEvent, container: HTMLElement | null) => {
+  if (container) {
+    handleSidebarResizePointerDown(event, container);
   }
 };
 

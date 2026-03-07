@@ -1,11 +1,11 @@
 ﻿<template>
   <div class="flex h-full min-h-0 flex-col gap-3">
     <div class="relative flex min-h-0 flex-1 flex-col rounded-box border border-base-300 bg-base-200/70 shadow-sm">
-      <div class="flex items-center gap-2 border-b border-base-300/80 px-3 py-2">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-base-300/80 px-3 py-2">
         <span class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
           Changes
         </span>
-        <div v-if="hasChanges" class="ml-auto flex items-center gap-1 text-[10px] font-semibold tracking-wide">
+        <div v-if="hasChanges" class="ml-auto flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold tracking-wide">
           <span
             v-if="statusCounts.modified > 0"
             class="rounded-full bg-blue-500/15 px-2 py-0.5 text-blue-600"
@@ -25,7 +25,7 @@
             D {{ statusCounts.deleted }}
           </span>
         </div>
-        <span v-else class="ml-auto text-[11px] text-base-content/45">
+        <span v-else class="ml-auto whitespace-nowrap text-[11px] text-base-content/45">
           Working tree clean
         </span>
       </div>
