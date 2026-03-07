@@ -19,18 +19,14 @@
       <button
         type="button"
         tabindex="-1"
-        class="terminal-resize-handle group relative -mt-[6px] flex h-3 w-full cursor-ns-resize items-center justify-center border-0 bg-transparent p-0"
-        title="&#1055;&#1086;&#1090;&#1103;&#1085;&#1080;&#1090;&#1077;, &#1095;&#1090;&#1086;&#1073;&#1099; &#1080;&#1079;&#1084;&#1077;&#1085;&#1080;&#1090;&#1100; &#1074;&#1099;&#1089;&#1086;&#1090;&#1091; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;&#1072;"
-        aria-label="&#1048;&#1079;&#1084;&#1077;&#1085;&#1080;&#1090;&#1100; &#1074;&#1099;&#1089;&#1086;&#1090;&#1091; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;&#1072;"
+        class="terminal-resize-handle group absolute -mt-2 flex h-4 w-full touch-none cursor-ns-resize items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
+        title="Потяните, чтобы изменить высоту терминала"
+        aria-label="Изменить высоту терминала"
         @pointerdown="handleTerminalPanelResizePointerDown"
       >
         <span
-          class="h-1 w-[17%] rounded-full transition-colors duration-150"
-          :class="
-            isTerminalPanelResizeActive
-              ? 'bg-[#6b7280]'
-              : 'bg-[#374151] group-hover:bg-[#4b5563] group-focus-visible:bg-[#4b5563]'
-          "
+          class="h-0.5 w-[60%] rounded-full transition-colors duration-150"
+          :class="isTerminalPanelResizeActive ? 'bg-primary' : 'bg-transparent group-hover:bg-base-300'"
         />
       </button>
     </div>
@@ -145,14 +141,6 @@ function handleTerminalInput(event: Event) {
 </script>
 
 <style scoped>
-.terminal-resize-handle {
-  touch-action: none;
-}
-
-.terminal-resize-handle:focus-visible {
-  outline: none;
-}
-
 .terminal-host :deep(.xterm) {
   border-radius: inherit;
 }
