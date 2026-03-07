@@ -47,19 +47,6 @@ export function useTerminalActions({
   }
 
   async function performToolbarAction(action: ToolbarAction) {
-    if (action.resetTerminal) {
-      const didReset = await resetTerminal();
-      if (!didReset) {
-        return;
-      }
-    } else if (!isTerminalReady.value) {
-      return;
-    }
-
-    if (action.value.length === 0) {
-      return;
-    }
-
     if (action.type === "scenario") {
       if (action.steps) {
         await runScenario(
@@ -74,6 +61,19 @@ export function useTerminalActions({
           action.steps
         );
       }
+      return;
+    }
+
+    if (action.resetTerminal) {
+      const didReset = await resetTerminal();
+      if (!didReset) {
+        return;
+      }
+    } else if (!isTerminalReady.value) {
+      return;
+    }
+
+    if (action.value.length === 0) {
       return;
     }
 
