@@ -5,6 +5,7 @@ import {
   type SubmitTerminalTextAttemptOptions,
   type SubmitTerminalTextResult
 } from "./terminal-submit-types";
+import { runScenario } from "./run-scenario";
 
 interface TerminalActionsDeps {
   readonly isTerminalReady: Ref<boolean>;
@@ -17,6 +18,7 @@ interface TerminalActionsDeps {
     data: string,
     fallbackErrorMessage: string
   ) => Promise<boolean>;
+  readonly waitForTerminalQuiet: (quietMs: number, timeoutMs: number) => Promise<void>;
   readonly focusTerminal: () => void;
   readonly getTodoEntry: (index: number) => string | null;
   readonly removeTodoEntry: (index: number) => void;
@@ -28,6 +30,7 @@ export function useTerminalActions({
   resetTerminal,
   attemptSubmitTerminalText,
   sendTerminalInput,
+  waitForTerminalQuiet,
   focusTerminal,
   getTodoEntry,
   removeTodoEntry,
@@ -54,6 +57,23 @@ export function useTerminalActions({
     }
 
     if (action.value.length === 0) {
+      return;
+    }
+
+    if (action.type === "scenario") {
+      if (action.steps) {
+        await runScenario(
+          {
+            isTerminalReady: () => isTerminalReady.value,
+            resetTerminal,
+            attemptSubmitTerminalText,
+            sendTerminalInput,
+            waitForTerminalQuiet,
+            focusTerminal
+          },
+          action.steps
+        );
+      }
       return;
     }
 

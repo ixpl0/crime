@@ -155,7 +155,8 @@ export function useAppShell() {
     attemptSubmitTerminalText,
     sendAltVShortcut,
     markTerminalDataReceived,
-    resetTerminalSessionState
+    resetTerminalSessionState,
+    waitForTerminalQuiet
   } = useTerminalSubmit({
     isTerminalReady,
     errorMessage,
@@ -314,6 +315,7 @@ export function useAppShell() {
     resetTerminal: resetPrimaryTerminal,
     attemptSubmitTerminalText,
     sendTerminalInput,
+    waitForTerminalQuiet,
     focusTerminal,
     getTodoEntry,
     removeTodoEntry,

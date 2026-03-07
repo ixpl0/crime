@@ -4,8 +4,10 @@ import {
   type ToolbarButtonColor,
   type ToolbarPresetColor,
   type ToolbarConfig,
-  type ToolbarElement
+  type ToolbarElement,
+  type ScenarioStep
 } from "../types/toolbar";
+import { parseScenarioSteps } from "./scenario-storage";
 import defaultAgentToolbarJson from "../defaults/agent-toolbar.json";
 import {
   isRecord,
@@ -35,7 +37,7 @@ export const isToolbarPresetColor = (value: string): value is ToolbarPresetColor
   TOOLBAR_PRESET_COLORS.has(value);
 
 const isToolbarActionType = (value: unknown): value is ToolbarActionType =>
-  value === "prompt" || value === "command" || value === "raw-input";
+  value === "prompt" || value === "command" || value === "raw-input" || value === "scenario";
 
 interface ParsedLastUsed {
   readonly valid: true;
@@ -89,19 +91,32 @@ function parseToolbarActionResetFlag(value: Record<string, unknown>) {
   return resetTerminal === true ? true : undefined;
 }
 
+function resolveScenarioDefinition(value: Record<string, unknown>) {
+  const steps = parseScenarioSteps(value.steps);
+  if (!steps) {
+    return null;
+  }
+  return { value: "", type: "scenario" as const, steps };
+}
+
 function resolveToolbarActionDefinition(
   value: Record<string, unknown>,
   resetTerminal: true | undefined
 ) {
-  if ("value" in value && typeof value.value !== "string") {
-    return null;
-  }
   if ("type" in value && !isToolbarActionType(value.type)) {
     return null;
   }
 
-  const explicitValue = typeof value.value === "string" ? value.value : null;
   const explicitType = isToolbarActionType(value.type) ? value.type : null;
+  if (explicitType === "scenario") {
+    return resolveScenarioDefinition(value);
+  }
+
+  if ("value" in value && typeof value.value !== "string") {
+    return null;
+  }
+
+  const explicitValue = typeof value.value === "string" ? value.value : null;
   const canUseImplicitResetAction =
     resetTerminal === true &&
     (value.value === undefined || value.value === "") &&
@@ -115,7 +130,7 @@ function resolveToolbarActionDefinition(
 
   return {
     value: explicitValue ?? "",
-    type: explicitType ?? "command"
+    type: explicitType ?? ("command" as const)
   };
 }
 
@@ -134,6 +149,35 @@ function parseToolbarActionTracking(value: Record<string, unknown>): {
   }
 
   return { lastUsed: parsedLastUsed.value, done: parsedDone.value };
+}
+
+interface ActionDefinition {
+  readonly value: string;
+  readonly type: ToolbarActionType;
+  readonly steps?: readonly ScenarioStep[];
+}
+
+function buildToolbarAction(
+  value: Record<string, unknown>,
+  label: string,
+  resetTerminal: true | undefined,
+  definition: ActionDefinition,
+  tracking: { readonly lastUsed: string | null | undefined; readonly done: boolean | undefined }
+): ToolbarAction {
+  const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
+  const color = isToolbarButtonColor(value.color) ? value.color : undefined;
+
+  return {
+    label,
+    value: definition.value,
+    type: definition.type,
+    ...(shortcut !== undefined && { shortcut }),
+    ...(color !== undefined && { color }),
+    ...(resetTerminal !== undefined && { resetTerminal }),
+    ...(tracking.lastUsed !== undefined && { lastUsed: tracking.lastUsed }),
+    ...(tracking.done !== undefined && { done: tracking.done }),
+    ...(definition.steps !== undefined && { steps: definition.steps })
+  };
 }
 
 const parseToolbarAction = (value: unknown): ToolbarAction | null => {
@@ -156,19 +200,7 @@ const parseToolbarAction = (value: unknown): ToolbarAction | null => {
     return null;
   }
 
-  const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
-  const color = isToolbarButtonColor(value.color) ? value.color : undefined;
-
-  return {
-    label: value.label,
-    value: actionDefinition.value,
-    type: actionDefinition.type,
-    ...(shortcut !== undefined && { shortcut }),
-    ...(color !== undefined && { color }),
-    ...(resetTerminal !== undefined && { resetTerminal }),
-    ...(tracking.lastUsed !== undefined && { lastUsed: tracking.lastUsed }),
-    ...(tracking.done !== undefined && { done: tracking.done })
-  };
+  return buildToolbarAction(value, value.label, resetTerminal, actionDefinition, tracking);
 };
 
 const parseToolbarElement = (value: unknown): ToolbarElement | null => {
@@ -229,7 +261,12 @@ function serializeToolbarAction(action: ToolbarAction) {
     label: action.label
   };
 
-  if (!(action.resetTerminal && action.type === "command" && action.value.length === 0)) {
+  if (action.type === "scenario") {
+    serializedAction.type = "scenario";
+    if (action.steps) {
+      serializedAction.steps = action.steps;
+    }
+  } else if (!(action.resetTerminal && action.type === "command" && action.value.length === 0)) {
     serializedAction.value = action.value;
     serializedAction.type = action.type;
   }

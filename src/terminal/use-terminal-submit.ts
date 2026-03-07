@@ -333,6 +333,8 @@ export function useTerminalSubmit(options: UseTerminalSubmitOptions) {
     attemptSubmitTerminalText: attemptSubmitTerminalText.bind(null, state),
     sendAltVShortcut: sendAltVShortcut.bind(null, state),
     markTerminalDataReceived: markTerminalDataReceived.bind(null, state),
-    resetTerminalSessionState: resetTerminalSessionState.bind(null, state)
+    resetTerminalSessionState: resetTerminalSessionState.bind(null, state),
+    waitForTerminalQuiet: (quietMs: number, timeoutMs: number) =>
+      waitForTerminalQuiet(state, quietMs, timeoutMs)
   };
 }

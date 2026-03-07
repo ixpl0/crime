@@ -192,6 +192,23 @@
       ]
     },
     {
+      "label": "Сценарии",
+      "color": "oklch(0.78 0.16 270)",
+      "items": [
+        {
+          "label": "Claude → /resume → 1",
+          "type": "scenario",
+          "steps": [
+            { "type": "command", "value": "claude", "resetTerminal": true },
+            { "type": "wait", "quietMs": 1000, "timeoutMs": 30000 },
+            { "type": "command", "value": "/resume" },
+            { "type": "wait", "quietMs": 1000, "timeoutMs": 10000 },
+            { "type": "raw-input", "value": "\r" }
+          ]
+        }
+      ]
+    },
+    {
       "label": "Git",
       "color": "oklch(0.77 0.13 228)",
       "items": [
