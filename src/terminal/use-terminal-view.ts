@@ -36,6 +36,7 @@ type UseTerminalViewOptions = {
     size: TerminalSize
   ) => Promise<TerminalBackendResponse>;
   resetTerminalSessionState: () => void;
+  onBell?: () => void;
 };
 
 type TerminalViewState = {
@@ -140,7 +141,10 @@ function bindTerminalInput(state: TerminalViewState, terminal: Terminal) {
     void state.options.sendTerminalInput(data, DEFAULT_INPUT_ERROR);
   });
 
-  terminal.onBell(playTerminalBell);
+  terminal.onBell(() => {
+    playTerminalBell();
+    state.options.onBell?.();
+  });
 }
 
 function initializeTerminalView(state: TerminalViewState) {

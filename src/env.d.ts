@@ -206,6 +206,10 @@ interface ZoomApi {
   setFactor: (factor: number) => boolean;
 }
 
+interface WindowApi {
+  flashFrame: () => Promise<void>;
+}
+
 interface ProjectApi {
   quickKeys: readonly QuickKeyBinding[];
   openFolder: () => Promise<string | null>;
@@ -216,6 +220,7 @@ interface ProjectApi {
   filesystem: FilesystemApi;
   git: GitApi;
   zoom: ZoomApi;
+  window: WindowApi;
   onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }
 

@@ -31,7 +31,8 @@ const IPC_CHANNELS = Object.freeze({
   "gitWatch": "git:watch",
   "gitUnwatch": "git:unwatch",
   "globalQuickKey": "global:quick-key",
-  "shellOpenExternal": "shell:open-external"
+  "shellOpenExternal": "shell:open-external",
+  "windowFlashFrame": "window:flash-frame"
 });
 
 const SETTINGS_DIRNAME = ".ide";
@@ -220,6 +221,9 @@ contextBridge.exposeInMainWorld("projectApi", {
       webFrame.setZoomFactor(normalizedFactor);
       return true;
     }
+  },
+  window: {
+    flashFrame: () => ipcRenderer.invoke(IPC_CHANNELS.windowFlashFrame)
   },
   onGlobalQuickKey: (listener) => {
     const handler = (_event, input) => listener(input);

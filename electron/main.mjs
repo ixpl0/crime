@@ -1,4 +1,4 @@
-﻿import { app, BrowserWindow, globalShortcut, nativeTheme } from "electron";
+﻿import { app, BrowserWindow, globalShortcut, ipcMain, nativeTheme } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import ipcChannelsModule from "./ipc-channels.cjs";
@@ -238,6 +238,13 @@ function registerIpcHandlers() {
     gitWatchers,
     stopGitWatcher,
     toIpcFailure
+  });
+
+  ipcMain.handle(IPC_CHANNELS.windowFlashFrame, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) {
+      win.flashFrame(true);
+    }
   });
 }
 

@@ -282,7 +282,8 @@ export function useAppShell() {
     resizeTerminalBackendRequest: (size) => window.projectApi.terminal.resize(size),
     startTerminalBackendRequest: (cwd, size) =>
       window.projectApi.terminal.start(cwd, size),
-    resetTerminalSessionState
+    resetTerminalSessionState,
+    onBell: triggerTerminalBell
   });
 
   const {
@@ -494,6 +495,10 @@ export function useAppShell() {
     openProjectFolder,
     projectPath
   };
+
+  function triggerTerminalBell() {
+    void window.projectApi.window.flashFrame();
+  }
 
   function handleDetachAgent() {
     detachAgent();
