@@ -10,7 +10,7 @@
       :class="agentCardClass"
       :style="agentCardStyle"
     >
-      <div class="card-body flex min-h-0 flex-col gap-4">
+      <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-4">
         <div v-if="errorMessage" class="alert alert-error">
           <span>{{ errorMessage }}</span>
         </div>
@@ -63,11 +63,13 @@
           @close="closeSecretsEditor"
         />
 
-        <!-- Agent: always in left card -->
         <AgentPanel v-show="isAgentDetached || activeTab === 'agent'" />
 
-        <!-- Non-agent tabs: in left card only when NOT detached -->
-        <template v-if="!isAgentDetached">
+        <div
+          ref="nonAgentContainer"
+          v-show="isAgentDetached || activeTab !== 'agent'"
+          class="flex min-h-0 flex-1 flex-col"
+        >
           <TerminalWorkspacePanel
             v-show="activeTab === 'terminal'"
             :project-path="projectPath"
@@ -140,33 +142,26 @@
           <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
             <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" />
           </div>
-        </template>
+        </div>
       </div>
     </div>
 
-    <!-- Resize handle between agent and secondary panels (only when detached) -->
     <PanelResizeHandle
-      v-if="isAgentDetached"
+      v-show="isAgentDetached"
       :is-active="isAgentPanelResizeActive"
       @pointerdown="handleAgentPanelResize"
     />
 
-    <!-- Right card: separate panel with non-agent tabs (only when detached) -->
     <SecondaryTabsPanel
-      v-if="isAgentDetached"
+      v-show="isAgentDetached"
       class="min-w-0"
-      :project-path="projectPath"
       :changes-count="changesCount"
-      :git-status-response="gitStatusResponse"
-      :git-refresh-token="gitStatusRefreshToken"
-      :git-repository-refresh-token="gitRepositoryRefreshToken"
-      :refresh-git-status="refreshGitStatus"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useAppConfigStore } from "../config/config-store";
 import { usePanelWidthResize } from "../composables/use-panel-width-resize";
 import { defaultSecretsContent } from "../settings/secrets-storage";
@@ -236,8 +231,25 @@ const {
 } = navigationStore;
 
 const mainContainer = ref<HTMLElement | null>(null);
+const cardBody = ref<HTMLElement | null>(null);
+const nonAgentContainer = ref<HTMLElement | null>(null);
 const filesContainer = ref<HTMLElement | null>(null);
 const changesContainer = ref<HTMLElement | null>(null);
+
+// Move non-agent content between card-body and secondary panel via raw DOM.
+// Vue 3 Block Tree uses VNode→el refs (not DOM position), so this is safe.
+watchEffect(() => {
+  const container = nonAgentContainer.value;
+  if (!container) {
+    return;
+  }
+  const target = isAgentDetached.value
+    ? document.getElementById("secondary-tabs-content")
+    : cardBody.value;
+  if (target && container.parentNode !== target) {
+    target.appendChild(container);
+  }
+}, { flush: "post" });
 
 const {
   panelWidth: agentPanelWidth,
@@ -251,22 +263,12 @@ const {
   minOppositeWidth: 200
 });
 
-const agentCardClass = computed(() => {
-  if (isAgentDetached.value && agentPanelWidth.value > 0) {
-    return "panel-w-resizable";
-  }
-  return "flex-1";
-});
-
-const agentCardStyle = computed(() => {
-  if (isAgentDetached.value && agentPanelWidth.value > 0) {
-    return {
-      "--panel-w": String(agentPanelWidth.value) + "px",
-      "--panel-max-w": agentPanelMaxWidth
-    };
-  }
-  return undefined;
-});
+const isAgentPanelResized = computed(() => isAgentDetached.value && agentPanelWidth.value > 0);
+const agentCardClass = computed(() => isAgentPanelResized.value ? "panel-w-resizable" : "flex-1");
+const agentCardStyle = computed(() => isAgentPanelResized.value
+  ? { "--panel-w": String(agentPanelWidth.value) + "px", "--panel-max-w": agentPanelMaxWidth }
+  : undefined
+);
 
 const handleAgentPanelResize = (event: PointerEvent) => {
   if (mainContainer.value) {
