@@ -2,7 +2,7 @@ import type { ScenarioStep, ScenarioStepType } from "../types/toolbar";
 import { isRecord } from "../settings/settings-storage-helpers";
 
 const SCENARIO_STEP_TYPES = new Set<string>([
-  "command", "prompt", "raw-input", "wait", "delay"
+  "command", "prompt", "raw-input", "wait", "wait-for", "delay"
 ]);
 
 const isScenarioStepType = (value: unknown): value is ScenarioStepType =>
@@ -20,6 +20,7 @@ const parseScenarioStep = (value: unknown): ScenarioStep | null => {
   return {
     type: value.type,
     ...(typeof value.value === "string" && { value: value.value }),
+    ...(typeof value.pattern === "string" && value.pattern.length > 0 && { pattern: value.pattern }),
     ...(value.resetTerminal === true && { resetTerminal: true }),
     ...(typeof value.quietMs === "number" && value.quietMs > 0 && { quietMs: value.quietMs }),
     ...(typeof value.timeoutMs === "number" && value.timeoutMs > 0 && { timeoutMs: value.timeoutMs }),

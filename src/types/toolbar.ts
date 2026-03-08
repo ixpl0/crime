@@ -1,11 +1,12 @@
 export type ToolbarActionType = "prompt" | "command" | "raw-input" | "scenario";
 
-export type ScenarioStepType = "command" | "prompt" | "raw-input" | "wait" | "delay";
+export type ScenarioStepType = "command" | "prompt" | "raw-input" | "wait" | "wait-for" | "delay";
 
 export interface ScenarioStep {
   readonly type: ScenarioStepType;
   readonly value?: string;
   readonly resetTerminal?: boolean;
+  readonly pattern?: string;
   readonly quietMs?: number;
   readonly timeoutMs?: number;
   readonly delayMs?: number;

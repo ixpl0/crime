@@ -20,6 +20,7 @@ interface ScenarioRunnerDeps {
     fallbackErrorMessage: string
   ) => Promise<boolean>;
   readonly waitForTerminalQuiet: (quietMs: number, timeoutMs: number) => Promise<void>;
+  readonly waitForTerminalPattern: (pattern: string, timeoutMs: number) => Promise<boolean>;
   readonly focusTerminal: () => void;
 }
 
@@ -82,6 +83,11 @@ const executeScenarioStep = async (
         step.timeoutMs ?? DEFAULT_TIMEOUT_MS
       );
       return true;
+
+    case "wait-for":
+      return step.pattern
+        ? deps.waitForTerminalPattern(step.pattern, step.timeoutMs ?? DEFAULT_TIMEOUT_MS)
+        : false;
 
     case "delay":
       await delay(step.delayMs ?? DEFAULT_DELAY_MS);

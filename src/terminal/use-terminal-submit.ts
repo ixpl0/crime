@@ -5,26 +5,25 @@ import type {
   SubmitTerminalTextResult,
   UseTerminalSubmitOptions
 } from "./terminal-submit-types";
+import { waitForTerminalPattern as waitForPattern } from "./terminal-pattern-match";
 
 interface TerminalSubmitState {
   readonly options: UseTerminalSubmitOptions;
   terminalDataVersion: number;
   terminalInputQueue: Promise<void>;
+  readonly terminalDataListeners: Set<(data: string) => void>;
 }
 
 function createTerminalSubmitState(options: UseTerminalSubmitOptions): TerminalSubmitState {
   return {
     options,
     terminalDataVersion: 0,
-    terminalInputQueue: Promise.resolve()
+    terminalInputQueue: Promise.resolve(),
+    terminalDataListeners: new Set()
   };
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
+const delay = (ms: number) => new Promise((resolve) => { setTimeout(resolve, ms); });
 
 function getSlashCommandText(text: string) {
   const withoutTrailingLineBreaks = text.replace(/[\r\n]+$/, "");
@@ -317,13 +316,17 @@ async function sendAltVShortcut(state: TerminalSubmitState) {
   return sendTerminalInput(state, "\u001bv", "Failed to send Alt+V to terminal.");
 }
 
-function markTerminalDataReceived(state: TerminalSubmitState) {
+function markTerminalDataReceived(state: TerminalSubmitState, data: string) {
   state.terminalDataVersion += 1;
+  for (const listener of state.terminalDataListeners) {
+    listener(data);
+  }
 }
 
 function resetTerminalSessionState(state: TerminalSubmitState) {
   state.terminalDataVersion = 0;
   state.terminalInputQueue = Promise.resolve();
+  state.terminalDataListeners.clear();
 }
 
 export function useTerminalSubmit(options: UseTerminalSubmitOptions) {
@@ -332,9 +335,11 @@ export function useTerminalSubmit(options: UseTerminalSubmitOptions) {
     sendTerminalInput: sendTerminalInput.bind(null, state),
     attemptSubmitTerminalText: attemptSubmitTerminalText.bind(null, state),
     sendAltVShortcut: sendAltVShortcut.bind(null, state),
-    markTerminalDataReceived: markTerminalDataReceived.bind(null, state),
+    markTerminalDataReceived: (data: string) => { markTerminalDataReceived(state, data); },
     resetTerminalSessionState: resetTerminalSessionState.bind(null, state),
     waitForTerminalQuiet: (quietMs: number, timeoutMs: number) =>
-      waitForTerminalQuiet(state, quietMs, timeoutMs)
+      waitForTerminalQuiet(state, quietMs, timeoutMs),
+    waitForTerminalPattern: (pattern: string, timeoutMs: number) =>
+      waitForPattern(state.terminalDataListeners, pattern, timeoutMs)
   };
 }

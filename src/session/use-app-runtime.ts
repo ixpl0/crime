@@ -14,7 +14,7 @@ interface UseAppRuntimeOptions {
   loadRecentProjectsFromStorage: () => void;
   validateRecentProjects: () => Promise<void>;
   subscribeTerminalData: (listener: (data: string, sessionId: string) => void) => () => void;
-  markTerminalDataReceived: () => void;
+  markTerminalDataReceived: (data: string) => void;
   writeTerminalOutput: (data: string) => void;
   subscribeTerminalExit: (listener: (code: number | null, sessionId: string) => void) => () => void;
   writeTerminalNotice: (message: string) => void;
@@ -61,7 +61,7 @@ function subscribeTerminalStreams(
       return;
     }
 
-    options.markTerminalDataReceived();
+    options.markTerminalDataReceived(data);
     // Keep terminal stream untouched: PTY output must reach xterm as-is.
     options.writeTerminalOutput(data);
   });

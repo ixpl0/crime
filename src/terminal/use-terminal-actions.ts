@@ -19,6 +19,7 @@ interface TerminalActionsDeps {
     fallbackErrorMessage: string
   ) => Promise<boolean>;
   readonly waitForTerminalQuiet: (quietMs: number, timeoutMs: number) => Promise<void>;
+  readonly waitForTerminalPattern: (pattern: string, timeoutMs: number) => Promise<boolean>;
   readonly focusTerminal: () => void;
   readonly getTodoEntry: (index: number) => string | null;
   readonly removeTodoEntry: (index: number) => void;
@@ -31,6 +32,7 @@ export function useTerminalActions({
   attemptSubmitTerminalText,
   sendTerminalInput,
   waitForTerminalQuiet,
+  waitForTerminalPattern,
   focusTerminal,
   getTodoEntry,
   removeTodoEntry,
@@ -56,6 +58,7 @@ export function useTerminalActions({
             attemptSubmitTerminalText,
             sendTerminalInput,
             waitForTerminalQuiet,
+            waitForTerminalPattern,
             focusTerminal
           },
           action.steps
