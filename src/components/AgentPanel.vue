@@ -19,7 +19,7 @@
       <button
         type="button"
         tabindex="-1"
-        class="terminal-resize-handle group absolute -mt-2 flex h-4 w-full touch-none cursor-ns-resize items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
+        class="terminal-resize-handle group -mt-2 flex h-4 w-full touch-none cursor-ns-resize items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
         title="Потяните, чтобы изменить высоту терминала"
         aria-label="Изменить высоту терминала"
         @pointerdown="handleTerminalPanelResizePointerDown"
