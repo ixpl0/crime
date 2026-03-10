@@ -254,6 +254,7 @@ function registerGlobalQuickKeys() {
       const windows = BrowserWindow.getAllWindows();
       for (const win of windows) {
         if (!win.isDestroyed()) {
+          win.flashFrame(false);
           win.webContents.send(IPC_CHANNELS.globalQuickKey, binding.input);
         }
       }
