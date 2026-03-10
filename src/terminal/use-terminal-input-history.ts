@@ -17,6 +17,7 @@ export interface UseTerminalInputHistoryOptions {
   sendTerminalInput: (data: string, fallbackErrorMessage: string) => Promise<boolean>;
   submitTextFromTextarea: (text: string) => Promise<SubmitTerminalTextResult>;
   sendAltVShortcut: () => Promise<boolean>;
+  copyTerminalSelectionIfAny: () => Promise<boolean>;
 }
 
 interface TerminalInputHistoryState {
@@ -296,7 +297,8 @@ function createHandlers(state: TerminalInputHistoryState): TerminalInputHistoryH
     appendTerminalInputHistory: appendTerminalInputHistory.bind(null, state),
     navigateTerminalInputHistory: navigateTerminalInputHistory.bind(null, state),
     sendAltVShortcut: state.options.sendAltVShortcut,
-    focusTerminalInput: focusTerminalInput.bind(null, state)
+    focusTerminalInput: focusTerminalInput.bind(null, state),
+    copyTerminalSelectionIfAny: state.options.copyTerminalSelectionIfAny
   });
 }
 

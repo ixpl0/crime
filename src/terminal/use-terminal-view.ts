@@ -15,8 +15,6 @@ type TerminalSize = {
   rows: number;
 };
 
-type TerminalCopyClickType = "right" | "middle";
-
 type UseTerminalViewOptions = {
   terminalContainer: Ref<HTMLElement | null>;
   projectPath: Ref<string | null>;
@@ -132,7 +130,37 @@ function registerTerminalPathLinkProvider(state: TerminalViewState) {
   });
 }
 
+function isCtrlKeyShortcut(event: KeyboardEvent, code: string) {
+  return event.type === "keydown" && event.ctrlKey && !event.metaKey && !event.altKey && event.code === code;
+}
+
+async function pasteClipboardToTerminal(state: TerminalViewState) {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text.length > 0) {
+      const bracketPaste = `\x1b[200~${text}\x1b[201~`;
+      await state.options.sendTerminalInput(bracketPaste, "Failed to paste to terminal.");
+    }
+  } catch (error) {
+    state.options.reportUiError("Terminal paste", error, "Failed to paste to terminal.");
+  }
+}
+
 function bindTerminalInput(state: TerminalViewState, terminal: Terminal) {
+  terminal.attachCustomKeyEventHandler((event) => {
+    if (isCtrlKeyShortcut(event, "KeyC") && terminal.hasSelection()) {
+      void copyTerminalSelectionIfAny(state);
+      return false;
+    }
+    if (isCtrlKeyShortcut(event, "KeyV")) {
+      event.preventDefault();
+      void pasteClipboardToTerminal(state);
+      return false;
+    }
+
+    return true;
+  });
+
   terminal.onData((data) => {
     if (!state.options.isTerminalReady.value) {
       return;
@@ -206,37 +234,30 @@ function syncTerminalFontSize(state: TerminalViewState, fontSize: number) {
   return true;
 }
 
-function reportClipboardWriteFailure(
-  state: TerminalViewState,
-  clickType: TerminalCopyClickType,
-  error: unknown
-) {
-  state.options.reportUiError(
-    "Terminal copy",
-    error,
-    `Failed to copy terminal selection with ${clickType} click.`
-  );
-}
-
-async function copyTerminalSelection(state: TerminalViewState, clickType: TerminalCopyClickType) {
+async function copyTerminalSelectionIfAny(state: TerminalViewState): Promise<boolean> {
   const selectedText = state.terminal?.getSelection() ?? "";
   if (selectedText.length === 0) {
-    return;
+    return false;
   }
 
   try {
     const response = await state.options.writeClipboardText(selectedText);
     if (!response.ok) {
-      reportClipboardWriteFailure(state, clickType, response.error);
+      state.options.reportUiError("Terminal copy", response.error, "Failed to copy terminal selection.");
+      return false;
     }
   } catch (error) {
-    reportClipboardWriteFailure(state, clickType, error);
+    state.options.reportUiError("Terminal copy", error, "Failed to copy terminal selection.");
+    return false;
   }
+
+  state.terminal?.clearSelection();
+  return true;
 }
 
 function handleTerminalContextMenu(state: TerminalViewState, event: MouseEvent) {
   event.preventDefault();
-  void copyTerminalSelection(state, "right");
+  void copyTerminalSelectionIfAny(state);
 }
 
 function handleTerminalAuxClick(state: TerminalViewState, event: MouseEvent) {
@@ -245,7 +266,7 @@ function handleTerminalAuxClick(state: TerminalViewState, event: MouseEvent) {
   }
 
   event.preventDefault();
-  void copyTerminalSelection(state, "middle");
+  void copyTerminalSelectionIfAny(state);
 }
 
 async function sendTerminalResize(state: TerminalViewState, size: TerminalSize) {
@@ -316,6 +337,7 @@ export function useTerminalView(options: UseTerminalViewOptions) {
     focusTerminal: focusTerminal.bind(null, state),
     handleTerminalContextMenu: handleTerminalContextMenu.bind(null, state),
     handleTerminalAuxClick: handleTerminalAuxClick.bind(null, state),
+    copyTerminalSelectionIfAny: copyTerminalSelectionIfAny.bind(null, state),
     writeTerminalOutput: writeTerminalOutput.bind(null, state),
     writeTerminalNotice: writeTerminalNotice.bind(null, state),
     syncTerminalFontSize: syncTerminalFontSize.bind(null, state),

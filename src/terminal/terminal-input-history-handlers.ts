@@ -19,6 +19,7 @@ export interface TerminalInputHistoryHandlersOptions {
   navigateTerminalInputHistory: (direction: -1 | 1) => void;
   sendAltVShortcut: () => Promise<boolean>;
   focusTerminalInput: () => void;
+  copyTerminalSelectionIfAny: () => Promise<boolean>;
 }
 
 export interface TerminalInputHistoryHandlers {
@@ -72,26 +73,37 @@ function tryHandleEscapePassthrough(
   return true;
 }
 
-function tryHandleCtrlCPassthrough(
-  options: TerminalInputHistoryHandlersOptions,
+function isCtrlCWithoutTextareaSelection(
   event: KeyboardEvent,
   textarea: HTMLTextAreaElement | null
 ) {
-  const isEligibleCtrlC =
+  return (
     textarea &&
     !event.isComposing &&
     event.ctrlKey &&
     !event.metaKey &&
     !event.altKey &&
     event.code === "KeyC" &&
-    textarea.selectionStart === textarea.selectionEnd;
-  if (!isEligibleCtrlC) {
+    textarea.selectionStart === textarea.selectionEnd
+  );
+}
+
+function tryHandleCtrlCPassthrough(
+  options: TerminalInputHistoryHandlersOptions,
+  event: KeyboardEvent,
+  textarea: HTMLTextAreaElement | null
+) {
+  if (!isCtrlCWithoutTextareaSelection(event, textarea)) {
     return false;
   }
 
   event.preventDefault();
-  const ctrlCInput = getCtrlKeyInput(event) ?? "\u0003";
-  void options.sendTerminalInput(ctrlCInput, "Failed to send Ctrl+C to terminal.");
+  void options.copyTerminalSelectionIfAny().then((copied) => {
+    if (!copied) {
+      const ctrlCInput = getCtrlKeyInput(event) ?? "\u0003";
+      void options.sendTerminalInput(ctrlCInput, "Failed to send Ctrl+C to terminal.");
+    }
+  });
   return true;
 }
 

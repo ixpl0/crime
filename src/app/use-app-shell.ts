@@ -150,6 +150,10 @@ export function useAppShell() {
     reportUiError
   });
 
+  const terminalSelectionCopier = {
+    copy: (): Promise<boolean> => Promise.resolve(false)
+  };
+
   const {
     sendTerminalInput,
     attemptSubmitTerminalText,
@@ -199,7 +203,8 @@ export function useAppShell() {
         },
         inputType: "prompt"
       }),
-    sendAltVShortcut
+    sendAltVShortcut,
+    copyTerminalSelectionIfAny: () => terminalSelectionCopier.copy()
   });
 
   const {
@@ -267,6 +272,7 @@ export function useAppShell() {
     focusTerminal,
     handleTerminalContextMenu,
     handleTerminalAuxClick,
+    copyTerminalSelectionIfAny,
     writeTerminalOutput,
     writeTerminalNotice,
     syncTerminalFontSize,
@@ -287,6 +293,8 @@ export function useAppShell() {
     resetTerminalSessionState,
     onBell: triggerTerminalBell
   });
+
+  terminalSelectionCopier.copy = copyTerminalSelectionIfAny;
 
   const {
     terminalPanelHeight,
