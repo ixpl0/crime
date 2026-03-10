@@ -80,8 +80,8 @@
           class="tab"
           tabindex="-1"
           :aria-expanded="isProjectDropdownOpen"
-          @click="toggleProjectDropdown"
-          @keydown="handleProjectDropdownTriggerKeydown"
+          @click="handleProjectDropdownClick"
+          @keydown="handleProjectDropdownKeydown"
         >
           &#1055;&#1088;&#1086;&#1077;&#1082;&#1090;
           <ChevronDown :size="14" class="ml-1" />
@@ -139,8 +139,8 @@
         tabindex="-1"
         :aria-expanded="isHiddenPanelsDropdownOpen"
         title="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1089;&#1082;&#1088;&#1099;&#1090;&#1099;&#1077; &#1087;&#1072;&#1085;&#1077;&#1083;&#1080;"
-        @click="toggleHiddenPanelsDropdown"
-        @keydown="handleHiddenPanelsDropdownTriggerKeydown"
+        @click="handleHiddenPanelsDropdownClick"
+        @keydown="handleHiddenPanelsDropdownKeydown"
       >
         <Eye :size="16" />
         <ChevronDown :size="14" />
@@ -187,6 +187,7 @@ import { ChevronDown, Eye, Moon, PanelLeftClose, PanelRightOpen, Settings, Sun }
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
+import { positionFixedDropdown } from "../utils/dropdown-utils";
 
 defineProps<{
   changesCount: number;
@@ -220,4 +221,32 @@ const {
   openProjectSettingsEditor: openProjectSettings,
   openSecretsEditor
 } = useAppConfigStore();
+
+const handleProjectDropdownClick = (event: MouseEvent) => {
+  toggleProjectDropdown();
+  if (isProjectDropdownOpen.value) {
+    positionFixedDropdown(event.currentTarget);
+  }
+};
+
+const handleProjectDropdownKeydown = (event: KeyboardEvent) => {
+  handleProjectDropdownTriggerKeydown(event);
+  if (isProjectDropdownOpen.value) {
+    positionFixedDropdown(event.currentTarget);
+  }
+};
+
+const handleHiddenPanelsDropdownClick = (event: MouseEvent) => {
+  toggleHiddenPanelsDropdown();
+  if (isHiddenPanelsDropdownOpen.value) {
+    positionFixedDropdown(event.currentTarget);
+  }
+};
+
+const handleHiddenPanelsDropdownKeydown = (event: KeyboardEvent) => {
+  handleHiddenPanelsDropdownTriggerKeydown(event);
+  if (isHiddenPanelsDropdownOpen.value) {
+    positionFixedDropdown(event.currentTarget);
+  }
+};
 </script>

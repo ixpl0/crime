@@ -13,7 +13,7 @@
           :class="getToolbarButtonColorClass(element.color)"
           :style="getToolbarButtonCustomStyle(element.color)"
           :aria-expanded="openDropdownIndex === elementIndex"
-          @click="toggleDropdownTabNavigation(elementIndex)"
+          @click="handleDropdownToggleClick($event, elementIndex)"
           @keydown="handleDropdownTriggerKeydown($event, elementIndex)"
         >
           {{ element.label }}
@@ -84,7 +84,7 @@ import {
 } from "../toolbar/toolbar-button-styles";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
 import { computeDaysSinceLastUsed, isLastUsedWithinOneDay } from "../toolbar/toolbar-tracking";
-import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, useDropdownClickOutside } from "../utils/dropdown-utils";
+import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, positionFixedDropdown, useDropdownClickOutside } from "../utils/dropdown-utils";
 import { ChevronDown, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";
 
 defineProps<{
@@ -132,8 +132,11 @@ function getTrackingDaysLabel(action: ToolbarAction): string | null {
   return `${String(days)}d`;
 }
 
-function toggleDropdownTabNavigation(index: number) {
+function handleDropdownToggleClick(event: MouseEvent, index: number) {
   openDropdownIndex.value = openDropdownIndex.value === index ? null : index;
+  if (openDropdownIndex.value !== null) {
+    positionFixedDropdown(event.currentTarget);
+  }
 }
 
 function handleDropdownTriggerKeydown(event: KeyboardEvent, index: number) {
@@ -148,6 +151,7 @@ function handleDropdownTriggerKeydown(event: KeyboardEvent, index: number) {
 
   event.preventDefault();
   openDropdownIndex.value = index;
+  positionFixedDropdown(event.currentTarget);
   if (event.key === "ArrowDown") {
     focusFirstDropdownItem(event.currentTarget);
   }
