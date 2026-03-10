@@ -10,11 +10,16 @@
     invalid-structure-message="Invalid settings structure"
     @save="handleSave"
     @close="$emit('close')"
-  />
+  >
+    <template #visual="{ model, onUpdate }">
+      <ProjectSettingsVisualEditor :model-value="model" @update:model-value="onUpdate" />
+    </template>
+  </JsonConfigEditorDialog>
 </template>
 
 <script setup lang="ts">
 import JsonConfigEditorDialog from "./JsonConfigEditorDialog.vue";
+import ProjectSettingsVisualEditor from "./visual-config/ProjectSettingsVisualEditor.vue";
 import { type ProjectSettings } from "../types/project-settings";
 import { defaultProjectSettings, parseProjectSettings } from "../settings/project-settings-storage";
 

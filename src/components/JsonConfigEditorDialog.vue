@@ -10,7 +10,35 @@
         {{ description }}
       </p>
 
-      <div class="form-control mt-4">
+      <!-- Mode tabs (only when visual slot exists) -->
+      <div v-if="hasVisualSlot" role="tablist" class="tabs tabs-bordered mt-4">
+        <button
+          role="tab"
+          class="tab"
+          :class="{ 'tab-active': editorMode === 'visual' }"
+          tabindex="-1"
+          @click="switchToVisual"
+        >
+          Visual
+        </button>
+        <button
+          role="tab"
+          class="tab"
+          :class="{ 'tab-active': editorMode === 'json' }"
+          tabindex="-1"
+          @click="switchToJson"
+        >
+          JSON
+        </button>
+      </div>
+
+      <!-- Visual editor (slot) -->
+      <div v-if="hasVisualSlot && editorMode === 'visual'" class="mt-4 max-h-96 overflow-y-auto pr-1">
+        <slot name="visual" :model="visualModel" :on-update="handleVisualUpdate" />
+      </div>
+
+      <!-- JSON editor (textarea) -->
+      <div v-if="!hasVisualSlot || editorMode === 'json'" class="form-control mt-4">
         <textarea
           v-model="jsonText"
           class="textarea textarea-bordered font-mono text-sm h-96 w-full resize-y"
@@ -23,7 +51,7 @@
         <span>{{ validationError }}</span>
       </div>
 
-      <div v-if="!validationError && isDirty" class="alert alert-success mt-2 text-sm">
+      <div v-if="!validationError && isDirty && editorMode === 'json'" class="alert alert-success mt-2 text-sm">
         <span>{{ validJsonMessage }}</span>
       </div>
 
@@ -44,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, useSlots, watch } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -55,6 +83,7 @@ const props = withDefaults(
     currentValue: unknown;
     defaultValue: unknown;
     parser: (value: unknown) => object | null;
+    serializer?: (value: unknown) => unknown;
     invalidStructureMessage: string;
     invalidJsonMessage?: string;
     validJsonMessage?: string;
@@ -64,6 +93,7 @@ const props = withDefaults(
   }>(),
   {
     description: "",
+    serializer: undefined,
     invalidJsonMessage: "Invalid JSON",
     validJsonMessage: "JSON is valid",
     resetLabel: "Reset",
@@ -77,15 +107,32 @@ const emit = defineEmits<{
   close: [];
 }>();
 
+const slots = useSlots();
+const hasVisualSlot = computed(() => !!slots.visual);
+
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const jsonText = ref("");
 const validationError = ref("");
 const isDirty = ref(false);
+const editorMode = ref<"visual" | "json">("visual");
+const visualModel = ref<object | null>(null);
 
 function initializeText() {
   jsonText.value = JSON.stringify(props.currentValue, null, 2);
   validationError.value = "";
   isDirty.value = false;
+
+  if (hasVisualSlot.value) {
+    const parsed = props.parser(props.currentValue);
+    if (parsed) {
+      visualModel.value = parsed;
+      editorMode.value = "visual";
+    } else {
+      editorMode.value = "json";
+    }
+  } else {
+    editorMode.value = "json";
+  }
 }
 
 function parseCurrentJsonText() {
@@ -110,7 +157,61 @@ function validateJson() {
   parseCurrentJsonText();
 }
 
+function handleVisualUpdate(newModel: object) {
+  visualModel.value = newModel;
+  isDirty.value = true;
+  validationError.value = "";
+}
+
+function switchToVisual() {
+  if (editorMode.value === "visual") {
+    return;
+  }
+
+  try {
+    const parsed = props.parser(JSON.parse(jsonText.value));
+    if (!parsed) {
+      validationError.value = props.invalidStructureMessage;
+      return;
+    }
+    visualModel.value = parsed;
+    validationError.value = "";
+    editorMode.value = "visual";
+  } catch {
+    validationError.value = props.invalidJsonMessage;
+  }
+}
+
+function switchToJson() {
+  if (editorMode.value === "json") {
+    return;
+  }
+
+  if (visualModel.value) {
+    const serialized = props.serializer
+      ? props.serializer(visualModel.value)
+      : visualModel.value;
+    jsonText.value = JSON.stringify(serialized, null, 2);
+  }
+
+  validationError.value = "";
+  editorMode.value = "json";
+}
+
 function save() {
+  if (hasVisualSlot.value && editorMode.value === "visual") {
+    if (!visualModel.value) {
+      return;
+    }
+    const validated = props.parser(visualModel.value);
+    if (!validated) {
+      validationError.value = props.invalidStructureMessage;
+      return;
+    }
+    emit("save", validated);
+    return;
+  }
+
   const parsedValue = parseCurrentJsonText();
   if (parsedValue === null) {
     return;
@@ -120,6 +221,14 @@ function save() {
 }
 
 function resetToDefault() {
+  if (hasVisualSlot.value && editorMode.value === "visual") {
+    const parsed = props.parser(props.defaultValue);
+    visualModel.value = parsed;
+    isDirty.value = true;
+    validationError.value = "";
+    return;
+  }
+
   jsonText.value = JSON.stringify(props.defaultValue, null, 2);
   validationError.value = "";
   isDirty.value = true;

@@ -9,11 +9,16 @@
     invalid-structure-message="Invalid prompt suffix configuration structure"
     @save="handleSave"
     @close="$emit('close')"
-  />
+  >
+    <template #visual="{ model, onUpdate }">
+      <PromptSuffixVisualEditor :model-value="model" @update:model-value="onUpdate" />
+    </template>
+  </JsonConfigEditorDialog>
 </template>
 
 <script setup lang="ts">
 import JsonConfigEditorDialog from "./JsonConfigEditorDialog.vue";
+import PromptSuffixVisualEditor from "./visual-config/PromptSuffixVisualEditor.vue";
 import { type PromptSuffixConfig } from "../types/prompt-suffix";
 import { defaultPromptSuffixConfig, parsePromptSuffixConfig } from "../prompt-suffix/prompt-suffix-storage";
 
