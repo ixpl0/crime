@@ -173,6 +173,7 @@ function createWindow() {
     y: initialWindowState.bounds.y,
     width: initialWindowState.bounds.width,
     height: initialWindowState.bounds.height,
+    show: !initialWindowState.isMaximized,
     icon: getThemeIconPath(),
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
@@ -191,7 +192,10 @@ function createWindow() {
   });
 
   if (initialWindowState.isMaximized) {
+    // Create hidden, maximize, then show — ensures Windows maximizes
+    // on the correct monitor instead of defaulting to the primary one.
     mainWindow.maximize();
+    mainWindow.show();
   }
 
   applyThemeIcon(mainWindow);

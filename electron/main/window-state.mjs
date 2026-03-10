@@ -90,9 +90,12 @@ function resolveWindowDisplay(savedState, bounds) {
 
 function buildWindowStateSnapshot(win) {
   const isMaximized = win.isMaximized();
-  const sourceBounds = isMaximized ? win.getNormalBounds() : win.getBounds();
-  const display = screen.getDisplayMatching(sourceBounds);
-  const bounds = clampWindowBoundsToWorkArea(sourceBounds, display.workArea);
+  const actualBounds = win.getBounds();
+  const normalBounds = isMaximized ? win.getNormalBounds() : actualBounds;
+  // Always use actual bounds for display detection — getNormalBounds() can
+  // return stale coordinates on Windows, pointing to a wrong monitor.
+  const display = screen.getDisplayMatching(actualBounds);
+  const bounds = clampWindowBoundsToWorkArea(normalBounds, display.workArea);
   return {
     ...bounds,
     displayId: display.id,
