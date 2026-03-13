@@ -157,12 +157,21 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
 
   const handleVisibilityChange = () => {
     if (document.visibilityState === "visible" && GIT_TABS.has(activeTab.value)) {
+      bumpRepositoryRefreshToken();
+      void refresh();
+    }
+  };
+
+  const handleWindowFocus = () => {
+    if (GIT_TABS.has(activeTab.value)) {
+      bumpRepositoryRefreshToken();
       void refresh();
     }
   };
 
   watch(activeTab, (newTab) => {
     if (GIT_TABS.has(newTab)) {
+      bumpRepositoryRefreshToken();
       void refresh();
     }
   });
@@ -184,6 +193,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     void refresh();
     startPolling();
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
   });
 
   onBeforeUnmount(() => {
@@ -191,6 +201,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     stopPolling();
     stopWatcher();
     document.removeEventListener("visibilitychange", handleVisibilityChange);
+    window.removeEventListener("focus", handleWindowFocus);
   });
 
   return {
