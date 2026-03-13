@@ -240,8 +240,7 @@ function registerIpcHandlers() {
   registerGitWatcherIpcHandlers({
     IPC_CHANNELS,
     gitWatchers,
-    stopGitWatcher,
-    toIpcFailure
+    stopGitWatcher
   });
 
   ipcMain.handle(IPC_CHANNELS.windowFlashFrame, (event) => {
