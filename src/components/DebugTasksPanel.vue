@@ -3,33 +3,22 @@
     <div class="card-body min-h-0 p-3">
       <div class="flex items-center justify-between gap-2">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
-          Задачи
+          Задачи Dream IDE
         </h2>
-        <div class="flex items-center gap-1">
-          <button
-            class="btn btn-ghost btn-xs"
-            type="button"
-            tabindex="-1"
-            :title="isDebugTodoPanelVisible ? 'Скрыть задачи Dream IDE' : 'Показать задачи Dream IDE'"
-            @click="toggleDebugTodoPanel"
-          >
-            <Bug :size="14" class="opacity-60" :class="{ 'text-primary opacity-100': isDebugTodoPanelVisible }" />
-          </button>
-          <button
-            class="btn btn-ghost btn-xs"
-            type="button"
-            tabindex="-1"
-            title="Hide todo panel"
-            @click="toggleTodoPanelCollapse"
-          >
-            <EyeOff :size="14" class="opacity-60" />
-          </button>
-        </div>
+        <button
+          class="btn btn-ghost btn-xs"
+          type="button"
+          tabindex="-1"
+          title="Скрыть панель задач Dream IDE"
+          @click="hidePanel"
+        >
+          <EyeOff :size="14" class="opacity-60" />
+        </button>
       </div>
-      <div class="todo-list-scroll mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
+      <div class="debug-todo-list-scroll mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1">
         <div
           v-for="todoDraftView in todoDraftViewItems"
-          :key="`todo-draft-${todoDraftView.index}`"
+          :key="`debug-todo-draft-${todoDraftView.index}`"
           class="space-y-1 rounded-lg border border-transparent p-1 transition-colors"
           :class="{ 'border-primary/40 bg-primary/10': isActiveDropTarget(todoDraftView.index) }"
           @dragenter.prevent="handleTodoDragEnter(todoDraftView.index, $event)"
@@ -38,7 +27,7 @@
         >
           <textarea
             :value="todoDraftView.value"
-            data-todo-textarea="true"
+            data-debug-todo-textarea="true"
             :data-todo-index="todoDraftView.index"
             class="textarea textarea-autosize-native textarea-bordered h-auto max-h-38 min-h-0 w-full resize-none overflow-y-auto text-sm leading-relaxed"
             rows="1"
@@ -80,15 +69,14 @@
 </template>
 
 <script setup lang="ts">
-import { Bug, EyeOff, GripVertical } from "lucide-vue-next";
+import { EyeOff, GripVertical } from "lucide-vue-next";
 import { useAppTerminalStore } from "../terminal/terminal-store";
-import { useAppTodoStore } from "../todo/todo-store";
+import { useDebugTodoStore } from "../todo/debug-todo-store";
 
 const {
   todoDraftViewItems,
   todoDragSourceIndex,
   todoDragOverIndex,
-  toggleTodoPanelCollapse,
   canDragTodoDraft,
   shouldShowTodoDragHandle,
   handleTodoDragStart,
@@ -100,22 +88,18 @@ const {
   handleTodoTextareaKeydown,
   handleTodoTextareaBlur,
   sendTodoEntryToTerminal,
-  isDebugTodoPanelVisible,
-  toggleDebugTodoPanel
-} = useAppTodoStore();
+  hidePanel
+} = useDebugTodoStore();
 const { isTerminalReady, lastPrompt } = useAppTerminalStore();
 
-function isActiveDropTarget(index: number) {
-  return (
-    todoDragOverIndex.value === index &&
-    todoDragSourceIndex.value !== null &&
-    todoDragSourceIndex.value !== index
-  );
-}
+const isActiveDropTarget = (index: number) =>
+  todoDragOverIndex.value === index &&
+  todoDragSourceIndex.value !== null &&
+  todoDragSourceIndex.value !== index;
 </script>
 
 <style scoped>
-.todo-list-scroll {
+.debug-todo-list-scroll {
   overflow-anchor: none;
 }
 </style>

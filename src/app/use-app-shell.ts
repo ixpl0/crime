@@ -38,6 +38,7 @@ import { useTerminalActions } from "../terminal/use-terminal-actions";
 import { useTerminalInputHistory } from "../terminal/use-terminal-input-history";
 import { useTerminalSubmit } from "../terminal/use-terminal-submit";
 import { useTerminalView } from "../terminal/use-terminal-view";
+import { provideDebugTodoStore } from "../todo/debug-todo-store";
 import { provideAppTodoStore } from "../todo/todo-store";
 import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
@@ -69,6 +70,9 @@ export function useAppShell() {
   const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
   const RECENT_PROJECTS_STORAGE_KEY = "dream-ide:recent-projects";
   const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
+  const DEBUG_TODO_PANEL_VISIBLE_STORAGE_KEY = "dream-ide:debug-todo-panel-visible";
+  const DEBUG_TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:debug-todo-panel-collapsed";
+  const DREAM_IDE_PROJECT_PATH = "D:\\projects\\life\\dream-ide";
   const AGENT_DETACHED_STORAGE_KEY = "dream-ide:agent-detached";
 
   const isAgentDetached = ref(
@@ -85,6 +89,11 @@ export function useAppShell() {
     RECENT_PROJECTS_STORAGE_KEY,
     (path) => window.projectApi.filesystem.readDirectory(path)
   );
+
+  const isDebugTodoPanelVisible = ref(
+    localStorage.getItem(DEBUG_TODO_PANEL_VISIBLE_STORAGE_KEY) === "1"
+  );
+  const debugTodoProjectPath = ref<string | null>(DREAM_IDE_PROJECT_PATH);
 
   const {
     isTodoPanelCollapsed,
@@ -113,6 +122,18 @@ export function useAppShell() {
     collapsedStorageKey: TODO_PANEL_COLLAPSED_STORAGE_KEY,
     reportUiError
   });
+
+  const debugTodo = useTodoPanel({
+    projectPath: debugTodoProjectPath,
+    collapsedStorageKey: DEBUG_TODO_PANEL_COLLAPSED_STORAGE_KEY,
+    textareaDataAttribute: "debug-todo-textarea",
+    reportUiError
+  });
+
+  const resizeAllTodoTextareas = () => {
+    resizeTodoTextareas();
+    debugTodo.resizeTodoTextareas();
+  };
 
   const {
     toolbarConfig,
@@ -307,7 +328,7 @@ export function useAppShell() {
     projectPath,
     projectSettings,
     terminalContainer,
-    resizeTodoTextareas,
+    resizeTodoTextareas: resizeAllTodoTextareas,
     resizeTerminalInputTextareaElement,
     resizeTerminalBackend,
     syncTerminalFontSize,
@@ -365,6 +386,7 @@ export function useAppShell() {
   useAppRuntime({
     isTodoPanelCollapsed,
     isTerminalReady,
+    isDebugTodoPanelVisible,
     loadRecentProjectsFromStorage,
     validateRecentProjects,
     subscribeTerminalData: (listener) => window.projectApi.terminal.onData(listener),
@@ -380,6 +402,8 @@ export function useAppShell() {
     resizeTerminalInputTextareaElement,
     openLastProjectOnStartup,
     handleTodoPanelCollapsedChanged,
+    loadDebugTodoEntries: () => debugTodo.loadTodoEntriesForProject(DREAM_IDE_PROJECT_PATH, "project-open"),
+    resizeDebugTodoTextareas: debugTodo.resizeTodoTextareas,
     stopProjectLayout,
     stopSettingsWatcher,
     stopTerminalRequest: () => window.projectApi.terminal.stop(),
@@ -497,13 +521,33 @@ export function useAppShell() {
     handleTodoTextareaInput,
     handleTodoTextareaKeydown,
     handleTodoTextareaBlur,
-    sendTodoEntryToTerminal
+    sendTodoEntryToTerminal,
+    isDebugTodoPanelVisible,
+    toggleDebugTodoPanel
+  });
+  provideDebugTodoStore({
+    todoDraftViewItems: debugTodo.todoDraftViewItems,
+    todoDragSourceIndex: debugTodo.todoDragSourceIndex,
+    todoDragOverIndex: debugTodo.todoDragOverIndex,
+    canDragTodoDraft: debugTodo.canDragTodoDraft,
+    shouldShowTodoDragHandle: debugTodo.shouldShowTodoDragHandle,
+    handleTodoDragStart: debugTodo.handleTodoDragStart,
+    handleTodoDragEnter: debugTodo.handleTodoDragEnter,
+    handleTodoDragOver: debugTodo.handleTodoDragOver,
+    handleTodoDragEnd: debugTodo.handleTodoDragEnd,
+    handleTodoDrop: debugTodo.handleTodoDrop,
+    handleTodoTextareaInput: debugTodo.handleTodoTextareaInput,
+    handleTodoTextareaKeydown: debugTodo.handleTodoTextareaKeydown,
+    handleTodoTextareaBlur: debugTodo.handleTodoTextareaBlur,
+    sendTodoEntryToTerminal: sendDebugTodoEntryToTerminal,
+    hidePanel: () => { setDebugTodoPanelVisible(false); }
   });
 
   return {
     errorMessage,
     isOpening,
     isTodoPanelCollapsed,
+    isDebugTodoPanelVisible,
     openProjectFolder,
     projectPath
   };
@@ -589,5 +633,37 @@ export function useAppShell() {
 
   function setTerminalInputText(value: string) {
     terminalInputText.value = value;
+  }
+
+  function setDebugTodoPanelVisible(visible: boolean) {
+    isDebugTodoPanelVisible.value = visible;
+    localStorage.setItem(DEBUG_TODO_PANEL_VISIBLE_STORAGE_KEY, visible ? "1" : "0");
+  }
+
+  function toggleDebugTodoPanel() {
+    setDebugTodoPanelVisible(!isDebugTodoPanelVisible.value);
+  }
+
+  async function sendDebugTodoEntryToTerminal(index: number) {
+    const text = debugTodo.getTodoEntry(index);
+    if (text === null) {
+      return;
+    }
+
+    const result = await attemptSubmitTerminalText(text, {
+      notReady: "Terminal is not ready to send input.",
+      messages: {
+        sendSlash: "Failed to send slash command from debug todo to terminal.",
+        sendText: "Failed to send debug todo prompt to terminal.",
+        submit: "Failed to send Enter to terminal."
+      },
+      inputType: "prompt"
+    });
+    if (result !== "submitted") {
+      return;
+    }
+
+    appendTerminalInputHistory(text);
+    debugTodo.removeTodoEntry(index);
   }
 }

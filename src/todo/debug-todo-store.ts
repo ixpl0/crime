@@ -2,12 +2,10 @@ import { inject, provide, type InjectionKey } from "vue";
 import { type MaybePromise, type ReadableRef } from "../types/utils";
 import { type TodoDraftViewItem } from "./use-todo-panel";
 
-export interface AppTodoStore {
-  isTodoPanelCollapsed: ReadableRef<boolean>;
+export interface DebugTodoStore {
   todoDraftViewItems: ReadableRef<TodoDraftViewItem[]>;
   todoDragSourceIndex: ReadableRef<number | null>;
   todoDragOverIndex: ReadableRef<number | null>;
-  toggleTodoPanelCollapse: () => void;
   canDragTodoDraft: (index: number) => boolean;
   shouldShowTodoDragHandle: (index: number) => boolean;
   handleTodoDragStart: (index: number, event: DragEvent) => void;
@@ -19,22 +17,21 @@ export interface AppTodoStore {
   handleTodoTextareaKeydown: (event: KeyboardEvent) => void;
   handleTodoTextareaBlur: () => void;
   sendTodoEntryToTerminal: (index: number) => MaybePromise;
-  isDebugTodoPanelVisible: ReadableRef<boolean>;
-  toggleDebugTodoPanel: () => void;
+  hidePanel: () => void;
 }
 
-const appTodoStoreKey: InjectionKey<AppTodoStore> = Symbol(
-  "dream-ide-app-todo-store"
+const debugTodoStoreKey: InjectionKey<DebugTodoStore> = Symbol(
+  "dream-ide-debug-todo-store"
 );
 
-export function provideAppTodoStore(store: AppTodoStore) {
-  provide(appTodoStoreKey, store);
+export function provideDebugTodoStore(store: DebugTodoStore) {
+  provide(debugTodoStoreKey, store);
 }
 
-export function useAppTodoStore() {
-  const store = inject(appTodoStoreKey);
+export function useDebugTodoStore() {
+  const store = inject(debugTodoStoreKey);
   if (store === undefined) {
-    throw new Error("App todo store is not available.");
+    throw new Error("Debug todo store is not available.");
   }
 
   return store;

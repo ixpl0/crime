@@ -35,10 +35,23 @@
         :class="{ 'lg:flex-row lg:gap-0': !isTodoPanelCollapsed }"
       >
         <template v-if="!isTodoPanelCollapsed">
-          <TasksPanel
-            class="panel-w-resizable"
+          <div
+            ref="tasksColumnContainer"
+            class="flex min-h-0 flex-col panel-w-resizable"
             :style="{ '--panel-w': tasksPanelWidth + 'px', '--panel-max-w': tasksPanelMaxWidth }"
-          />
+          >
+            <TasksPanel class="min-h-0 lg:flex-1" />
+            <template v-if="isDebugTodoPanelVisible">
+              <PanelHeightResizeHandle
+                :is-active="isDebugPanelResizeActive"
+                @pointerdown="handleDebugPanelResize"
+              />
+              <DebugTasksPanel
+                class="panel-h-resizable"
+                :style="{ '--panel-h': debugPanelHeight + 'px', '--panel-max-h': debugPanelMaxHeight }"
+              />
+            </template>
+          </div>
           <PanelResizeHandle
             :is-active="isTasksPanelResizeActive"
             @pointerdown="handleTasksPanelResize"
@@ -55,17 +68,22 @@
 import "@xterm/xterm/css/xterm.css";
 import { ref } from "vue";
 import { useAppShell } from "./app/use-app-shell";
+import { usePanelHeightResize } from "./composables/use-panel-height-resize";
 import { usePanelWidthResize } from "./composables/use-panel-width-resize";
+import DebugTasksPanel from "./components/DebugTasksPanel.vue";
 import MainPanel from "./components/MainPanel.vue";
+import PanelHeightResizeHandle from "./components/PanelHeightResizeHandle.vue";
 import PanelResizeHandle from "./components/PanelResizeHandle.vue";
 import TasksPanel from "./components/TasksPanel.vue";
 
 const TASKS_PANEL_DEFAULT_WIDTH = 288;
+const DEBUG_PANEL_DEFAULT_HEIGHT = 200;
 
-const { errorMessage, isOpening, isTodoPanelCollapsed, openProjectFolder, projectPath } =
+const { errorMessage, isOpening, isTodoPanelCollapsed, isDebugTodoPanelVisible, openProjectFolder, projectPath } =
   useAppShell();
 
 const outerContainer = ref<HTMLElement | null>(null);
+const tasksColumnContainer = ref<HTMLElement | null>(null);
 
 const {
   panelWidth: tasksPanelWidth,
@@ -78,9 +96,27 @@ const {
   minOppositeWidth: 400
 });
 
+const {
+  panelHeight: debugPanelHeight,
+  panelMaxHeight: debugPanelMaxHeight,
+  isResizeActive: isDebugPanelResizeActive,
+  handleResizePointerDown: handleDebugPanelResizePointerDown
+} = usePanelHeightResize({
+  storageKey: "dream-ide:debug-tasks-panel-height",
+  defaultHeight: DEBUG_PANEL_DEFAULT_HEIGHT,
+  minHeight: 100,
+  minOppositeHeight: 100
+});
+
 const handleTasksPanelResize = (event: PointerEvent) => {
   if (outerContainer.value) {
     handleTasksPanelResizePointerDown(event, outerContainer.value);
+  }
+};
+
+const handleDebugPanelResize = (event: PointerEvent) => {
+  if (tasksColumnContainer.value) {
+    handleDebugPanelResizePointerDown(event, tasksColumnContainer.value);
   }
 };
 

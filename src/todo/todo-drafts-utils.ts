@@ -30,22 +30,24 @@ export function getPersistedTodoEntries(entries: string[]) {
   return entries.filter((entry) => entry.trim().length > 0);
 }
 
-export function resizeTodoTextareas() {
+const DEFAULT_TEXTAREA_DATA_ATTRIBUTE = "todo-textarea";
+
+export function resizeTodoTextareas(dataAttribute: string = DEFAULT_TEXTAREA_DATA_ATTRIBUTE) {
   const textareas = document.querySelectorAll<HTMLTextAreaElement>(
-    'textarea[data-todo-textarea="true"]'
+    `textarea[data-${dataAttribute}="true"]`
   );
   for (const textarea of textareas) {
     textarea.style.removeProperty("height");
   }
 }
 
-export function getFocusedTodoSnapshot() {
+export function getFocusedTodoSnapshot(dataAttribute: string = DEFAULT_TEXTAREA_DATA_ATTRIBUTE) {
   const activeElement = document.activeElement;
   if (!(activeElement instanceof HTMLTextAreaElement)) {
     return null;
   }
 
-  if (activeElement.dataset.todoTextarea !== "true") {
+  if (activeElement.getAttribute(`data-${dataAttribute}`) !== "true") {
     return null;
   }
 
@@ -62,12 +64,12 @@ export function getFocusedTodoSnapshot() {
   } satisfies TodoFocusSnapshot;
 }
 
-export function restoreTodoFocus(snapshot: TodoFocusSnapshot | null) {
+export function restoreTodoFocus(snapshot: TodoFocusSnapshot | null, dataAttribute: string = DEFAULT_TEXTAREA_DATA_ATTRIBUTE) {
   if (!snapshot) {
     return;
   }
 
-  const selector = `textarea[data-todo-textarea="true"][data-todo-index="${String(snapshot.index)}"]`;
+  const selector = `textarea[data-${dataAttribute}="true"][data-todo-index="${String(snapshot.index)}"]`;
   const textarea = document.querySelector<HTMLTextAreaElement>(selector);
   if (!textarea) {
     return;
@@ -81,8 +83,8 @@ export function restoreTodoFocus(snapshot: TodoFocusSnapshot | null) {
   textarea.scrollTop = snapshot.scrollTop;
 }
 
-function focusTodoTextareaByIndex(index: number) {
-  const selector = `textarea[data-todo-textarea="true"][data-todo-index="${String(index)}"]`;
+function focusTodoTextareaByIndex(index: number, dataAttribute: string = DEFAULT_TEXTAREA_DATA_ATTRIBUTE) {
+  const selector = `textarea[data-${dataAttribute}="true"][data-todo-index="${String(index)}"]`;
   const textarea = document.querySelector<HTMLTextAreaElement>(selector);
   if (!textarea) {
     return;
@@ -93,11 +95,11 @@ function focusTodoTextareaByIndex(index: number) {
   textarea.setSelectionRange(cursorPosition, cursorPosition);
 }
 
-export function focusTodoComposerTextarea(totalDraftsCount: number) {
+export function focusTodoComposerTextarea(totalDraftsCount: number, dataAttribute: string = DEFAULT_TEXTAREA_DATA_ATTRIBUTE) {
   const composerIndex = totalDraftsCount - 1;
   if (composerIndex < 0) {
     return;
   }
 
-  focusTodoTextareaByIndex(composerIndex);
+  focusTodoTextareaByIndex(composerIndex, dataAttribute);
 }

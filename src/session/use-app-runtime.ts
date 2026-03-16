@@ -11,6 +11,7 @@ const PRIMARY_TERMINAL_SESSION_ID = "primary";
 interface UseAppRuntimeOptions {
   isTodoPanelCollapsed: Ref<boolean>;
   isTerminalReady: Ref<boolean>;
+  isDebugTodoPanelVisible: Ref<boolean>;
   loadRecentProjectsFromStorage: () => void;
   validateRecentProjects: () => Promise<void>;
   subscribeTerminalData: (listener: (data: string, sessionId: string) => void) => () => void;
@@ -26,6 +27,8 @@ interface UseAppRuntimeOptions {
   resizeTerminalInputTextareaElement: () => void;
   openLastProjectOnStartup: () => Promise<void>;
   handleTodoPanelCollapsedChanged: (isCollapsed: boolean) => void;
+  loadDebugTodoEntries: () => Promise<void>;
+  resizeDebugTodoTextareas: () => void;
   stopProjectLayout: () => void;
   stopSettingsWatcher: () => Promise<void>;
   stopTerminalRequest: () => Promise<TerminalResponse>;
@@ -132,6 +135,7 @@ function runStartupFlow(options: UseAppRuntimeOptions) {
     options.resizeTerminalInputTextareaElement();
   });
   void options.openLastProjectOnStartup();
+  void options.loadDebugTodoEntries();
 }
 
 function stopRuntimeSubscriptions(state: RuntimeSubscriptionState) {
@@ -176,6 +180,14 @@ export function useAppRuntime(options: UseAppRuntimeOptions) {
 
   watch(options.isTodoPanelCollapsed, (isCollapsed) => {
     options.handleTodoPanelCollapsedChanged(isCollapsed);
+  });
+
+  watch(options.isDebugTodoPanelVisible, (isVisible) => {
+    if (isVisible) {
+      void nextTick(() => {
+        options.resizeDebugTodoTextareas();
+      });
+    }
   });
 
   onBeforeUnmount(() => {

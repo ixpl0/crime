@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { computed, nextTick, ref, type Ref } from "vue";
 import { loadTodoEntries, saveTodoEntries } from "../settings/todo-storage";
 import { areStringArraysEqual } from "../utils/array-utils";
@@ -16,6 +17,7 @@ export type TodoEntriesLoadSource = "project-open" | "settings-watch";
 export interface UseTodoPanelOptions {
   projectPath: Ref<string | null>;
   collapsedStorageKey: string;
+  textareaDataAttribute?: string;
   reportUiError: (context: string, error: unknown, fallbackMessage: string) => unknown;
 }
 
@@ -24,8 +26,11 @@ export interface TodoDraftViewItem {
   value: string;
 }
 
+const DEFAULT_TEXTAREA_DATA_ATTRIBUTE = "todo-textarea";
+
 interface TodoPanelState {
   readonly options: UseTodoPanelOptions;
+  readonly textareaDataAttribute: string;
   readonly todoDrafts: Ref<string[]>;
   readonly todoDragSourceIndex: Ref<number | null>;
   readonly todoDragOverIndex: Ref<number | null>;
@@ -37,9 +42,9 @@ interface TodoPanelState {
   todoPersistQueue: Promise<void>;
 }
 
-function scheduleTodoTextareasResize() {
+function scheduleTodoTextareasResize(dataAttribute: string) {
   void nextTick(() => {
-    resizeTodoTextareas();
+    resizeTodoTextareas(dataAttribute);
   });
 }
 
@@ -53,6 +58,7 @@ function createTodoPanelState(options: UseTodoPanelOptions): TodoPanelState {
   );
   return {
     options,
+    textareaDataAttribute: options.textareaDataAttribute ?? DEFAULT_TEXTAREA_DATA_ATTRIBUTE,
     todoDrafts,
     todoDragSourceIndex,
     todoDragOverIndex,
@@ -76,7 +82,7 @@ function toggleTodoPanelCollapse(state: TodoPanelState) {
 function handleTodoPanelCollapsedChanged(state: TodoPanelState, isCollapsed: boolean) {
   persistTodoPanelCollapsedState(state, isCollapsed);
   if (!isCollapsed) {
-    scheduleTodoTextareasResize();
+    scheduleTodoTextareasResize(state.textareaDataAttribute);
   }
 }
 
@@ -192,8 +198,8 @@ function applyReorderedTodoDrafts(state: TodoPanelState, sourceIndex: number, ta
   const nextVersion = updateTodoDrafts(state, normalizedDrafts);
   persistCurrentTodoEntries(state, nextVersion);
   void nextTick(() => {
-    resizeTodoTextareas();
-    restoreTodoFocus(focusedTodoSnapshot);
+    resizeTodoTextareas(state.textareaDataAttribute);
+    restoreTodoFocus(focusedTodoSnapshot, state.textareaDataAttribute);
   });
 }
 
@@ -225,10 +231,10 @@ function finalizeTodoDraftEditing(state: TodoPanelState, options: { focusCompose
 
   void nextTick(() => {
     if (didUpdateDrafts) {
-      resizeTodoTextareas();
+      resizeTodoTextareas(state.textareaDataAttribute);
     }
     if (options.focusComposer) {
-      focusTodoComposerTextarea(state.todoDrafts.value.length);
+      focusTodoComposerTextarea(state.todoDrafts.value.length, state.textareaDataAttribute);
     }
   });
 }
@@ -270,19 +276,19 @@ async function loadTodoEntriesForProject(state: TodoPanelState, path: string, so
   if (source === "settings-watch" && state.todoDraftEditVersion > state.todoPersistedVersion) {
     return;
   }
-  const focusedTodoSnapshot = getFocusedTodoSnapshot();
+  const focusedTodoSnapshot = getFocusedTodoSnapshot(state.textareaDataAttribute);
   const nextDrafts = getNormalizedTodoDrafts(entries);
   if (areStringArraysEqual(state.todoDrafts.value, nextDrafts)) {
     void nextTick(() => {
-      resizeTodoTextareas();
-      restoreTodoFocus(focusedTodoSnapshot);
+      resizeTodoTextareas(state.textareaDataAttribute);
+      restoreTodoFocus(focusedTodoSnapshot, state.textareaDataAttribute);
     });
     return;
   }
   state.todoDrafts.value = nextDrafts;
   void nextTick(() => {
-    resizeTodoTextareas();
-    restoreTodoFocus(focusedTodoSnapshot);
+    resizeTodoTextareas(state.textareaDataAttribute);
+    restoreTodoFocus(focusedTodoSnapshot, state.textareaDataAttribute);
   });
 }
 
@@ -302,7 +308,7 @@ function removeTodoEntry(state: TodoPanelState, index: number) {
   const nextVersion = updateTodoDrafts(state, getNormalizedTodoDrafts(nextDrafts));
   resetTodoDragState(state);
   persistCurrentTodoEntries(state, nextVersion);
-  scheduleTodoTextareasResize();
+  scheduleTodoTextareasResize(state.textareaDataAttribute);
   return true;
 }
 
@@ -329,6 +335,6 @@ export function useTodoPanel(options: UseTodoPanelOptions) {
     loadTodoEntriesForProject: loadTodoEntriesForProject.bind(null, state),
     getTodoEntry: getTodoEntry.bind(null, state), removeTodoEntry: removeTodoEntry.bind(null, state),
     resetTodoRuntimeState: resetTodoRuntimeState.bind(null, state),
-    resizeTodoTextareas
+    resizeTodoTextareas: () => { resizeTodoTextareas(state.textareaDataAttribute); }
   };
 }
