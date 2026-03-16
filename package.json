@@ -20,6 +20,9 @@
     "prestart": "bun run sync:preload-shared",
     "preview": "vite preview",
     "start": "cross-env NODE_ENV=production electron .",
+    "dist": "bun run build && electron-builder --win",
+    "dist:mac": "bun run build && electron-builder --mac",
+    "dist:linux": "bun run build && electron-builder --linux",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -54,6 +57,7 @@
     "cross-env": "^10.1.0",
     "daisyui": "^5.5.19",
     "electron": "^40.6.1",
+    "electron-builder": "^26.8.1",
     "eslint": "^10.0.2",
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.4.0",

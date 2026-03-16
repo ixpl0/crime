@@ -1,0 +1,40 @@
+appId: com.dream-ide.app
+productName: Dream IDE
+
+directories:
+  output: release
+
+files:
+  - electron/**/*
+  - dist/**/*
+  - package.json
+  - "!**/node_modules/**/{CHANGELOG,README,readme,test,tests,__tests__}*"
+  - "!**/node_modules/**/*.{md,ts,map}"
+
+buildDependenciesFromSource: false
+npmRebuild: false
+
+asar: true
+asarUnpack:
+  - "node_modules/node-pty/**/*"
+
+win:
+  target: nsis
+  icon: electron/assets/app.ico
+  signAndEditExecutable: false
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  deleteAppDataOnUninstall: false
+
+mac:
+  target: dmg
+  icon: electron/assets/icon.icns
+  category: public.app-category.developer-tools
+
+linux:
+  target: AppImage
+  icon: electron/assets/icon.png
+  category: Development
