@@ -33,7 +33,7 @@
       </div>
 
       <!-- Visual editor (slot) -->
-      <div v-if="hasVisualSlot && editorMode === 'visual'" class="mt-4 max-h-96 overflow-y-auto pr-1">
+      <div v-if="hasVisualSlot && editorMode === 'visual' && visualModel" class="mt-4 max-h-96 overflow-y-auto pr-1">
         <slot name="visual" :model="visualModel" :on-update="handleVisualUpdate" />
       </div>
 
