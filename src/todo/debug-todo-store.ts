@@ -1,5 +1,5 @@
 import { inject, provide, type InjectionKey } from "vue";
-import { type MaybePromise, type ReadableRef } from "../types/utils";
+import { type ReadableRef } from "../types/utils";
 import { type TodoDraftViewItem } from "./use-todo-panel";
 
 export interface DebugTodoStore {
@@ -16,7 +16,7 @@ export interface DebugTodoStore {
   handleTodoTextareaInput: (index: number, event: Event) => void;
   handleTodoTextareaKeydown: (event: KeyboardEvent) => void;
   handleTodoTextareaBlur: () => void;
-  sendTodoEntryToTerminal: (index: number) => MaybePromise;
+  confirmTodoEntry: () => void;
   hidePanel: () => void;
 }
 

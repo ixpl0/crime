@@ -61,15 +61,27 @@
             >
               <GripVertical :size="14" />
             </button>
-            <div :title="lastPrompt" class="ml-auto">
+            <div class="ml-auto flex items-center gap-1">
               <button
+                v-if="todoDraftView.index === todoDraftViewItems.length - 1"
                 class="btn btn-ghost btn-xs normal-case text-base-content/70"
                 type="button"
                 tabindex="-1"
+                :disabled="!todoDraftView.value.trim()"
+                @click="confirmTodoEntry"
+              >
+                Создать задачу
+              </button>
+              <button
+                v-else
+                class="btn btn-ghost btn-xs normal-case text-base-content/70"
+                type="button"
+                tabindex="-1"
+                :title="lastPrompt"
                 :disabled="!isTerminalReady || !todoDraftView.value.trim()"
                 @click="sendTodoEntryToTerminal(todoDraftView.index)"
               >
-                {{ todoDraftView.index === todoDraftViewItems.length - 1 ? "Создать задачу" : "Отправить" }}
+                Отправить
               </button>
             </div>
           </div>
@@ -99,6 +111,7 @@ const {
   handleTodoTextareaInput,
   handleTodoTextareaKeydown,
   handleTodoTextareaBlur,
+  confirmTodoEntry,
   sendTodoEntryToTerminal,
   isDebugTodoPanelVisible,
   toggleDebugTodoPanel

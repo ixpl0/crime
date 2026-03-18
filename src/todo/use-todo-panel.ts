@@ -332,6 +332,7 @@ export function useTodoPanel(options: UseTodoPanelOptions) {
     handleTodoDragOver: handleTodoDragOver.bind(null, state), handleTodoDragEnd: handleTodoDragEnd.bind(null, state),
     handleTodoDrop: handleTodoDrop.bind(null, state), handleTodoTextareaInput: handleTodoTextareaInput.bind(null, state),
     handleTodoTextareaKeydown: handleTodoTextareaKeydown.bind(null, state), handleTodoTextareaBlur: handleTodoTextareaBlur.bind(null, state),
+    confirmTodoEntry: () => { finalizeTodoDraftEditing(state, { focusComposer: true }); },
     loadTodoEntriesForProject: loadTodoEntriesForProject.bind(null, state),
     getTodoEntry: getTodoEntry.bind(null, state), removeTodoEntry: removeTodoEntry.bind(null, state),
     resetTodoRuntimeState: resetTodoRuntimeState.bind(null, state),

@@ -50,15 +50,15 @@
             >
               <GripVertical :size="14" />
             </button>
-            <div :title="lastPrompt" class="ml-auto">
+            <div v-if="todoDraftView.index === todoDraftViewItems.length - 1" class="ml-auto">
               <button
                 class="btn btn-ghost btn-xs normal-case text-base-content/70"
                 type="button"
                 tabindex="-1"
-                :disabled="!isTerminalReady || !todoDraftView.value.trim()"
-                @click="sendTodoEntryToTerminal(todoDraftView.index)"
+                :disabled="!todoDraftView.value.trim()"
+                @click="confirmTodoEntry"
               >
-                {{ todoDraftView.index === todoDraftViewItems.length - 1 ? "Создать задачу" : "Отправить" }}
+                Создать задачу
               </button>
             </div>
           </div>
@@ -70,7 +70,6 @@
 
 <script setup lang="ts">
 import { EyeOff, GripVertical } from "lucide-vue-next";
-import { useAppTerminalStore } from "../terminal/terminal-store";
 import { useDebugTodoStore } from "../todo/debug-todo-store";
 
 const {
@@ -87,10 +86,9 @@ const {
   handleTodoTextareaInput,
   handleTodoTextareaKeydown,
   handleTodoTextareaBlur,
-  sendTodoEntryToTerminal,
+  confirmTodoEntry,
   hidePanel
 } = useDebugTodoStore();
-const { isTerminalReady, lastPrompt } = useAppTerminalStore();
 
 const isActiveDropTarget = (index: number) =>
   todoDragOverIndex.value === index &&

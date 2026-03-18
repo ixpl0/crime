@@ -112,6 +112,7 @@ export function useAppShell() {
     handleTodoTextareaInput,
     handleTodoTextareaKeydown,
     handleTodoTextareaBlur,
+    confirmTodoEntry,
     loadTodoEntriesForProject,
     getTodoEntry,
     removeTodoEntry,
@@ -521,6 +522,7 @@ export function useAppShell() {
     handleTodoTextareaInput,
     handleTodoTextareaKeydown,
     handleTodoTextareaBlur,
+    confirmTodoEntry,
     sendTodoEntryToTerminal,
     isDebugTodoPanelVisible,
     toggleDebugTodoPanel
@@ -539,7 +541,7 @@ export function useAppShell() {
     handleTodoTextareaInput: debugTodo.handleTodoTextareaInput,
     handleTodoTextareaKeydown: debugTodo.handleTodoTextareaKeydown,
     handleTodoTextareaBlur: debugTodo.handleTodoTextareaBlur,
-    sendTodoEntryToTerminal: sendDebugTodoEntryToTerminal,
+    confirmTodoEntry: debugTodo.confirmTodoEntry,
     hidePanel: () => { setDebugTodoPanelVisible(false); }
   });
 
@@ -644,26 +646,4 @@ export function useAppShell() {
     setDebugTodoPanelVisible(!isDebugTodoPanelVisible.value);
   }
 
-  async function sendDebugTodoEntryToTerminal(index: number) {
-    const text = debugTodo.getTodoEntry(index);
-    if (text === null) {
-      return;
-    }
-
-    const result = await attemptSubmitTerminalText(text, {
-      notReady: "Terminal is not ready to send input.",
-      messages: {
-        sendSlash: "Failed to send slash command from debug todo to terminal.",
-        sendText: "Failed to send debug todo prompt to terminal.",
-        submit: "Failed to send Enter to terminal."
-      },
-      inputType: "prompt"
-    });
-    if (result !== "submitted") {
-      return;
-    }
-
-    appendTerminalInputHistory(text);
-    debugTodo.removeTodoEntry(index);
-  }
 }
