@@ -233,6 +233,9 @@ export function useChangesPanel({
   watch(projectPath, () => {
     lastSnapshot = "";
     hasRefreshed.value = false;
+    changeEntries.value = [];
+    infoMessage.value = "";
+    loadError.value = "";
     closeContextMenu();
     if (onResetSelectedFile) {
       onResetSelectedFile();

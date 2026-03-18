@@ -232,7 +232,11 @@ function navigateTabHistoryForward(state: TabState, onAgentTabActivated: () => v
   setActiveTab(nextTab, state, onAgentTabActivated, false);
 }
 
-function createTabNavigationApi(state: TabState, onAgentTabActivated: () => void) {
+function createTabNavigationApi(
+  state: TabState,
+  onAgentTabActivated: () => void,
+  isAgentDetached: Readonly<Ref<boolean>>
+) {
   return {
     activeTab: state.activeTab,
     setActiveTab: (nextTab: AppTab) => {
@@ -241,6 +245,7 @@ function createTabNavigationApi(state: TabState, onAgentTabActivated: () => void
     clearTabNavigationHistory: () => {
       state.tabBackHistory.length = 0;
       state.tabForwardHistory.length = 0;
+      state.activeTab.value = isAgentDetached.value ? "terminal" : "agent";
     },
     handleHistoryNavigationMouseButton: (event: MouseEvent) => {
       if (event.button === 3) {
@@ -269,7 +274,7 @@ export function useAppNavigation(options: UseAppNavigationOptions) {
 
   return {
     ...createDropdownNavigationApi(options, dropdownState),
-    ...createTabNavigationApi(tabState, options.onAgentTabActivated),
+    ...createTabNavigationApi(tabState, options.onAgentTabActivated, options.isAgentDetached),
     isAgentDetached: options.isAgentDetached,
     detachAgent: () => {
       detachAgent(tabState, options.isAgentDetached, options.onAgentTabActivated);
