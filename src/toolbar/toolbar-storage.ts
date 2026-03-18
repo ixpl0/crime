@@ -17,7 +17,6 @@ import {
 
 export const TOOLBAR_CONFIG_FILENAME = "agent-toolbar.json";
 
-export const defaultToolbarConfig = defaultAgentToolbarJson as unknown as ToolbarConfig;
 
 const TOOLBAR_PRESET_COLORS = new Set<string>([
   "primary", "secondary", "accent", "info", "success", "warning", "error", "neutral", "ghost"
@@ -255,6 +254,12 @@ export const parseToolbarConfig = (value: unknown): ToolbarConfig | null => {
 
   return { elements };
 };
+
+const parsedDefaultToolbarConfig = parseToolbarConfig(defaultAgentToolbarJson);
+if (!parsedDefaultToolbarConfig) {
+  throw new Error("Default agent toolbar config is invalid");
+}
+export const defaultToolbarConfig: ToolbarConfig = parsedDefaultToolbarConfig;
 
 function serializeToolbarAction(action: ToolbarAction) {
   const serializedAction: Record<string, unknown> = {

@@ -5,7 +5,11 @@ import { parseToolbarConfig, serializeToolbarConfig } from "./toolbar-storage";
 
 export const TERMINAL_TOOLBAR_CONFIG_FILENAME = "terminal-toolbar.json";
 
-export const defaultTerminalToolbarConfig = defaultTerminalToolbarJson as unknown as ToolbarConfig;
+const parsedDefaultTerminalToolbarConfig = parseToolbarConfig(defaultTerminalToolbarJson);
+if (!parsedDefaultTerminalToolbarConfig) {
+  throw new Error("Default terminal toolbar config is invalid");
+}
+export const defaultTerminalToolbarConfig: ToolbarConfig = parsedDefaultTerminalToolbarConfig;
 
 export const loadTerminalToolbarConfig = async (projectPath: string): Promise<ToolbarConfig> => {
   return loadJsonProjectSetting(

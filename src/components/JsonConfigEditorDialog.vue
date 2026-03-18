@@ -223,10 +223,14 @@ function save() {
 function resetToDefault() {
   if (hasVisualSlot.value && editorMode.value === "visual") {
     const parsed = props.parser(props.defaultValue);
-    visualModel.value = parsed;
-    isDirty.value = true;
-    validationError.value = "";
-    return;
+    if (parsed) {
+      visualModel.value = parsed;
+      isDirty.value = true;
+      validationError.value = "";
+      return;
+    }
+    // Parser failed — fall back to JSON mode
+    editorMode.value = "json";
   }
 
   jsonText.value = JSON.stringify(props.defaultValue, null, 2);
