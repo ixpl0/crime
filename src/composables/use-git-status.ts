@@ -129,11 +129,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
         return;
       }
 
-      if (!GIT_TABS.has(activeTab.value)) {
-        return;
-      }
-
-        void refresh();
+      void refresh();
     }, FALLBACK_POLLING_MS);
   };
 
@@ -156,17 +152,23 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
   };
 
   const handleVisibilityChange = () => {
-    if (document.visibilityState === "visible" && GIT_TABS.has(activeTab.value)) {
-      bumpRepositoryRefreshToken();
-      void refresh();
+    if (document.visibilityState !== "visible") {
+      return;
     }
+
+    if (GIT_TABS.has(activeTab.value)) {
+      bumpRepositoryRefreshToken();
+    }
+
+    void refresh();
   };
 
   const handleWindowFocus = () => {
     if (GIT_TABS.has(activeTab.value)) {
       bumpRepositoryRefreshToken();
-      void refresh();
     }
+
+    void refresh();
   };
 
   watch(activeTab, (newTab) => {
