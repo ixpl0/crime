@@ -13,8 +13,8 @@
         class="terminal-host w-full overflow-hidden rounded-box border border-[var(--terminal-bg)] bg-[var(--terminal-bg)]"
         :style="{ height: `${terminalPanelHeight}px` }"
         @click="focusTerminal"
-        @contextmenu="handleTerminalContextMenu"
-        @auxclick="handleTerminalAuxClick"
+        @contextmenu="handleTerminalCopyEvent"
+        @auxclick="handleTerminalCopyEvent"
       />
       <button
         type="button"
@@ -120,8 +120,7 @@ const {
   setTerminalInputTextarea,
   executeToolbarAction,
   focusTerminal,
-  handleTerminalContextMenu,
-  handleTerminalAuxClick,
+  handleTerminalCopyEvent,
   handleTerminalPanelResizePointerDown,
   setTerminalInputText,
   handleTextareaKeydown,

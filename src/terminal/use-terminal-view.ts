@@ -43,20 +43,13 @@ type TerminalViewState = {
   fitAddon: FitAddon | null;
   webLinksAddon: WebLinksAddon | null;
   terminalPathLinkProvider: { dispose: () => void } | null;
+  resizeObserver: ResizeObserver | null;
 };
 
 const DEFAULT_INPUT_ERROR = "Failed to send input to terminal.";
-const INITIAL_TERMINAL_MESSAGE =
-  "\u0422\u0435\u0440\u043c\u0438\u043d\u0430\u043b \u0433\u043e\u0442\u043e\u0432. " +
-  "\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0430\u043f\u043a\u0443 " +
-  "\u043f\u0440\u043e\u0435\u043a\u0442\u0430.";
-const PREPARE_TERMINAL_ERROR =
-  "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c " +
-  "\u043f\u043e\u0434\u0433\u043e\u0442\u043e\u0432\u0438\u0442\u044c " +
-  "\u043e\u043a\u043d\u043e \u0442\u0435\u0440\u043c\u0438\u043d\u0430\u043b\u0430.";
-const START_TERMINAL_ERROR =
-  "\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c " +
-  "\u0437\u0430\u043f\u0443\u0441\u0442\u0438\u0442\u044c \u0442\u0435\u0440\u043c\u0438\u043d\u0430\u043b.";
+const INITIAL_TERMINAL_MESSAGE = "Терминал готов. Выберите папку проекта.";
+const PREPARE_TERMINAL_ERROR = "Не удалось подготовить окно терминала.";
+const START_TERMINAL_ERROR = "Не удалось запустить терминал.";
 
 function createTerminal(fontSize: number) {
   return new Terminal({
@@ -81,7 +74,8 @@ function createTerminalViewState(options: UseTerminalViewOptions): TerminalViewS
     terminal: null,
     fitAddon: null,
     webLinksAddon: null,
-    terminalPathLinkProvider: null
+    terminalPathLinkProvider: null,
+    resizeObserver: null
   };
 }
 
@@ -138,8 +132,7 @@ async function pasteClipboardToTerminal(state: TerminalViewState) {
   try {
     const text = await navigator.clipboard.readText();
     if (text.length > 0) {
-      const bracketPaste = `\x1b[200~${text}\x1b[201~`;
-      await state.options.sendTerminalInput(bracketPaste, "Failed to paste to terminal.");
+      await state.options.sendTerminalInput(`\x1b[200~${text}\x1b[201~`, "Failed to paste to terminal.");
     }
   } catch (error) {
     state.options.reportUiError("Terminal paste", error, "Failed to paste to terminal.");
@@ -175,6 +168,20 @@ function bindTerminalInput(state: TerminalViewState, terminal: Terminal) {
   });
 }
 
+function startContainerResizeObserver(state: TerminalViewState, container: HTMLElement) {
+  stopContainerResizeObserver(state);
+  const observer = new ResizeObserver(() => {
+    void resizeTerminalBackend(state);
+  });
+  observer.observe(container);
+  state.resizeObserver = observer;
+}
+
+function stopContainerResizeObserver(state: TerminalViewState) {
+  state.resizeObserver?.disconnect();
+  state.resizeObserver = null;
+}
+
 function initializeTerminalView(state: TerminalViewState) {
   const container = state.options.terminalContainer.value;
   if (state.terminal || !container) {
@@ -200,6 +207,7 @@ function initializeTerminalView(state: TerminalViewState) {
   fitAddon.fit();
   terminal.writeln(INITIAL_TERMINAL_MESSAGE);
   bindTerminalInput(state, terminal);
+  startContainerResizeObserver(state, container);
   return true;
 }
 
@@ -255,28 +263,18 @@ async function copyTerminalSelectionIfAny(state: TerminalViewState): Promise<boo
   return true;
 }
 
-function handleTerminalContextMenu(state: TerminalViewState, event: MouseEvent) {
-  event.preventDefault();
-  void copyTerminalSelectionIfAny(state);
-}
-
-function handleTerminalAuxClick(state: TerminalViewState, event: MouseEvent) {
-  if (event.button !== 1) {
+function handleTerminalCopyEvent(state: TerminalViewState, event: MouseEvent) {
+  if (event.type === "auxclick" && event.button !== 1) {
     return;
   }
-
   event.preventDefault();
   void copyTerminalSelectionIfAny(state);
 }
 
 async function sendTerminalResize(state: TerminalViewState, size: TerminalSize) {
-  try {
-    const response = await state.options.resizeTerminalBackendRequest(size);
-    if (!response.ok) {
-      state.options.reportUiError("Terminal resize", response.error, "Failed to resize terminal backend.");
-    }
-  } catch (error) {
-    state.options.reportUiError("Terminal resize", error, "Failed to resize terminal backend.");
+  const response = await state.options.resizeTerminalBackendRequest(size).catch(() => null);
+  if (response && !response.ok) {
+    state.options.reportUiError("Terminal resize", response.error, "Failed to resize terminal backend.");
   }
 }
 
@@ -322,6 +320,7 @@ async function startTerminal(state: TerminalViewState, cwd: string) {
 }
 
 function disposeTerminalView(state: TerminalViewState) {
+  stopContainerResizeObserver(state);
   disposeTerminalPathLinkProvider(state);
   state.terminal?.dispose();
   state.terminal = null;
@@ -335,8 +334,7 @@ export function useTerminalView(options: UseTerminalViewOptions) {
     startTerminal: startTerminal.bind(null, state),
     resizeTerminalBackend: resizeTerminalBackend.bind(null, state),
     focusTerminal: focusTerminal.bind(null, state),
-    handleTerminalContextMenu: handleTerminalContextMenu.bind(null, state),
-    handleTerminalAuxClick: handleTerminalAuxClick.bind(null, state),
+    handleTerminalCopyEvent: handleTerminalCopyEvent.bind(null, state),
     copyTerminalSelectionIfAny: copyTerminalSelectionIfAny.bind(null, state),
     writeTerminalOutput: writeTerminalOutput.bind(null, state),
     writeTerminalNotice: writeTerminalNotice.bind(null, state),

@@ -74,8 +74,8 @@
           :ref="(element) => setSessionContainer(session.id, element)"
           class="terminal-host min-h-0 flex-1"
           @click="focusSession(session.id)"
-          @contextmenu="handleSessionContextMenu(session.id, $event)"
-          @auxclick="handleSessionAuxClick(session.id, $event)"
+          @contextmenu="handleSessionCopyEvent(session.id, $event)"
+          @auxclick="handleSessionCopyEvent(session.id, $event)"
         />
       </section>
     </div>
@@ -120,8 +120,7 @@ interface WorkspaceSession {
   startTerminal: (cwd: string) => Promise<void>;
   resizeTerminalBackend: () => Promise<void>;
   focusTerminal: () => void;
-  handleTerminalContextMenu: (event: MouseEvent) => void;
-  handleTerminalAuxClick: (event: MouseEvent) => void;
+  handleTerminalCopyEvent: (event: MouseEvent) => void;
   writeTerminalOutput: (data: string) => void;
   writeTerminalNotice: (line: string) => void;
   syncTerminalFontSize: (fontSize: number) => boolean;
@@ -378,12 +377,8 @@ function focusSession(sessionId: string) {
   getSessionById(sessionId)?.focusTerminal();
 }
 
-function handleSessionContextMenu(sessionId: string, event: MouseEvent) {
-  getSessionById(sessionId)?.handleTerminalContextMenu(event);
-}
-
-function handleSessionAuxClick(sessionId: string, event: MouseEvent) {
-  getSessionById(sessionId)?.handleTerminalAuxClick(event);
+function handleSessionCopyEvent(sessionId: string, event: MouseEvent) {
+  getSessionById(sessionId)?.handleTerminalCopyEvent(event);
 }
 
 async function closeSession(sessionId: string) {

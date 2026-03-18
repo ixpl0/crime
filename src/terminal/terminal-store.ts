@@ -22,8 +22,7 @@ export interface AppTerminalStore {
   ) => void;
   executeToolbarAction: (action: ToolbarAction) => void;
   focusTerminal: () => void;
-  handleTerminalContextMenu: (event: MouseEvent) => void;
-  handleTerminalAuxClick: (event: MouseEvent) => void;
+  handleTerminalCopyEvent: (event: MouseEvent) => void;
   handleTerminalPanelResizePointerDown: (event: PointerEvent) => void;
   setTerminalInputText: (value: string) => void;
   handleTextareaKeydown: (event: KeyboardEvent) => void;
