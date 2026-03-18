@@ -11,9 +11,6 @@
       :style="agentCardStyle"
     >
       <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-4">
-        <div v-if="errorMessage" class="alert alert-error">
-          <span>{{ errorMessage }}</span>
-        </div>
 
         <MainPanelHeader :changes-count="changesCount" />
 
@@ -190,7 +187,6 @@ const {
   promptSuffixConfigFilename,
   projectSettingsFilename,
   secretsFilename,
-  errorMessage,
   isToolbarConfigEditorOpen,
   isTerminalToolbarConfigEditorOpen,
   isPromptSuffixConfigEditorOpen,

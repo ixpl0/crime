@@ -43,10 +43,10 @@
 
     <div
       v-if="isExpanded && loadError"
-      class="py-0.5 text-sm text-error"
+      class="py-0.5 text-sm text-base-content/50"
       :style="{ paddingLeft: `${NODE_BASE_PADDING_REM + (depth + 1) * NODE_INDENT_REM}rem` }"
     >
-      {{ loadError }}
+      Folder contents unavailable.
     </div>
   </div>
 </template>
@@ -60,6 +60,7 @@ import {
   type DeletedChildrenByParent
 } from "./file-tree-status-utils";
 import { isPathInsideBase, isSamePath } from "../../utils/path-utils";
+import { useAppToastStore } from "../../toast/toast-store";
 import { toErrorMessage } from "../../utils/fail-fast";
 
 const props = withDefaults(
@@ -88,6 +89,7 @@ const emit = defineEmits<{
 const isExpanded = ref(false);
 const isLoading = ref(false);
 const loadError = ref("");
+const { pushError } = useAppToastStore();
 const children = ref<FileEntry[]>([]);
 const NODE_BASE_PADDING_REM = 0.5;
 const NODE_INDENT_REM = 1;
@@ -307,6 +309,12 @@ function handleContextMenu(event: MouseEvent) {
     isDirectory: props.entry.isDirectory
   });
 }
+
+watch(loadError, (message) => {
+  if (message) {
+    pushError(message);
+  }
+});
 
 watch(
   () => [props.revealPath, props.revealRequestToken] as const,

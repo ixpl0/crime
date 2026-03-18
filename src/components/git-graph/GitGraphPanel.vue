@@ -9,8 +9,8 @@
         <span class="loading loading-spinner loading-md" />
       </div>
 
-      <div v-else-if="loadError" class="py-4 text-center text-sm text-error">
-        {{ loadError }}
+      <div v-else-if="loadError" class="py-4 text-center text-sm text-base-content/50">
+        Git history unavailable
       </div>
 
       <div v-else-if="graphRows.length === 0" class="py-4 text-center text-sm text-base-content/50">
@@ -99,8 +99,8 @@
         <span class="loading loading-spinner loading-sm" />
       </div>
 
-      <div v-else-if="detailsError" class="px-3 py-4 text-sm text-error">
-        {{ detailsError }}
+      <div v-else-if="detailsError" class="px-3 py-4 text-sm text-base-content/50">
+        Commit details unavailable
       </div>
 
       <div v-else class="min-h-0 flex-1 overflow-y-auto px-3 py-2">
@@ -216,9 +216,12 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from "vue";
+import { toRef, watch } from "vue";
 import { X } from "lucide-vue-next";
+import { useAppToastStore } from "../../toast/toast-store";
 import { useGitGraphPanel } from "./use-git-graph-panel";
+
+const { pushError } = useAppToastStore();
 
 const props = defineProps<{
   projectPath: string;
@@ -253,5 +256,16 @@ const {
   selectCommit,
   closeDetails
 } = useGitGraphPanel(toRef(props, "projectPath"), toRef(props, "gitRefreshToken"));
+watch(loadError, (message) => {
+  if (message) {
+    pushError(message);
+  }
+});
+
+watch(detailsError, (message) => {
+  if (message) {
+    pushError(message);
+  }
+});
 </script>
 

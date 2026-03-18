@@ -1,8 +1,5 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-1">
-    <div v-if="panelErrorMessage" class="alert alert-error">
-      <span>{{ panelErrorMessage }}</span>
-    </div>
 
     <div class="flex flex-wrap items-center gap-2">
       <ToolbarPanel
@@ -96,6 +93,7 @@ import {
 } from "vue";
 import { RotateCw } from "lucide-vue-next";
 import { useAppConfigStore } from "../config/config-store";
+import { useAppToastStore } from "../toast/toast-store";
 import { normalizeTerminalFontSize } from "../layout/project-layout-utils";
 import {
   getToolbarButtonColorClass,
@@ -140,7 +138,7 @@ const {
   openTerminalToolbarConfigEditor
 } = useAppConfigStore();
 
-const panelErrorMessage = ref("");
+const { pushError } = useAppToastStore();
 const sessions = shallowRef<WorkspaceSession[]>([]);
 const projectPathRef = computed<string | null>(() => props.projectPath);
 const terminalFontSize = computed(() =>
@@ -196,7 +194,6 @@ watch(
       return;
     }
 
-    panelErrorMessage.value = "";
     void closeAllSessions();
   }
 );
@@ -219,7 +216,7 @@ onBeforeUnmount(() => {
 
 function reportPanelError(context: string, error: unknown, fallbackMessage: string): string {
   const message = toContextualErrorMessage(context, error, fallbackMessage);
-  panelErrorMessage.value = message;
+  pushError(message);
   console.error(message, error);
   return message;
 }

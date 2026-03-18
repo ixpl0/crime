@@ -1,4 +1,5 @@
 <template>
+  <AppToastViewport />
   <main class="h-screen overflow-hidden bg-base-200 p-6 text-base-content" @mousedown="handleGlobalMousedown">
     <section
       class="flex h-full min-h-0 flex-col gap-6"
@@ -21,10 +22,6 @@
               </button>
             </div>
           </div>
-        </div>
-
-        <div v-if="errorMessage" class="alert alert-error">
-          <span>{{ errorMessage }}</span>
         </div>
       </template>
 
@@ -68,6 +65,7 @@
 import "@xterm/xterm/css/xterm.css";
 import { ref } from "vue";
 import { useAppShell } from "./app/use-app-shell";
+import AppToastViewport from "./components/AppToastViewport.vue";
 import { usePanelHeightResize } from "./composables/use-panel-height-resize";
 import { usePanelWidthResize } from "./composables/use-panel-width-resize";
 import DebugTasksPanel from "./components/DebugTasksPanel.vue";
@@ -79,7 +77,7 @@ import TasksPanel from "./components/TasksPanel.vue";
 const TASKS_PANEL_DEFAULT_WIDTH = 288;
 const DEBUG_PANEL_DEFAULT_HEIGHT = 200;
 
-const { errorMessage, isOpening, isTodoPanelCollapsed, isDebugTodoPanelVisible, openProjectFolder, projectPath } =
+const { isOpening, isTodoPanelCollapsed, isDebugTodoPanelVisible, openProjectFolder, projectPath } =
   useAppShell();
 
 const outerContainer = ref<HTMLElement | null>(null);

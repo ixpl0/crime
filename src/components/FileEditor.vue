@@ -17,6 +17,7 @@ import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from "@cod
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { toErrorMessage } from "../utils/fail-fast";
+import { useAppToastStore } from "../toast/toast-store";
 import { loadLanguageExtension } from "../codemirror/language-detection";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -32,13 +33,14 @@ const emit = defineEmits<{ saved: [] }>();
 const editorContainer = ref<HTMLElement | null>(null);
 const saveStatus = ref<SaveStatus>("idle");
 const saveError = ref("");
+const { pushError } = useAppToastStore();
 let editorView: EditorView | null = null;
 let savedResetTimeoutId: number | null = null;
 
 const saveStatusText = computed(() => {
   if (saveStatus.value === "saving") { return "Saving..."; }
   if (saveStatus.value === "saved") { return "Saved"; }
-  if (saveStatus.value === "error") { return saveError.value || "Save failed"; }
+  if (saveStatus.value === "error") { return "Action failed"; }
   return "";
 });
 
@@ -138,6 +140,12 @@ const loadAndCreateEditor = async () => {
     saveError.value = toErrorMessage(error, "Failed to load file.");
   }
 };
+
+watch(saveError, (message) => {
+  if (message) {
+    pushError(message);
+  }
+});
 
 watch(() => [props.projectPath, props.filePath], () => {
   void loadAndCreateEditor();

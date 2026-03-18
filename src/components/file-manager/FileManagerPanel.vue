@@ -15,8 +15,8 @@
           <span class="loading loading-spinner loading-md" />
         </div>
 
-        <div v-else-if="loadError" class="py-4 text-center text-sm text-error">
-          {{ loadError }}
+        <div v-else-if="loadError" class="py-4 text-center text-sm text-base-content/50">
+          Files unavailable
         </div>
 
         <div v-else-if="entries.length === 0" class="py-4 text-center text-sm text-base-content/50">
@@ -96,9 +96,10 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from "vue";
+import { toRef, watch } from "vue";
 import { RotateCcw, Trash2 } from "lucide-vue-next";
 import { useConfirmDialog } from "../../utils/dialog-utils";
+import { useAppToastStore } from "../../toast/toast-store";
 import FileTreeNode from "./FileTreeNode.vue";
 import { useFileManagerPanel } from "./use-file-manager-panel";
 
@@ -124,6 +125,7 @@ const emit = defineEmits<{
 }>();
 
 const { requestConfirm } = useConfirmDialog();
+const { pushError } = useAppToastStore();
 
 const {
   isLoading,
@@ -149,6 +151,11 @@ const {
   gitRefreshToken: toRef(props, "gitRefreshToken"),
   refreshGitStatus: props.refreshGitStatus,
   requestConfirm
+});
+watch(loadError, (message) => {
+  if (message) {
+    pushError(message);
+  }
 });
 </script>
 

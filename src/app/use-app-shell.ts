@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import { nextTick, ref, type ComponentPublicInstance } from "vue";
+import { nextTick, ref, watch, type ComponentPublicInstance } from "vue";
 import { type ProjectSettings } from "../types/project-settings";
 import { type ToolbarAction } from "../types/toolbar";
 import {
@@ -42,6 +42,7 @@ import { provideDebugTodoStore } from "../todo/debug-todo-store";
 import { provideAppTodoStore } from "../todo/todo-store";
 import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
+import { provideAppToastStore } from "../toast/toast-store";
 
 // eslint-disable-next-line max-lines-per-function
 export function useAppShell() {
@@ -63,6 +64,7 @@ export function useAppShell() {
   const isTerminalReady = ref(false);
   const projectPath = ref<string | null>(null);
   const errorMessage = ref("");
+  const toastStore = provideAppToastStore();
   const terminalContainer = ref<HTMLElement | null>(null);
   const TERMINAL_INPUT_HISTORY_LIMIT = 200;
   const TERMINAL_INPUT_CHUNK_SIZE = 2048;
@@ -413,6 +415,18 @@ export function useAppShell() {
   useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
   provideConfirmDialog();
+  watch(errorMessage, (message) => {
+    if (!message) {
+      return;
+    }
+
+    toastStore.pushError(message);
+    queueMicrotask(() => {
+      if (errorMessage.value === message) {
+        errorMessage.value = "";
+      }
+    });
+  });
 
   provideAppNavigationStore({
     projectPath,

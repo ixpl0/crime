@@ -25,7 +25,7 @@
         Select a file in tree to preview it.
       </div>
       <div v-else-if="isLoading" class="flex h-full items-center justify-center"><span class="loading loading-spinner loading-md" /></div>
-      <div v-else-if="loadError" class="px-4 py-3 text-sm text-error">{{ loadError }}</div>
+      <div v-else-if="loadError" class="flex h-full items-center justify-center px-4 text-sm text-base-content/55">Preview unavailable.</div>
       <div v-else-if="displayLines.length === 0" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
         File is empty.
       </div>
@@ -47,6 +47,7 @@
 import { computed, ref, watch } from "vue";
 import { Eye, Pencil } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
+import { useAppToastStore } from "../toast/toast-store";
 import { toContextDiffLines } from "./file-content-viewer-utils";
 import FileEditor from "./FileEditor.vue";
 import CodeMirrorDiffViewer from "./CodeMirrorDiffViewer.vue";
@@ -63,6 +64,7 @@ const props = defineProps<{
 const emit = defineEmits<{ "file-not-found": [filePath: string]; "file-saved": [] }>();
 
 const isEditing = ref(false);
+const { pushError } = useAppToastStore();
 
 const fileExistsOnDisk = ref(false);
 
@@ -191,6 +193,11 @@ async function loadFilePreview() {
   applyDiffResultState(responses.diffResponse, responses.fileResponse, fallbackLines);
 }
 
+watch(loadError, (message) => {
+  if (message) {
+    pushError(message);
+  }
+});
 watch(() => props.filePath, () => { isEditing.value = false; });
 watch(() => [props.projectPath, props.filePath, props.refreshToken ?? 0, props.isActive], () => { void loadFilePreview(); }, { immediate: true });
 </script>
