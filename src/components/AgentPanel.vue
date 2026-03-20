@@ -73,7 +73,7 @@
             class="btn btn-sm min-w-0 px-2"
             :disabled="!isTerminalReady"
             :title="quickKey.accelerator"
-            @click="sendQuickKey(quickKey.input)"
+            @click="sendQuickKey(quickKey)"
           >
             <ArrowUp v-if="quickKey.icon === 'arrow-up'" :size="14" />
             <ArrowDown v-else-if="quickKey.icon === 'arrow-down'" :size="14" />

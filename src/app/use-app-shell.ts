@@ -52,13 +52,17 @@ export function useAppShell() {
     { length: QUICK_KEY_GRID_SIZE },
     () => null
   );
+  const quickKeysByInput = new Map<string, QuickKeyBinding>();
   for (const quickKey of window.projectApi.quickKeys) {
+    quickKeysByInput.set(quickKey.input, quickKey);
     if (quickKey.gridIndex < 1 || quickKey.gridIndex > QUICK_KEY_GRID_SIZE) {
       continue;
     }
 
     quickKeyGridSlots[quickKey.gridIndex - 1] = quickKey;
   }
+
+  const findQuickKeyByInput = (input: string) => quickKeysByInput.get(input);
 
   const isOpening = ref(false);
   const isTerminalReady = ref(false);
@@ -400,6 +404,7 @@ export function useAppShell() {
     handleHistoryNavigationMouseButton,
     reportUiError,
     subscribeGlobalQuickKey: (listener) => window.projectApi.onGlobalQuickKey(listener),
+    findQuickKeyByInput,
     sendQuickKey,
     resizeTerminalInputTextareaElement,
     openLastProjectOnStartup,

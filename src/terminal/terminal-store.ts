@@ -29,7 +29,7 @@ export interface AppTerminalStore {
   handleTextareaInput: (event: Event) => void;
   handleTextareaPaste: (event: ClipboardEvent) => MaybePromise;
   sendTextareaToTerminal: () => MaybePromise;
-  sendQuickKey: (data: string) => void;
+  sendQuickKey: (quickKey: QuickKeyBinding) => void;
   focusTextarea: () => void;
 }
 

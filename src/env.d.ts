@@ -53,6 +53,7 @@ interface SettingsApi {
 }
 
 type QuickKeyIcon = "arrow-up" | "arrow-down" | "arrow-left" | "arrow-right" | "enter";
+type QuickKeyMode = "raw" | "text";
 
 interface QuickKeyBinding {
   id: string;
@@ -60,6 +61,7 @@ interface QuickKeyBinding {
   input: string;
   label: string;
   icon: QuickKeyIcon | null;
+  mode: QuickKeyMode;
   gridIndex: number;
 }
 

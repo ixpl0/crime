@@ -130,12 +130,27 @@ export function useTerminalActions({
     focusTerminal();
   }
 
-  function sendQuickKey(data: string) {
+  function sendQuickKey(quickKey: QuickKeyBinding) {
     if (!isTerminalReady.value) {
       return;
     }
 
-    void sendTerminalInput(data, "Failed to send quick key to terminal.");
+    if (quickKey.mode === "text") {
+      void submitQuickKeyText(quickKey.input);
+      return;
+    }
+
+    void sendTerminalInput(quickKey.input, "Failed to send quick key to terminal.");
+  }
+
+  async function submitQuickKeyText(text: string) {
+    const textOk = await sendTerminalInput(text, "Failed to send text to terminal.");
+    if (!textOk) {
+      return;
+    }
+
+    await sendTerminalInput("\r", "Failed to send Enter to terminal.");
+    focusTerminal();
   }
 
   async function sendTodoEntryToTerminal(index: number) {

@@ -23,7 +23,8 @@ interface UseAppRuntimeOptions {
   handleHistoryNavigationMouseButton: (event: MouseEvent) => void;
   reportUiError: (context: string, error: unknown, fallbackMessage: string) => string;
   subscribeGlobalQuickKey: (listener: (input: string) => void) => () => void;
-  sendQuickKey: (data: string) => void;
+  findQuickKeyByInput: (input: string) => QuickKeyBinding | undefined;
+  sendQuickKey: (quickKey: QuickKeyBinding) => void;
   resizeTerminalInputTextareaElement: () => void;
   openLastProjectOnStartup: () => Promise<void>;
   handleTodoPanelCollapsedChanged: (isCollapsed: boolean) => void;
@@ -123,7 +124,10 @@ function subscribeGlobalQuickKeys(
   state: RuntimeSubscriptionState
 ) {
   state.unsubscribeGlobalQuickKey = options.subscribeGlobalQuickKey((input) => {
-    options.sendQuickKey(input);
+    const quickKey = options.findQuickKeyByInput(input);
+    if (quickKey) {
+      options.sendQuickKey(quickKey);
+    }
   });
 }
 

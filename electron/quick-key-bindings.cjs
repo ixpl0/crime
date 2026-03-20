@@ -8,6 +8,7 @@ const quickKeyBindings = Object.freeze([
     input: "1",
     label: "1",
     icon: null,
+    mode: "raw",
     gridIndex: 1
   },
   {
@@ -16,6 +17,7 @@ const quickKeyBindings = Object.freeze([
     input: "2",
     label: "2",
     icon: null,
+    mode: "raw",
     gridIndex: 2
   },
   {
@@ -24,6 +26,7 @@ const quickKeyBindings = Object.freeze([
     input: "3",
     label: "3",
     icon: null,
+    mode: "raw",
     gridIndex: 3
   },
   {
@@ -32,7 +35,17 @@ const quickKeyBindings = Object.freeze([
     input: "4",
     label: "4",
     icon: null,
+    mode: "raw",
     gridIndex: 4
+  },
+  {
+    id: "quick-yes",
+    accelerator: withPrimaryModifier("Alt+Shift+Y"),
+    input: "\u0434\u0430",
+    label: "\u0414\u0430",
+    icon: null,
+    mode: "text",
+    gridIndex: 5
   },
   {
     id: "quick-up",
@@ -40,7 +53,17 @@ const quickKeyBindings = Object.freeze([
     input: "\x1b[A",
     label: "Up",
     icon: "arrow-up",
+    mode: "raw",
     gridIndex: 6
+  },
+  {
+    id: "quick-no",
+    accelerator: withPrimaryModifier("Alt+Shift+N"),
+    input: "\u043d\u0435\u0442",
+    label: "\u041d\u0435\u0442",
+    icon: null,
+    mode: "text",
+    gridIndex: 7
   },
   {
     id: "quick-esc",
@@ -48,6 +71,7 @@ const quickKeyBindings = Object.freeze([
     input: "\x1b",
     label: "Esc",
     icon: null,
+    mode: "raw",
     gridIndex: 8
   },
   {
@@ -56,6 +80,7 @@ const quickKeyBindings = Object.freeze([
     input: "\x1b[D",
     label: "Left",
     icon: "arrow-left",
+    mode: "raw",
     gridIndex: 9
   },
   {
@@ -64,6 +89,7 @@ const quickKeyBindings = Object.freeze([
     input: "\x1b[B",
     label: "Down",
     icon: "arrow-down",
+    mode: "raw",
     gridIndex: 10
   },
   {
@@ -72,6 +98,7 @@ const quickKeyBindings = Object.freeze([
     input: "\x1b[C",
     label: "Right",
     icon: "arrow-right",
+    mode: "raw",
     gridIndex: 11
   },
   {
@@ -80,6 +107,7 @@ const quickKeyBindings = Object.freeze([
     input: "\r",
     label: "Enter",
     icon: "enter",
+    mode: "raw",
     gridIndex: 12
   }
 ]);

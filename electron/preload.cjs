@@ -43,6 +43,7 @@ const quickKeyBindings = Object.freeze([
     "input": "1",
     "label": "1",
     "icon": null,
+    "mode": "raw",
     "gridIndex": 1
   },
   {
@@ -51,6 +52,7 @@ const quickKeyBindings = Object.freeze([
     "input": "2",
     "label": "2",
     "icon": null,
+    "mode": "raw",
     "gridIndex": 2
   },
   {
@@ -59,6 +61,7 @@ const quickKeyBindings = Object.freeze([
     "input": "3",
     "label": "3",
     "icon": null,
+    "mode": "raw",
     "gridIndex": 3
   },
   {
@@ -67,7 +70,17 @@ const quickKeyBindings = Object.freeze([
     "input": "4",
     "label": "4",
     "icon": null,
+    "mode": "raw",
     "gridIndex": 4
+  },
+  {
+    "id": "quick-yes",
+    "accelerator": "Ctrl+Alt+Shift+Y",
+    "input": "да",
+    "label": "Да",
+    "icon": null,
+    "mode": "text",
+    "gridIndex": 5
   },
   {
     "id": "quick-up",
@@ -75,7 +88,17 @@ const quickKeyBindings = Object.freeze([
     "input": "\u001b[A",
     "label": "Up",
     "icon": "arrow-up",
+    "mode": "raw",
     "gridIndex": 6
+  },
+  {
+    "id": "quick-no",
+    "accelerator": "Ctrl+Alt+Shift+N",
+    "input": "нет",
+    "label": "Нет",
+    "icon": null,
+    "mode": "text",
+    "gridIndex": 7
   },
   {
     "id": "quick-esc",
@@ -83,6 +106,7 @@ const quickKeyBindings = Object.freeze([
     "input": "\u001b",
     "label": "Esc",
     "icon": null,
+    "mode": "raw",
     "gridIndex": 8
   },
   {
@@ -91,6 +115,7 @@ const quickKeyBindings = Object.freeze([
     "input": "\u001b[D",
     "label": "Left",
     "icon": "arrow-left",
+    "mode": "raw",
     "gridIndex": 9
   },
   {
@@ -99,6 +124,7 @@ const quickKeyBindings = Object.freeze([
     "input": "\u001b[B",
     "label": "Down",
     "icon": "arrow-down",
+    "mode": "raw",
     "gridIndex": 10
   },
   {
@@ -107,6 +133,7 @@ const quickKeyBindings = Object.freeze([
     "input": "\u001b[C",
     "label": "Right",
     "icon": "arrow-right",
+    "mode": "raw",
     "gridIndex": 11
   },
   {
@@ -115,6 +142,7 @@ const quickKeyBindings = Object.freeze([
     "input": "\r",
     "label": "Enter",
     "icon": "enter",
+    "mode": "raw",
     "gridIndex": 12
   }
 ]);
@@ -130,17 +158,8 @@ function normalizeZoomFactor(value) {
   return Math.min(Math.max(value, MIN_ZOOM_FACTOR), MAX_ZOOM_FACTOR);
 }
 
-const exposedQuickKeys = quickKeyBindings.map((binding) => ({
-  id: binding.id,
-  accelerator: binding.accelerator,
-  input: binding.input,
-  label: binding.label,
-  icon: binding.icon,
-  gridIndex: binding.gridIndex
-}));
-
 contextBridge.exposeInMainWorld("projectApi", {
-  quickKeys: exposedQuickKeys,
+  quickKeys: quickKeyBindings,
   openFolder: () => ipcRenderer.invoke(IPC_CHANNELS.projectOpenFolder),
   settings: {
     directoryName: SETTINGS_DIRNAME,
