@@ -73,7 +73,7 @@ function appendPromptSuffixes(state: TerminalSubmitState, rawText: string) {
 
   const cleanedText = rawText.replace(/[\r\n]+$/, "");
   const suffixLines = activeSuffixValues.map((value) => `- ${value}`).join("\n");
-  return `${cleanedText}\n\n\u0414\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0435 \u0442\u0440\u0435\u0431\u043e\u0432\u0430\u043d\u0438\u044f:\n${suffixLines}`;
+  return `${cleanedText}\n\nДополнительные требования:\n${suffixLines}`;
 }
 
 function enqueueTerminalOperation<T>(

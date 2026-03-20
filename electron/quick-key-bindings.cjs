@@ -41,8 +41,8 @@ const quickKeyBindings = Object.freeze([
   {
     id: "quick-yes",
     accelerator: withPrimaryModifier("Alt+Shift+Y"),
-    input: "\u0434\u0430",
-    label: "\u0414\u0430",
+    input: "да",
+    label: "Да",
     icon: null,
     mode: "text",
     gridIndex: 5
@@ -59,8 +59,8 @@ const quickKeyBindings = Object.freeze([
   {
     id: "quick-no",
     accelerator: withPrimaryModifier("Alt+Shift+N"),
-    input: "\u043d\u0435\u0442",
-    label: "\u041d\u0435\u0442",
+    input: "нет",
+    label: "Нет",
     icon: null,
     mode: "text",
     gridIndex: 7
