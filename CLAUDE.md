@@ -1,4 +1,4 @@
-# Dream IDE
+# Crime
 
 General-purpose desktop IDE for projects in any language. Built with Electron + Vue 3, features integrated terminal and configurable toolbar.
 
@@ -21,7 +21,7 @@ electron/
   main.mjs               — Electron main process entry, window creation, IPC registration
   preload.cjs            — Context bridge (contextIsolation: true, window.projectApi)
   ipc-channels.cjs       — IPC channel name constants
-  settings-constants.cjs — Settings directory name (".ide")
+  settings-constants.cjs — Settings directory name (".crime")
   quick-key-bindings.cjs — Global quick key definitions
   main/
     child-process-env.mjs  — PTY/shell environment setup
@@ -80,7 +80,7 @@ src/
   - `git:changed/watch/unwatch`
   - `shell:open-external`
   - `global:quick-key`
-- **Per-project config** (in `.ide/` directory):
+- **Per-project config** (in `.crime/` directory):
   - `agent-toolbar.json` — toolbar actions and dropdowns
   - `settings.json` — zoom, terminal, slash-command settings
   - `prompt-suffixes.json` — prompt suffix presets
@@ -91,7 +91,7 @@ src/
 
 ## Engineering Principles
 
-- **Language-agnostic IDE**: Dream IDE is used for projects in any programming language. Toolbar prompts (review, practices, etc.) must not assume a specific language or ecosystem — always detect the project's stack first.
+- **Language-agnostic IDE**: Crime is used for projects in any programming language. Toolbar prompts (review, practices, etc.) must not assume a specific language or ecosystem — always detect the project's stack first.
 - **Terminal freedom first**: do not sanitize, rewrite, or filter PTY byte streams. Terminal behavior must remain fully controlled by shell and user actions.
 - **Fail-fast in development**: surface errors immediately in UI/logs instead of silently swallowing them.
 - **Focus management**: Tab-навигация отключена для всех UI-элементов. Основной фокус — textarea терминала. Обеспечивается: (1) глобальный mousedown handler в App.vue предотвращает фокус на кнопках, (2) CSS убирает focus outline, (3) tabindex="-1" на всех кнопках. При добавлении новых кнопок — всегда ставить tabindex="-1".

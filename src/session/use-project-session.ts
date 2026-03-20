@@ -30,7 +30,7 @@ import type { TerminalInputHistoryLoadSource } from "../terminal/use-terminal-in
 import type { TodoEntriesLoadSource } from "../todo/use-todo-panel";
 
 const EMPTY_PROMPT_SUFFIX_CONFIG: PromptSuffixConfig = { items: [] };
-const LAST_PROJECT_PATH_STORAGE_KEY = "dream-ide:last-project-path";
+const LAST_PROJECT_PATH_STORAGE_KEY = "crime:last-project-path";
 const SETTINGS_WATCH_ALL = "*";
 
 export interface UseProjectSessionOptions {
@@ -167,7 +167,7 @@ async function loadPromptSuffixConfigForProject(state: ProjectSessionState, path
     state.options.reportUiError(
       "Prompt suffix config",
       error,
-      "Failed to load prompt suffix config. Fix .ide/prompt-suffixes.json or use Reset in Prompt Suffix Settings."
+      "Failed to load prompt suffix config. Fix .crime/prompt-suffixes.json or use Reset in Prompt Suffix Settings."
     );
   }
 }

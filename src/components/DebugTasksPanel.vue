@@ -3,13 +3,13 @@
     <div class="card-body min-h-0 p-3">
       <div class="flex items-center justify-between gap-2">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
-          Задачи Dream IDE
+          Задачи Crime
         </h2>
         <button
           class="btn btn-ghost btn-xs"
           type="button"
           tabindex="-1"
-          title="Скрыть панель задач Dream IDE"
+          title="Скрыть панель задач Crime"
           @click="hidePanel"
         >
           <EyeOff :size="14" class="opacity-60" />

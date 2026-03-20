@@ -168,7 +168,7 @@ function applyThemeIcon(win) {
 function createWindow() {
   const initialWindowState = getInitialWindowState();
   const mainWindow = new BrowserWindow({
-    title: "Dream IDE",
+    title: "Crime",
     x: initialWindowState.bounds.x,
     y: initialWindowState.bounds.y,
     width: initialWindowState.bounds.width,

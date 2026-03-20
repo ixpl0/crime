@@ -10,7 +10,7 @@
             class="btn btn-ghost btn-xs"
             type="button"
             tabindex="-1"
-            :title="isDebugTodoPanelVisible ? 'Скрыть задачи Dream IDE' : 'Показать задачи Dream IDE'"
+            :title="isDebugTodoPanelVisible ? 'Скрыть задачи Crime' : 'Показать задачи Crime'"
             @click="toggleDebugTodoPanel"
           >
             <Bug :size="14" class="opacity-60" :class="{ 'text-primary opacity-100': isDebugTodoPanelVisible }" />

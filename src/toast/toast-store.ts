@@ -24,7 +24,7 @@ export interface AppToastStore {
 }
 
 const APP_TOAST_STORE_KEY: InjectionKey<AppToastStore> = Symbol(
-  "dream-ide-app-toast-store"
+  "crime-app-toast-store"
 );
 
 const DEFAULT_DURATION_MS = 4500;

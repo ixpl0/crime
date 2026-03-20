@@ -70,12 +70,12 @@ export function useAppShell() {
   const TERMINAL_INPUT_CHUNK_SIZE = 2048;
   const TEXTAREA_SUBMIT_ACTIVITY_TIMEOUT_CAP_MS = 400;
   const TEXTAREA_SUBMIT_QUIET_TIMEOUT_CAP_MS = 1200;
-  const RECENT_PROJECTS_STORAGE_KEY = "dream-ide:recent-projects";
-  const TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:todo-panel-collapsed";
-  const DEBUG_TODO_PANEL_VISIBLE_STORAGE_KEY = "dream-ide:debug-todo-panel-visible";
-  const DEBUG_TODO_PANEL_COLLAPSED_STORAGE_KEY = "dream-ide:debug-todo-panel-collapsed";
-  const DREAM_IDE_PROJECT_PATH = "D:\\projects\\life\\dream-ide";
-  const AGENT_DETACHED_STORAGE_KEY = "dream-ide:agent-detached";
+  const RECENT_PROJECTS_STORAGE_KEY = "crime:recent-projects";
+  const TODO_PANEL_COLLAPSED_STORAGE_KEY = "crime:todo-panel-collapsed";
+  const DEBUG_TODO_PANEL_VISIBLE_STORAGE_KEY = "crime:debug-todo-panel-visible";
+  const DEBUG_TODO_PANEL_COLLAPSED_STORAGE_KEY = "crime:debug-todo-panel-collapsed";
+  const CRIME_PROJECT_PATH = "D:\\projects\\life\\crime";
+  const AGENT_DETACHED_STORAGE_KEY = "crime:agent-detached";
 
   const isAgentDetached = ref(
     localStorage.getItem(AGENT_DETACHED_STORAGE_KEY) === "true"
@@ -95,7 +95,7 @@ export function useAppShell() {
   const isDebugTodoPanelVisible = ref(
     localStorage.getItem(DEBUG_TODO_PANEL_VISIBLE_STORAGE_KEY) === "1"
   );
-  const debugTodoProjectPath = ref<string | null>(DREAM_IDE_PROJECT_PATH);
+  const debugTodoProjectPath = ref<string | null>(CRIME_PROJECT_PATH);
 
   const {
     isTodoPanelCollapsed,
@@ -404,7 +404,7 @@ export function useAppShell() {
     resizeTerminalInputTextareaElement,
     openLastProjectOnStartup,
     handleTodoPanelCollapsedChanged,
-    loadDebugTodoEntries: () => debugTodo.loadTodoEntriesForProject(DREAM_IDE_PROJECT_PATH, "project-open"),
+    loadDebugTodoEntries: () => debugTodo.loadTodoEntriesForProject(CRIME_PROJECT_PATH, "project-open"),
     resizeDebugTodoTextareas: debugTodo.resizeTodoTextareas,
     stopProjectLayout,
     stopSettingsWatcher,

@@ -253,7 +253,7 @@ const {
   isResizeActive: isAgentPanelResizeActive,
   handleResizePointerDown: handleAgentPanelResizePointerDown
 } = usePanelWidthResize({
-  storageKey: "dream-ide:agent-panel-width",
+  storageKey: "crime:agent-panel-width",
   defaultWidth: 0,
   minWidth: 200,
   minOppositeWidth: 200
@@ -278,7 +278,7 @@ const {
   isResizeActive: isSidebarResizeActive,
   handleResizePointerDown: handleSidebarResizePointerDown
 } = usePanelWidthResize({
-  storageKey: "dream-ide:sidebar-panel-width",
+  storageKey: "crime:sidebar-panel-width",
   defaultWidth: 352,
   minWidth: 50,
   minOppositeWidth: 50

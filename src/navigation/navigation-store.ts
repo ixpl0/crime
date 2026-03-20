@@ -42,7 +42,7 @@ export interface AppNavigationStore {
 }
 
 const appNavigationStoreKey: InjectionKey<AppNavigationStore> = Symbol(
-  "dream-ide-app-navigation-store"
+  "crime-app-navigation-store"
 );
 
 export function provideAppNavigationStore(store: AppNavigationStore) {

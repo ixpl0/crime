@@ -1,4 +1,4 @@
-# Dream IDE
+# Crime
 
 Electron + Vue 3 desktop IDE with integrated terminal and configurable toolbar.
 
@@ -21,7 +21,7 @@ electron/
   main.mjs               — Electron main process entry, window creation, IPC registration
   preload.cjs            — Context bridge (contextIsolation: true, window.projectApi)
   ipc-channels.cjs       — IPC channel name constants
-  settings-constants.cjs — Settings directory name (".ide")
+  settings-constants.cjs — Settings directory name (".crime")
   quick-key-bindings.cjs — Global quick key definitions
   main/
     child-process-env.mjs  — PTY/shell environment setup
@@ -80,7 +80,7 @@ src/
   - `git:changed/watch/unwatch`
   - `shell:open-external`
   - `global:quick-key`
-- **Per-project config** (in `.ide/` directory):
+- **Per-project config** (in `.crime/` directory):
   - `agent-toolbar.json` — toolbar actions and dropdowns
   - `settings.json` — zoom, terminal, slash-command settings
   - `prompt-suffixes.json` — prompt suffix presets

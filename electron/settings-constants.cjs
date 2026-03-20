@@ -1,4 +1,4 @@
-const SETTINGS_DIRNAME = ".ide";
+const SETTINGS_DIRNAME = ".crime";
 
 module.exports = {
   SETTINGS_DIRNAME

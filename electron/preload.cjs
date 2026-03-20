@@ -35,7 +35,7 @@ const IPC_CHANNELS = Object.freeze({
   "windowFlashFrame": "window:flash-frame"
 });
 
-const SETTINGS_DIRNAME = ".ide";
+const SETTINGS_DIRNAME = ".crime";
 const quickKeyBindings = Object.freeze([
   {
     "id": "quick-1",

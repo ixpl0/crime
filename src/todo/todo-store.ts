@@ -25,7 +25,7 @@ export interface AppTodoStore {
 }
 
 const appTodoStoreKey: InjectionKey<AppTodoStore> = Symbol(
-  "dream-ide-app-todo-store"
+  "crime-app-todo-store"
 );
 
 export function provideAppTodoStore(store: AppTodoStore) {

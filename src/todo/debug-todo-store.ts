@@ -21,7 +21,7 @@ export interface DebugTodoStore {
 }
 
 const debugTodoStoreKey: InjectionKey<DebugTodoStore> = Symbol(
-  "dream-ide-debug-todo-store"
+  "crime-debug-todo-store"
 );
 
 export function provideDebugTodoStore(store: DebugTodoStore) {

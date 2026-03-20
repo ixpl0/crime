@@ -34,7 +34,7 @@ export interface AppTerminalStore {
 }
 
 const appTerminalStoreKey: InjectionKey<AppTerminalStore> = Symbol(
-  "dream-ide-app-terminal-store"
+  "crime-app-terminal-store"
 );
 
 export function provideAppTerminalStore(store: AppTerminalStore) {

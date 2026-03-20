@@ -11,7 +11,7 @@ const VALID_THEMES: readonly string[] = [
 ];
 
 const DEFAULT_THEME: Theme = "light";
-const STORAGE_KEY = "dream-ide-theme";
+const STORAGE_KEY = "crime-theme";
 
 const toValidTheme = (value: string | null): Theme =>
   value !== null && VALID_THEMES.includes(value) ? value as Theme : DEFAULT_THEME;

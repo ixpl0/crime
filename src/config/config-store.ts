@@ -41,7 +41,7 @@ export interface AppConfigStore {
 }
 
 const appConfigStoreKey: InjectionKey<AppConfigStore> = Symbol(
-  "dream-ide-app-config-store"
+  "crime-app-config-store"
 );
 
 export function provideAppConfigStore(store: AppConfigStore) {

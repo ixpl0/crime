@@ -1,5 +1,5 @@
-appId: com.dream-ide.app
-productName: Dream IDE
+appId: com.crime.app
+productName: Crime
 
 directories:
   output: release

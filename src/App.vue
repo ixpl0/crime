@@ -8,7 +8,7 @@
       <template v-if="!projectPath">
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
-            <h1 class="card-title text-3xl">Dream IDE</h1>
+            <h1 class="card-title text-3xl">Crime</h1>
             <p class="opacity-80">Choose a folder to open it as a project.</p>
             <div class="card-actions justify-end">
               <button
@@ -89,7 +89,7 @@ const {
   isResizeActive: isTasksPanelResizeActive,
   handleResizePointerDown: handleTasksPanelResizePointerDown
 } = usePanelWidthResize({
-  storageKey: "dream-ide:tasks-panel-width",
+  storageKey: "crime:tasks-panel-width",
   defaultWidth: TASKS_PANEL_DEFAULT_WIDTH,
   minOppositeWidth: 400
 });
@@ -100,7 +100,7 @@ const {
   isResizeActive: isDebugPanelResizeActive,
   handleResizePointerDown: handleDebugPanelResizePointerDown
 } = usePanelHeightResize({
-  storageKey: "dream-ide:debug-tasks-panel-height",
+  storageKey: "crime:debug-tasks-panel-height",
   defaultHeight: DEBUG_PANEL_DEFAULT_HEIGHT,
   minHeight: 100,
   minOppositeHeight: 100
