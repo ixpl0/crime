@@ -1,4 +1,4 @@
-﻿import { app, BrowserWindow, globalShortcut, ipcMain, nativeTheme } from "electron";
+﻿import { app, BrowserWindow, globalShortcut, ipcMain } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import ipcChannelsModule from "./ipc-channels.cjs";
@@ -142,27 +142,9 @@ function isActiveSession(webContentsId, sessionId, shellProcess) {
   return session?.process === shellProcess;
 }
 
-function getThemeIconPath() {
-  const isDarkTheme = nativeTheme.shouldUseDarkColors;
-  if (process.platform === "win32") {
-    return join(__dirname, "assets", isDarkTheme ? "icon-dark.ico" : "icon-light.ico");
-  }
-
-  return join(__dirname, "assets", isDarkTheme ? "icon-dark.png" : "icon-light.png");
-}
-
-function applyThemeIcon(win) {
-  if (win.isDestroyed()) {
-    return;
-  }
-
-  const iconPath = getThemeIconPath();
-  if (process.platform === "darwin") {
-    app.dock?.setIcon(iconPath);
-    return;
-  }
-
-  win.setIcon(iconPath);
+function getIconPath() {
+  const extension = process.platform === "win32" ? "ico" : "png";
+  return join(__dirname, "assets", `icon.${extension}`);
 }
 
 function createWindow() {
@@ -174,7 +156,7 @@ function createWindow() {
     width: initialWindowState.bounds.width,
     height: initialWindowState.bounds.height,
     show: !initialWindowState.isMaximized,
-    icon: getThemeIconPath(),
+    icon: getIconPath(),
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -198,7 +180,6 @@ function createWindow() {
     mainWindow.show();
   }
 
-  applyThemeIcon(mainWindow);
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
@@ -278,13 +259,6 @@ app.whenReady().then(() => {
   registerIpcHandlers();
   createWindow();
   registerGlobalQuickKeys();
-
-  nativeTheme.on("updated", () => {
-    const windows = BrowserWindow.getAllWindows();
-    for (const win of windows) {
-      applyThemeIcon(win);
-    }
-  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

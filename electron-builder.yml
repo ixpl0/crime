@@ -18,9 +18,11 @@ asar: true
 asarUnpack:
   - "node_modules/node-pty/**/*"
 
+afterPack: scripts/after-pack.mjs
+
 win:
   target: nsis
-  icon: electron/assets/app.ico
+  icon: electron/assets/icon.ico
   signAndEditExecutable: false
 
 nsis:
@@ -28,11 +30,6 @@ nsis:
   allowToChangeInstallationDirectory: true
   perMachine: false
   deleteAppDataOnUninstall: false
-
-mac:
-  target: dmg
-  icon: electron/assets/icon.icns
-  category: public.app-category.developer-tools
 
 linux:
   target: AppImage
