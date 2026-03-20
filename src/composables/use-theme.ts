@@ -10,11 +10,13 @@ const VALID_THEMES: readonly string[] = [
   "winter", "dim", "nord", "sunset"
 ];
 
-const DEFAULT_THEME: Theme = "light";
 const STORAGE_KEY = "crime-theme";
 
+const getSystemTheme = (): Theme =>
+  window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
 const toValidTheme = (value: string | null): Theme =>
-  value !== null && VALID_THEMES.includes(value) ? value as Theme : DEFAULT_THEME;
+  value !== null && VALID_THEMES.includes(value) ? value as Theme : getSystemTheme();
 
 const currentTheme = ref<Theme>(toValidTheme(localStorage.getItem(STORAGE_KEY)));
 
