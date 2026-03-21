@@ -107,6 +107,12 @@ interface FilesystemCopyResponse {
   error?: string;
 }
 
+interface FilesystemCreatePathResponse {
+  ok: boolean;
+  path?: string;
+  error?: string;
+}
+
 interface FilesystemApi {
   readDirectory: (path: string) => Promise<FilesystemReadResponse>;
   readFile: (projectPath: string, filePath: string) => Promise<FilesystemReadFileResponse>;
@@ -114,6 +120,7 @@ interface FilesystemApi {
   writeFile: (projectPath: string, filePath: string, content: string) => Promise<FilesystemWriteFileResponse>;
   movePath: (projectPath: string, sourcePath: string, destinationDirectory: string) => Promise<FilesystemMoveResponse>;
   copyPaths: (projectPath: string, sourcePaths: readonly string[], destinationDirectory: string) => Promise<FilesystemCopyResponse>;
+  createPath: (projectPath: string, parentDirectory: string, name: string, isDirectory: boolean) => Promise<FilesystemCreatePathResponse>;
   getPathForFile: (file: File) => string;
 }
 

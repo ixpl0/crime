@@ -1,10 +1,11 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
 import { type DeletedChildrenByParent } from "./file-tree-status-utils";
 import { toErrorMessage } from "../../utils/fail-fast";
-import { clampContextMenuX, clampContextMenuY, getGitUnavailableMessage } from "../../utils/context-menu-utils";
+import { clampContextMenuX, clampContextMenuY } from "../../utils/context-menu-utils";
 import { buildNextTreeState, type NextTreeState } from "./file-manager-panel-utils";
 import type { FileManagerContextMenuPayload, FileManagerContextMenuState } from "./file-manager-context-menu-types";
 import { useFileDrag } from "./use-file-drag";
+import { useFileManagerActions } from "./use-file-manager-actions";
 export type { FileManagerContextMenuPayload, FileManagerContextMenuState };
 
 const FILESYSTEM_REFRESH_INTERVAL_MS = 5000;
@@ -15,6 +16,7 @@ interface UseFileManagerPanelOptions {
   gitRefreshToken: Ref<number>;
   refreshGitStatus: () => Promise<void>;
   requestConfirm: (options: { title: string; body?: string }) => Promise<boolean>;
+  requestPrompt: (options: { title: string; placeholder?: string }) => Promise<string | null>;
 }
 
 // eslint-disable-next-line max-lines-per-function
@@ -23,7 +25,8 @@ export function useFileManagerPanel({
   gitStatusResponse,
   gitRefreshToken,
   refreshGitStatus,
-  requestConfirm
+  requestConfirm,
+  requestPrompt
 }: UseFileManagerPanelOptions) {
   const isLoading = ref(false);
   const loadError = ref("");
@@ -75,7 +78,6 @@ export function useFileManagerPanel({
     if (nextState.stateSnapshot === lastStateSnapshot) {
       return;
     }
-
     const hasStructureChanged = nextState.structureSnapshot !== lastStructureSnapshot;
     lastStateSnapshot = nextState.stateSnapshot;
     lastStructureSnapshot = nextState.structureSnapshot;
@@ -97,7 +99,6 @@ export function useFileManagerPanel({
     if (!lastDirectoryResponse || !gitResponse) {
       return;
     }
-
     const nextState = buildNextTreeState(projectPath.value, lastDirectoryResponse, gitResponse);
     applyTreeState(nextState);
   }
@@ -113,7 +114,6 @@ export function useFileManagerPanel({
       if (requestId !== loadRequestId) {
         return null;
       }
-
       const message = toErrorMessage(error, "Failed to load project directory.");
       if (!isBackgroundRefresh) {
         isLoading.value = false;
@@ -131,114 +131,40 @@ export function useFileManagerPanel({
       isLoading.value = true;
       loadError.value = "";
     }
-
     const directoryResponse = await requestDirectoryState(requestId, isBackgroundRefresh);
     if (!directoryResponse) {
       return;
     }
-
     if (!isBackgroundRefresh) {
       isLoading.value = false;
     }
-
     lastDirectoryResponse = directoryResponse;
     const gitResponse = gitStatusResponse.value ?? { ok: true, available: true, entries: [] };
     const nextState = buildNextTreeState(projectPath.value, directoryResponse, gitResponse);
     applyTreeState(nextState);
   };
 
-  async function revertPath(path: string) {
-    if (isActionInProgress.value || !await requestConfirm({ title: "Откатить изменения файла?", body: path })) {
-      return;
-    }
-    closeContextMenu();
-    revertingPath.value = path;
-    loadError.value = "";
-    try {
-      const response = await window.projectApi.git.revertFile(projectPath.value, path);
-      if (!response.ok) {
-        loadError.value = response.error ?? "Failed to revert file changes.";
-      } else if (!response.available) {
-        loadError.value = getGitUnavailableMessage(response.reason);
-      } else {
-        await refreshGitStatus();
-        await loadRootDirectory(true);
-      }
-    } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to revert file changes.");
-    } finally {
-      revertingPath.value = null;
-    }
-  }
-
-  async function revertAllChanges() {
-    if (isActionInProgress.value || !hasChanges.value) {
-      return;
-    }
-    if (!await requestConfirm({ title: "Откатить ВСЕ изменения?", body: "Это удалит все незакоммиченные правки в текущем проекте." })) {
-      return;
-    }
-    closeContextMenu();
-    isRevertingAll.value = true;
-    loadError.value = "";
-    try {
-      const response = await window.projectApi.git.revertAll(projectPath.value);
-      if (!response.ok) {
-        loadError.value = response.error ?? "Failed to revert all changes.";
-      } else if (!response.available) {
-        loadError.value = getGitUnavailableMessage(response.reason);
-      } else {
-        await refreshGitStatus();
-        await loadRootDirectory(true);
-      }
-    } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to revert all changes.");
-    } finally {
-      isRevertingAll.value = false;
-    }
-  }
-
-  async function deletePath(targetPath: string, isDirectory: boolean) {
-    const entityLabel = isDirectory ? "папку" : "файл";
-    if (isActionInProgress.value || !await requestConfirm({ title: `Удалить ${entityLabel}?`, body: targetPath })) {
-      return;
-    }
-    closeContextMenu();
-    revertingPath.value = targetPath;
-    loadError.value = "";
-    try {
-      const response = await window.projectApi.filesystem.deletePath(projectPath.value, targetPath);
-      if (!response.ok) {
-        loadError.value = response.error ?? "Failed to delete path.";
-      } else {
-        await refreshGitStatus();
-        await loadRootDirectory(true);
-      }
-    } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to delete path.");
-    } finally {
-      revertingPath.value = null;
-    }
-  }
-
-  const handleContextMenuRevertClick = () => {
-    if (contextMenu.value) { void revertPath(contextMenu.value.path); }
-  };
-  const handleContextMenuDeleteClick = () => {
-    if (contextMenu.value) { void deletePath(contextMenu.value.path, contextMenu.value.isDirectory); }
-  };
-  const handleRevertAllClick = () => { void revertAllChanges(); };
+  const {
+    handleContextMenuRevertClick,
+    handleContextMenuDeleteClick,
+    handleContextMenuNewFileClick,
+    handleContextMenuNewFolderClick,
+    handleRevertAllClick
+  } = useFileManagerActions({
+    projectPath, loadError, revertingPath, isRevertingAll,
+    hasChanges, isActionInProgress, contextMenu,
+    closeContextMenu, refreshGitStatus, loadRootDirectory,
+    requestConfirm, requestPrompt
+  });
 
   function handleGlobalPointerDown(event: PointerEvent) {
     if (!contextMenu.value) {
       return;
     }
-
     const target = event.target;
     if (contextMenuElement.value && target instanceof Node && contextMenuElement.value.contains(target)) {
       return;
     }
-
     closeContextMenu();
   }
 
@@ -264,7 +190,6 @@ export function useFileManagerPanel({
       if (typeof document !== "undefined" && document.visibilityState !== "visible") {
         return;
       }
-
       isAutoRefreshInFlight = true;
       void loadRootDirectory(true).finally(() => {
         isAutoRefreshInFlight = false;
@@ -324,6 +249,8 @@ export function useFileManagerPanel({
     openContextMenu,
     handleContextMenuRevertClick,
     handleContextMenuDeleteClick,
+    handleContextMenuNewFileClick,
+    handleContextMenuNewFolderClick,
     handleRevertAllClick,
     fileDragContext
   };

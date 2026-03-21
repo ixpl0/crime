@@ -16,6 +16,7 @@
         @dragover="handlePanelDragOver"
         @drop="handlePanelDrop"
         @dragleave="handlePanelDragLeave"
+        @contextmenu.self="handlePanelContextMenu"
       >
         <div v-if="isLoading" class="flex items-center justify-center py-8">
           <span class="loading loading-spinner loading-md" />
@@ -62,6 +63,28 @@
         @contextmenu.prevent
       >
         <button
+          v-if="contextMenu.status !== 'deleted'"
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start"
+          tabindex="-1"
+          :disabled="isActionInProgress"
+          @click="handleContextMenuNewFileClick"
+        >
+          <FilePlus :size="14" />
+          New file
+        </button>
+        <button
+          v-if="contextMenu.status !== 'deleted'"
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start"
+          tabindex="-1"
+          :disabled="isActionInProgress"
+          @click="handleContextMenuNewFolderClick"
+        >
+          <FolderPlus :size="14" />
+          New folder
+        </button>
+        <button
           v-if="contextMenu.status !== null"
           type="button"
           class="btn btn-ghost btn-sm w-full justify-start"
@@ -73,7 +96,7 @@
           Revert changes
         </button>
         <button
-          v-if="contextMenu.status !== 'deleted'"
+          v-if="contextMenu.status !== 'deleted' && contextMenu.path !== props.projectPath"
           type="button"
           class="btn btn-ghost btn-sm w-full justify-start text-error"
           tabindex="-1"
@@ -103,8 +126,8 @@
 
 <script setup lang="ts">
 import { provide, toRef, watch } from "vue";
-import { RotateCcw, Trash2 } from "lucide-vue-next";
-import { useConfirmDialog } from "../../utils/dialog-utils";
+import { FilePlus, FolderPlus, RotateCcw, Trash2 } from "lucide-vue-next";
+import { useConfirmDialog, usePromptDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import FileTreeNode from "./FileTreeNode.vue";
 import { useFileManagerPanel } from "./use-file-manager-panel";
@@ -132,6 +155,7 @@ const emit = defineEmits<{
 }>();
 
 const { requestConfirm } = useConfirmDialog();
+const { requestPrompt } = usePromptDialog();
 const { pushError } = useAppToastStore();
 
 const {
@@ -151,6 +175,8 @@ const {
   openContextMenu,
   handleContextMenuRevertClick,
   handleContextMenuDeleteClick,
+  handleContextMenuNewFileClick,
+  handleContextMenuNewFolderClick,
   handleRevertAllClick,
   fileDragContext
 } = useFileManagerPanel({
@@ -158,10 +184,20 @@ const {
   gitStatusResponse: toRef(props, "gitStatusResponse"),
   gitRefreshToken: toRef(props, "gitRefreshToken"),
   refreshGitStatus: props.refreshGitStatus,
-  requestConfirm
+  requestConfirm,
+  requestPrompt
 });
 
 provide(FILE_DRAG_KEY, fileDragContext);
+
+const handlePanelContextMenu = (event: MouseEvent) => {
+  openContextMenu({
+    event,
+    path: props.projectPath,
+    status: null,
+    isDirectory: true
+  });
+};
 
 const handlePanelDragOver = (event: DragEvent) => {
   event.preventDefault();

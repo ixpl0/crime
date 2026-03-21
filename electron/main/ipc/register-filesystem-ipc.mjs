@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { access, cp, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { toIpcErrorResponse } from "../error-utils.mjs";
 import { isPathInsideBase } from "./path-utils.mjs";
@@ -39,6 +39,7 @@ function removeFilesystemHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.filesystemWriteFile);
   ipcMain.removeHandler(IPC_CHANNELS.filesystemMovePath);
   ipcMain.removeHandler(IPC_CHANNELS.filesystemCopyPaths);
+  ipcMain.removeHandler(IPC_CHANNELS.filesystemCreatePath);
 }
 
 function withIgnoredState(entries, ignoredEntryPathKeySet, toPathKey) {
@@ -235,6 +236,37 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
       return { ok: true };
     } catch (error) {
       return toIpcErrorResponse(error, "Failed to copy files.");
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.filesystemCreatePath, async (_event, projectPath, parentDirectory, name, isDirectory) => {
+    if (typeof projectPath !== "string" || typeof parentDirectory !== "string" || typeof name !== "string") {
+      return { ok: false, error: "Project path, parent directory, and name are required." };
+    }
+
+    const resolvedParent = resolve(parentDirectory);
+    if (!isPathInsideBase(projectPath, resolvedParent)) {
+      return { ok: false, error: "Parent directory is outside project." };
+    }
+
+    const resolvedNewPath = join(resolvedParent, name);
+    if (!isPathInsideBase(projectPath, resolvedNewPath)) {
+      return { ok: false, error: "Invalid path." };
+    }
+
+    if (await pathExists(resolvedNewPath)) {
+      return { ok: false, error: `"${name}" already exists.` };
+    }
+
+    try {
+      if (isDirectory) {
+        await mkdir(resolvedNewPath);
+      } else {
+        await writeFile(resolvedNewPath, "", "utf-8");
+      }
+      return { ok: true, path: resolvedNewPath };
+    } catch (error) {
+      return toIpcErrorResponse(error, isDirectory ? "Failed to create directory." : "Failed to create file.");
     }
   });
 }

@@ -47,3 +47,51 @@ export const useConfirmDialog = (): ConfirmDialogStore => {
   }
   return store;
 };
+
+export interface PromptDialogOptions {
+  title: string;
+  placeholder?: string;
+}
+
+export interface PromptDialogState {
+  title: string;
+  placeholder: string;
+}
+
+export interface PromptDialogStore {
+  pendingState: Readonly<Ref<PromptDialogState | null>>;
+  requestPrompt: (options: PromptDialogOptions) => Promise<string | null>;
+  resolvePrompt: (result: string | null) => void;
+}
+
+const PROMPT_DIALOG_KEY = Symbol("prompt-dialog");
+
+export const providePromptDialog = (): PromptDialogStore => {
+  const pendingState = ref<PromptDialogState | null>(null);
+  let pendingResolve: ((result: string | null) => void) | null = null;
+
+  const requestPrompt = (options: PromptDialogOptions): Promise<string | null> =>
+    new Promise<string | null>((resolve) => {
+      pendingResolve = resolve;
+      pendingState.value = { title: options.title, placeholder: options.placeholder ?? "" };
+    });
+
+  const resolvePrompt = (result: string | null): void => {
+    const resolve = pendingResolve;
+    pendingResolve = null;
+    pendingState.value = null;
+    resolve?.(result);
+  };
+
+  const store: PromptDialogStore = { pendingState, requestPrompt, resolvePrompt };
+  provide(PROMPT_DIALOG_KEY, store);
+  return store;
+};
+
+export const usePromptDialog = (): PromptDialogStore => {
+  const store = inject<PromptDialogStore>(PROMPT_DIALOG_KEY);
+  if (!store) {
+    throw new Error("usePromptDialog() requires providePromptDialog() in an ancestor component.");
+  }
+  return store;
+};

@@ -23,6 +23,7 @@ const IPC_CHANNELS = Object.freeze({
   "filesystemWriteFile": "filesystem:write-file",
   "filesystemMovePath": "filesystem:move-path",
   "filesystemCopyPaths": "filesystem:copy-paths",
+  "filesystemCreatePath": "filesystem:create-path",
   "gitStatus": "git:status",
   "gitFileDiff": "git:file-diff",
   "gitRevertFile": "git:revert-file",
@@ -217,6 +218,8 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.invoke(IPC_CHANNELS.filesystemMovePath, projectPath, sourcePath, destinationDirectory),
     copyPaths: (projectPath, sourcePaths, destinationDirectory) =>
       ipcRenderer.invoke(IPC_CHANNELS.filesystemCopyPaths, projectPath, sourcePaths, destinationDirectory),
+    createPath: (projectPath, parentDirectory, name, isDirectory) =>
+      ipcRenderer.invoke(IPC_CHANNELS.filesystemCreatePath, projectPath, parentDirectory, name, isDirectory),
     getPathForFile: (file) => webUtils.getPathForFile(file)
   },
   git: {

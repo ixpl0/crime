@@ -49,6 +49,7 @@
         />
 
         <ConfirmDialog />
+        <PromptDialog />
 
         <SecretsEditor
           title="Секреты проекта"
@@ -169,6 +170,7 @@ import { useGitStatus } from "../composables/use-git-status";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
 import ConfirmDialog from "./ConfirmDialog.vue";
+import PromptDialog from "./PromptDialog.vue";
 import FileContentViewer from "./FileContentViewer.vue";
 import FileManagerPanel from "./file-manager/FileManagerPanel.vue";
 import GitGraphPanel from "./git-graph/GitGraphPanel.vue";
