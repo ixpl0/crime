@@ -154,6 +154,7 @@ export function useFileManagerPanel({
     projectPath, loadError, revertingPath, isRevertingAll,
     hasChanges, isActionInProgress, contextMenu,
     closeContextMenu, refreshGitStatus, loadRootDirectory,
+    forceRefreshTree: () => { refreshToken.value += 1; },
     requestConfirm, requestPrompt
   });
 

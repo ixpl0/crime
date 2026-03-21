@@ -14,6 +14,7 @@ interface UseFileManagerActionsOptions {
   closeContextMenu: () => void;
   refreshGitStatus: () => Promise<void>;
   loadRootDirectory: (isBackgroundRefresh?: boolean) => Promise<void>;
+  forceRefreshTree: () => void;
   requestConfirm: (options: { title: string; body?: string }) => Promise<boolean>;
   requestPrompt: (options: { title: string; placeholder?: string }) => Promise<string | null>;
 }
@@ -32,7 +33,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
   const {
     projectPath, loadError, revertingPath, isRevertingAll,
     hasChanges, isActionInProgress, contextMenu,
-    closeContextMenu, refreshGitStatus, loadRootDirectory,
+    closeContextMenu, refreshGitStatus, loadRootDirectory, forceRefreshTree,
     requestConfirm, requestPrompt
   } = options;
 
@@ -52,6 +53,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       } else {
         await refreshGitStatus();
         await loadRootDirectory(true);
+        forceRefreshTree();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert file changes.");
@@ -80,6 +82,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       } else {
         await refreshGitStatus();
         await loadRootDirectory(true);
+        forceRefreshTree();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to revert all changes.");
@@ -103,6 +106,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       } else {
         await refreshGitStatus();
         await loadRootDirectory(true);
+        forceRefreshTree();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to delete path.");
@@ -140,6 +144,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
       } else {
         await refreshGitStatus();
         await loadRootDirectory(true);
+        forceRefreshTree();
       }
     } catch (error) {
       loadError.value = toErrorMessage(error, "Failed to create path.");
