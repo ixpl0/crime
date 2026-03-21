@@ -159,6 +159,12 @@ function handleFileSelect(path: string, state: FileNavigationState) {
   state.filesDisplayPath.value = path;
 }
 
+function resetSelectedFile(state: FileNavigationState) {
+  state.selectedFilePath.value = null;
+  state.filesDisplayPath.value = null;
+  state.selectedFileTargetLine.value = null;
+}
+
 function resetChangesSelectedFile(state: FileNavigationState) {
   state.changesSelectedFilePath.value = null;
 }
@@ -188,6 +194,7 @@ function resetFileNavigationState(state: FileNavigationState) {
   state.fileTreeRevealRequestToken.value = 0;
 }
 
+// eslint-disable-next-line max-lines-per-function
 export function useFileNavigation(options: UseFileNavigationOptions) {
   const state = createFileNavigationState();
 
@@ -210,6 +217,7 @@ export function useFileNavigation(options: UseFileNavigationOptions) {
     handleChangesFileSelect: (path: string) => {
       state.changesSelectedFilePath.value = path;
     },
+    resetSelectedFile: () => { resetSelectedFile(state); },
     resetChangesSelectedFile: () => { resetChangesSelectedFile(state); },
     handleChangesPathOpen: (path: string) => {
       openChangesPathInFiles(path, options, state);

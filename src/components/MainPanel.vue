@@ -101,6 +101,7 @@
                 :target-request-token="selectedFileTargetRequestToken"
                 :refresh-token="gitStatusRefreshToken"
                 :is-active="activeTab === 'files'"
+                @file-not-found="resetSelectedFile"
               />
             </div>
           </div>
@@ -223,7 +224,8 @@ const {
   changesSelectedFilePath,
   handleChangesFileSelect,
   resetChangesSelectedFile,
-  handleChangesPathOpen
+  handleChangesPathOpen,
+  resetSelectedFile
 } = navigationStore;
 
 const mainContainer = ref<HTMLElement | null>(null);

@@ -95,11 +95,24 @@ interface FilesystemWriteFileResponse {
   error?: string;
 }
 
+interface FilesystemMoveResponse {
+  ok: boolean;
+  error?: string;
+}
+
+interface FilesystemCopyResponse {
+  ok: boolean;
+  error?: string;
+}
+
 interface FilesystemApi {
   readDirectory: (path: string) => Promise<FilesystemReadResponse>;
   readFile: (projectPath: string, filePath: string) => Promise<FilesystemReadFileResponse>;
   deletePath: (projectPath: string, targetPath: string) => Promise<FilesystemDeleteResponse>;
   writeFile: (projectPath: string, filePath: string, content: string) => Promise<FilesystemWriteFileResponse>;
+  movePath: (projectPath: string, sourcePath: string, destinationDirectory: string) => Promise<FilesystemMoveResponse>;
+  copyPaths: (projectPath: string, sourcePaths: readonly string[], destinationDirectory: string) => Promise<FilesystemCopyResponse>;
+  getPathForFile: (file: File) => string;
 }
 
 type GitFileStatus = "added" | "modified" | "deleted";

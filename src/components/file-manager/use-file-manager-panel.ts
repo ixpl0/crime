@@ -4,6 +4,7 @@ import { toErrorMessage } from "../../utils/fail-fast";
 import { clampContextMenuX, clampContextMenuY, getGitUnavailableMessage } from "../../utils/context-menu-utils";
 import { buildNextTreeState, type NextTreeState } from "./file-manager-panel-utils";
 import type { FileManagerContextMenuPayload, FileManagerContextMenuState } from "./file-manager-context-menu-types";
+import { useFileDrag } from "./use-file-drag";
 export type { FileManagerContextMenuPayload, FileManagerContextMenuState };
 
 const FILESYSTEM_REFRESH_INTERVAL_MS = 5000;
@@ -35,13 +36,11 @@ export function useFileManagerPanel({
   const isRevertingAll = ref(false);
   const revertingPath = ref<string | null>(null);
   const refreshToken = ref(0);
-  const changedFilesCount = computed(() => Object.keys(gitStatuses.value).length);
-  const hasChanges = computed(() => changedFilesCount.value > 0);
-  const headerSummary = computed(() =>
-    hasChanges.value
-      ? `${String(changedFilesCount.value)} changed`
-      : `${String(entries.value.length)} items`
-  );
+  const hasChanges = computed(() => Object.keys(gitStatuses.value).length > 0);
+  const headerSummary = computed(() => {
+    const count = Object.keys(gitStatuses.value).length;
+    return count > 0 ? `${String(count)} changed` : `${String(entries.value.length)} items`;
+  });
   const isActionInProgress = computed(() => isRevertingAll.value || revertingPath.value !== null);
 
   let loadRequestId = 0;
@@ -222,21 +221,13 @@ export function useFileManagerPanel({
     }
   }
 
-  function handleContextMenuRevertClick() {
-    if (contextMenu.value) {
-      void revertPath(contextMenu.value.path);
-    }
-  }
-
-  function handleContextMenuDeleteClick() {
-    if (contextMenu.value) {
-      void deletePath(contextMenu.value.path, contextMenu.value.isDirectory);
-    }
-  }
-
-  function handleRevertAllClick() {
-    void revertAllChanges();
-  }
+  const handleContextMenuRevertClick = () => {
+    if (contextMenu.value) { void revertPath(contextMenu.value.path); }
+  };
+  const handleContextMenuDeleteClick = () => {
+    if (contextMenu.value) { void deletePath(contextMenu.value.path, contextMenu.value.isDirectory); }
+  };
+  const handleRevertAllClick = () => { void revertAllChanges(); };
 
   function handleGlobalPointerDown(event: PointerEvent) {
     if (!contextMenu.value) {
@@ -309,6 +300,13 @@ export function useFileManagerPanel({
     startAutoRefresh();
   });
 
+  const fileDragContext = useFileDrag({
+    projectPath,
+    loadError,
+    refreshGitStatus,
+    loadRootDirectory
+  });
+
   return {
     isLoading,
     loadError,
@@ -326,6 +324,7 @@ export function useFileManagerPanel({
     openContextMenu,
     handleContextMenuRevertClick,
     handleContextMenuDeleteClick,
-    handleRevertAllClick
+    handleRevertAllClick,
+    fileDragContext
   };
 }

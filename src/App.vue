@@ -134,7 +134,8 @@ const handleGlobalMousedown = (event: MouseEvent) => {
     return;
   }
 
-  if (target.closest(FOCUSABLE_SELECTOR) || target.matches(FOCUSABLE_SELECTOR)) {
+  const focusableElement = target.closest(FOCUSABLE_SELECTOR) ?? (target.matches(FOCUSABLE_SELECTOR) ? target : null);
+  if (focusableElement && !(focusableElement instanceof HTMLElement && focusableElement.draggable)) {
     event.preventDefault();
   }
 };

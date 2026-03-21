@@ -10,7 +10,13 @@
         </span>
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+      <div
+        class="min-h-0 flex-1 overflow-y-auto px-2 py-2 transition-colors duration-150"
+        :class="{ 'bg-primary/5': fileDragContext.dragOverDirectoryPath.value === props.projectPath }"
+        @dragover="handlePanelDragOver"
+        @drop="handlePanelDrop"
+        @dragleave="handlePanelDragLeave"
+      >
         <div v-if="isLoading" class="flex items-center justify-center py-8">
           <span class="loading loading-spinner loading-md" />
         </div>
@@ -96,12 +102,13 @@
 </template>
 
 <script setup lang="ts">
-import { toRef, watch } from "vue";
+import { provide, toRef, watch } from "vue";
 import { RotateCcw, Trash2 } from "lucide-vue-next";
 import { useConfirmDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import FileTreeNode from "./FileTreeNode.vue";
 import { useFileManagerPanel } from "./use-file-manager-panel";
+import { FILE_DRAG_KEY } from "./file-drag-injection";
 
 const props = withDefaults(
   defineProps<{
@@ -144,7 +151,8 @@ const {
   openContextMenu,
   handleContextMenuRevertClick,
   handleContextMenuDeleteClick,
-  handleRevertAllClick
+  handleRevertAllClick,
+  fileDragContext
 } = useFileManagerPanel({
   projectPath: toRef(props, "projectPath"),
   gitStatusResponse: toRef(props, "gitStatusResponse"),
@@ -152,6 +160,29 @@ const {
   refreshGitStatus: props.refreshGitStatus,
   requestConfirm
 });
+
+provide(FILE_DRAG_KEY, fileDragContext);
+
+const handlePanelDragOver = (event: DragEvent) => {
+  event.preventDefault();
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = fileDragContext.dragSourcePath.value !== null ? "move" : "copy";
+  }
+  fileDragContext.onDragOverDirectory(props.projectPath);
+};
+
+const handlePanelDrop = (event: DragEvent) => {
+  event.preventDefault();
+  fileDragContext.onDropOnDirectory(props.projectPath, event);
+};
+
+const handlePanelDragLeave = (event: DragEvent) => {
+  const relatedTarget = event.relatedTarget as Node | null;
+  const target = event.currentTarget as HTMLElement;
+  if (!relatedTarget || !target.contains(relatedTarget)) {
+    fileDragContext.clearDragOver();
+  }
+};
 watch(loadError, (message) => {
   if (message) {
     pushError(message);

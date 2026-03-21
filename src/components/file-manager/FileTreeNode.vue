@@ -1,12 +1,18 @@
 <template>
-  <div>
+  <div
+    @dragover="handleNodeDragOver"
+    @drop="handleNodeDrop"
+  >
     <button
-      class="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm hover:border-base-300 hover:bg-base-300/65"
+      class="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm transition-colors duration-150 hover:border-base-300 hover:bg-base-300/65"
       tabindex="-1"
+      :draggable="isDraggable"
       :class="buttonClasses"
       :style="{ paddingLeft: `${NODE_BASE_PADDING_REM + depth * NODE_INDENT_REM}rem` }"
       @click="handleClick"
       @contextmenu="handleContextMenu"
+      @dragstart="handleDragStart"
+      @dragend="handleDragEnd"
     >
       <template v-if="entry.isDirectory">
         <FolderOpen v-if="isExpanded" :size="16" class="shrink-0" :class="folderIconClasses" />
@@ -62,6 +68,8 @@ import {
 import { isPathInsideBase, isSamePath } from "../../utils/path-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import { toErrorMessage } from "../../utils/fail-fast";
+import { useFileTreeNodeDrag } from "./use-file-tree-node-drag";
+import { useFileTreeNodeClasses } from "./file-tree-node-classes";
 
 const props = withDefaults(
   defineProps<{
@@ -114,63 +122,34 @@ const isSelectedEntry = computed(() => {
   return isSamePath(props.entry.path, props.selectedPath);
 });
 
-const buttonClasses = computed(() => {
-  const classes: string[] = [];
+const isDraggable = computed(() => !props.entry.isVirtual && !isDeletedEntry.value);
 
-  if (isSelectedEntry.value) {
-    classes.push("border-primary/40 bg-primary/10");
-  }
-
-  if (isIgnoredEntry.value) {
-    classes.push("opacity-[0.55]");
-    return classes.join(" ");
-  }
-
-  if (isDeletedEntry.value) {
-    classes.push("opacity-90");
-  }
-
-  return classes.join(" ");
+const {
+  isDragSource,
+  isDropTarget,
+  handleDragStart,
+  handleDragEnd,
+  handleNodeDragOver,
+  handleNodeDrop
+} = useFileTreeNodeDrag({
+  getPath: () => props.entry.path,
+  getIsDirectory: () => props.entry.isDirectory,
+  getIsVirtual: () => props.entry.isVirtual === true,
+  getIsDraggable: () => isDraggable.value
 });
 
-const nameClasses = computed(() => {
-  if (entryStatus.value === "added") {
-    return "text-green-600";
-  }
-
-  if (entryStatus.value === "modified") {
-    return "text-blue-600";
-  }
-
-  if (entryStatus.value === "deleted") {
-    return "text-red-600";
-  }
-
-  return "";
-});
-
-const folderIconClasses = computed(() => {
-  if (entryStatus.value === "deleted") {
-    return "text-red-500";
-  }
-
-  return "text-warning";
-});
-
-const fileIconClasses = computed(() => {
-  if (entryStatus.value === "added") {
-    return "text-green-500";
-  }
-
-  if (entryStatus.value === "modified") {
-    return "text-blue-500";
-  }
-
-  if (entryStatus.value === "deleted") {
-    return "text-red-500";
-  }
-
-  return "text-base-content/50";
+const {
+  buttonClasses,
+  nameClasses,
+  folderIconClasses,
+  fileIconClasses
+} = useFileTreeNodeClasses({
+  entryStatus,
+  isIgnoredEntry,
+  isDeletedEntry,
+  isSelectedEntry,
+  isDragSource,
+  isDropTarget
 });
 
 function setChildrenIfChanged(nextChildren: FileEntry[]) {

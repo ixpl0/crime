@@ -117,6 +117,10 @@ function isFileNotFoundError(error: unknown): error is { code: string; message: 
   return typeof error === "object" && error !== null && "code" in error && "message" in error && (error as { code: string }).code === "ENOENT";
 }
 
+function isFileNotFoundResponse(response: FilesystemReadFileResponse): boolean {
+  return !response.ok && typeof response.error === "string" && response.error.includes("ENOENT");
+}
+
 function applyUnavailableDiffState(diffResponse: GitFileDiffResponse, fileResponse: FilesystemReadFileResponse, fallbackLines: ViewerLine[]) {
   displayLines.value = fallbackLines;
   diffInfoMessage.value = diffResponse.error ? `Git diff unavailable: ${diffResponse.error}` : "Git diff unavailable.";
@@ -188,6 +192,11 @@ async function loadFilePreview() {
   fileExistsOnDisk.value = responses.fileResponse.ok;
   if (!responses.fileResponse.ok && isEditing.value) {
     isEditing.value = false;
+  }
+  if (isFileNotFoundResponse(responses.fileResponse)) {
+    emit("file-not-found", filePath);
+    clearViewerContentState();
+    return;
   }
   const fallbackLines = buildFallbackLines(responses.fileResponse);
   applyDiffResultState(responses.diffResponse, responses.fileResponse, fallbackLines);

@@ -279,6 +279,7 @@ export function useAppShell() {
     openTerminalPathInFiles,
     handleFileSelect,
     handleChangesFileSelect,
+    resetSelectedFile,
     resetChangesSelectedFile,
     handleChangesPathOpen,
     resetFileNavigationState
@@ -464,6 +465,7 @@ export function useAppShell() {
     selectedFileTargetRequestToken,
     changesSelectedFilePath,
     handleChangesFileSelect,
+    resetSelectedFile,
     resetChangesSelectedFile,
     handleChangesPathOpen
   });

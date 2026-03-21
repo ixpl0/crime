@@ -37,6 +37,7 @@ export interface AppNavigationStore {
   selectedFileTargetRequestToken: ReadableRef<number>;
   changesSelectedFilePath: ReadableRef<string | null>;
   handleChangesFileSelect: (path: string) => void;
+  resetSelectedFile: () => void;
   resetChangesSelectedFile: () => void;
   handleChangesPathOpen: (path: string) => void;
 }

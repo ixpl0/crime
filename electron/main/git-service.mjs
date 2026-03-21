@@ -491,6 +491,7 @@ export function createGitService(runCommand) {
     getFileDiff,
     restorePath,
     getLog,
-    getCommitDetails
+    getCommitDetails,
+    runGitCommandSafe
   };
 }
