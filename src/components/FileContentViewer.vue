@@ -3,8 +3,9 @@
     <div class="border-b border-base-300/80 bg-base-100/40 px-3 py-2">
       <div class="flex items-center gap-2">
         <span class="truncate text-sm font-semibold">{{ filePath ? fileName : "File preview" }}</span>
-        <span v-if="filePath && !isLoading && !isEditing" class="ml-auto text-[11px] text-base-content/45">
-          {{ `${String(displayLines.length)} lines` }}
+        <span v-if="filePath && !isLoading && !isEditing" class="ml-auto flex items-center gap-2 text-[11px] text-base-content/45">
+          <span v-if="isTruncated" class="text-warning/70">{{ `showing first ${String(LARGE_FILE_LINE_THRESHOLD)} of ${String(displayLines.length)} lines` }}</span>
+          <span v-else>{{ `${String(displayLines.length)} lines` }}</span>
         </span>
         <button v-if="filePath && canEdit" class="ml-auto btn btn-ghost btn-xs btn-square" tabindex="-1" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
           <component :is="isEditing ? Eye : Pencil" :size="14" />
@@ -26,18 +27,26 @@
       </div>
       <div v-else-if="isLoading" class="flex h-full items-center justify-center"><span class="loading loading-spinner loading-md" /></div>
       <div v-else-if="loadError" class="flex h-full items-center justify-center px-4 text-sm text-base-content/55">Preview unavailable.</div>
+      <div v-else-if="isBinaryFile" class="flex h-full flex-col items-center justify-center gap-2 px-4 text-sm text-base-content/60">
+        <span>Binary file — preview not available.</span>
+        <button class="btn btn-ghost btn-xs" tabindex="-1" @click="openFileExternally">Show in folder</button>
+      </div>
       <div v-else-if="displayLines.length === 0" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
         File is empty.
       </div>
       <CodeMirrorDiffViewer
         v-else
         :file-path="filePath"
-        :display-lines="displayLines"
+        :display-lines="visibleLines"
         :target-line="targetLine"
         :target-request-token="targetRequestToken"
       />
     </div>
-    <div v-if="diffInfoMessage" class="border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
+    <div v-if="isTruncated && !isEditing" class="flex items-center gap-2 border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
+      <span>File too large for inline preview.</span>
+      <button class="btn btn-ghost btn-xs" tabindex="-1" @click="openFileExternally">Show in folder</button>
+    </div>
+    <div v-else-if="diffInfoMessage" class="border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
       {{ diffInfoMessage }}
     </div>
   </div>
@@ -48,6 +57,7 @@ import { computed, ref, watch } from "vue";
 import { Eye, Pencil } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
 import { useAppToastStore } from "../toast/toast-store";
+import { LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
 import { toContextDiffLines } from "./file-content-viewer-utils";
 import FileEditor from "./FileEditor.vue";
 import CodeMirrorDiffViewer from "./CodeMirrorDiffViewer.vue";
@@ -70,7 +80,7 @@ const fileExistsOnDisk = ref(false);
 
 const canEdit = computed(() => {
   if (!props.filePath) { return false; }
-  return !isLoading.value && !loadError.value && fileExistsOnDisk.value;
+  return !isLoading.value && !loadError.value && !isBinaryFile.value && fileExistsOnDisk.value;
 });
 
 const toggleEditMode = () => {
@@ -83,9 +93,16 @@ const toggleEditMode = () => {
 const handleEditorSaved = () => {
   emit("file-saved");
 };
+
+const openFileExternally = () => {
+  if (props.filePath) {
+    void window.projectApi.shell.openPath(props.filePath);
+  }
+};
 type ViewerLine = GitDiffLine;
 const isLoading = ref(false);
 const loadError = ref("");
+const isBinaryFile = ref(false);
 const diffInfoMessage = ref("");
 const displayLines = ref<ViewerLine[]>([]);
 let loadRequestId = 0;
@@ -96,9 +113,17 @@ const fileName = computed(() => {
   return segments[segments.length - 1] ?? props.filePath;
 });
 
+const isTruncated = computed(() => displayLines.value.length > LARGE_FILE_LINE_THRESHOLD);
+
+const visibleLines = computed(() => {
+  if (!isTruncated.value) { return displayLines.value; }
+  return displayLines.value.slice(0, LARGE_FILE_LINE_THRESHOLD);
+});
+
 function clearViewerContentState() {
   isLoading.value = false;
   loadError.value = "";
+  isBinaryFile.value = false;
   diffInfoMessage.value = "";
   displayLines.value = [];
   fileExistsOnDisk.value = false;
@@ -155,6 +180,7 @@ function applyDiffResultState(diffResponse: GitFileDiffResponse, fileResponse: F
 function prepareFilePreviewLoad() {
   isLoading.value = true;
   loadError.value = "";
+  isBinaryFile.value = false;
   diffInfoMessage.value = "";
 }
 
@@ -190,12 +216,18 @@ async function loadFilePreview() {
   if (!responses) return;
   isLoading.value = false;
   fileExistsOnDisk.value = responses.fileResponse.ok;
+  isBinaryFile.value = responses.fileResponse.binary === true;
   if (!responses.fileResponse.ok && isEditing.value) {
     isEditing.value = false;
   }
   if (isFileNotFoundResponse(responses.fileResponse)) {
     emit("file-not-found", filePath);
     clearViewerContentState();
+    return;
+  }
+  if (isBinaryFile.value) {
+    displayLines.value = [];
+    diffInfoMessage.value = "";
     return;
   }
   const fallbackLines = buildFallbackLines(responses.fileResponse);

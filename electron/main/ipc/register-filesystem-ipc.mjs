@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { access, cp, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { access, cp, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { toIpcErrorResponse } from "../error-utils.mjs";
 import { isPathInsideBase } from "./path-utils.mjs";
@@ -10,6 +10,25 @@ async function pathExists(targetPath) {
     return true;
   } catch {
     return false;
+  }
+}
+
+const BINARY_CHECK_SIZE = 8192;
+
+async function isBinaryFile(filePath) {
+  let fileHandle;
+  try {
+    fileHandle = await open(filePath, "r");
+    const buffer = Buffer.alloc(BINARY_CHECK_SIZE);
+    const { bytesRead } = await fileHandle.read(buffer, 0, BINARY_CHECK_SIZE, 0);
+    for (let i = 0; i < bytesRead; i++) {
+      if (buffer[i] === 0) {
+        return true;
+      }
+    }
+    return false;
+  } finally {
+    await fileHandle?.close();
   }
 }
 
@@ -81,6 +100,9 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
     }
 
     try {
+      if (await isBinaryFile(resolvedFilePath)) {
+        return { ok: true, content: null, binary: true };
+      }
       const content = await readFile(resolvedFilePath, "utf-8");
       return { ok: true, content };
     } catch (error) {

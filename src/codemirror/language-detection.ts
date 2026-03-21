@@ -1,5 +1,7 @@
 import type { Extension } from "@codemirror/state";
 
+export const LARGE_FILE_LINE_THRESHOLD = 10_000;
+
 const extensionToLanguage: Partial<Record<string, () => Promise<Extension>>> = {
   js: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),
   mjs: () => import("@codemirror/lang-javascript").then((m) => m.javascript()),

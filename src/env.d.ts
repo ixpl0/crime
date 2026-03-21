@@ -25,6 +25,7 @@ interface ClipboardApi {
 
 interface ShellApi {
   openExternal: (url: string) => Promise<TerminalResponse>;
+  openPath: (filePath: string) => Promise<TerminalResponse>;
 }
 
 interface SettingsReadResponse {
@@ -81,7 +82,8 @@ interface FilesystemReadResponse {
 
 interface FilesystemReadFileResponse {
   ok: boolean;
-  content?: string;
+  content?: string | null;
+  binary?: boolean;
   error?: string;
 }
 

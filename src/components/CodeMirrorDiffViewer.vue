@@ -8,7 +8,7 @@ import { EditorView, lineNumbers } from "@codemirror/view";
 import { EditorState, type Extension } from "@codemirror/state";
 import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { loadLanguageExtension } from "../codemirror/language-detection";
+import { loadLanguageExtension, LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
 import {
   createDiffLineDecorations,
   createDiffLineNumbers,
@@ -65,7 +65,8 @@ const createEditor = async () => {
   destroyEditor();
 
   const document = buildDocument(props.displayLines);
-  const languageExtensions = await loadLanguageExtension(props.filePath);
+  const isLargeFile = props.displayLines.length > LARGE_FILE_LINE_THRESHOLD;
+  const languageExtensions = isLargeFile ? [] : await loadLanguageExtension(props.filePath);
   const isDiff = hasDiffContent(props.displayLines);
   const diffExtensions = isDiff ? buildDiffExtensions(props.displayLines) : [];
 

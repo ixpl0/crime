@@ -11,14 +11,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { EditorState, type Extension } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { oneDark } from "@codemirror/theme-one-dark";
 import { toErrorMessage } from "../utils/fail-fast";
 import { useAppToastStore } from "../toast/toast-store";
-import { loadLanguageExtension } from "../codemirror/language-detection";
+import { loadLanguageExtension, LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -82,8 +82,14 @@ const saveFile = async () => {
   }
 };
 
+const loadLanguageForContent = async (content: string): Promise<Extension[]> => {
+  const lineCount = content.split("\n").length;
+  if (lineCount > LARGE_FILE_LINE_THRESHOLD) { return []; }
+  return loadLanguageExtension(props.filePath);
+};
+
 const createEditor = async (container: HTMLElement, content: string) => {
-  const languageExtensions = await loadLanguageExtension(props.filePath);
+  const languageExtensions = await loadLanguageForContent(content);
 
   const saveKeymap = keymap.of([{
     key: "Mod-s",

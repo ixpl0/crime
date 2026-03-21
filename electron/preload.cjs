@@ -34,6 +34,7 @@ const IPC_CHANNELS = Object.freeze({
   "gitUnwatch": "git:unwatch",
   "globalQuickKey": "global:quick-key",
   "shellOpenExternal": "shell:open-external",
+  "shellOpenPath": "shell:open-path",
   "windowFlashFrame": "window:flash-frame"
 });
 
@@ -201,7 +202,8 @@ contextBridge.exposeInMainWorld("projectApi", {
     writeText: (text) => ipcRenderer.invoke(IPC_CHANNELS.clipboardWriteText, text)
   },
   shell: {
-    openExternal: (url) => ipcRenderer.invoke(IPC_CHANNELS.shellOpenExternal, url)
+    openExternal: (url) => ipcRenderer.invoke(IPC_CHANNELS.shellOpenExternal, url),
+    openPath: (filePath) => ipcRenderer.invoke(IPC_CHANNELS.shellOpenPath, filePath)
   },
   filesystem: {
     readDirectory: (dirPath) => ipcRenderer.invoke(IPC_CHANNELS.filesystemReadDirectory, dirPath),
