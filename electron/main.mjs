@@ -150,7 +150,7 @@ function getIconPath() {
 function createWindow() {
   const initialWindowState = getInitialWindowState();
   const mainWindow = new BrowserWindow({
-    title: "Crime",
+    title: "CRIME",
     x: initialWindowState.bounds.x,
     y: initialWindowState.bounds.y,
     width: initialWindowState.bounds.width,

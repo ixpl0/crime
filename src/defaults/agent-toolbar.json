@@ -173,13 +173,13 @@
       "color": "oklch(0.80 0.18 150)",
       "items": [
         {
-          "label": "/resume",
-          "value": "/resume",
+          "label": "/new",
+          "value": "/new",
           "type": "command"
         },
         {
-          "label": "/new",
-          "value": "/new",
+          "label": "/resume",
+          "value": "/resume",
           "type": "command"
         },
         {
