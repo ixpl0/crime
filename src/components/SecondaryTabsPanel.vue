@@ -1,43 +1,55 @@
 <template>
   <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-xl">
     <div class="card-body flex min-h-0 flex-col gap-4">
-      <div role="tablist" class="tabs tabs-bordered shrink-0">
+      <div class="flex shrink-0 items-center gap-2">
+        <div role="tablist" class="tabs tabs-bordered">
+          <button
+            role="tab"
+            class="tab"
+            tabindex="-1"
+            :class="{ 'tab-active': activeTab === 'terminal' }"
+            @click="setActiveTab('terminal')"
+          >
+            Терминал
+          </button>
+          <button
+            role="tab"
+            class="tab"
+            tabindex="-1"
+            :class="{ 'tab-active': activeTab === 'files' }"
+            @click="setActiveTab('files')"
+          >
+            Файлы
+          </button>
+          <button
+            role="tab"
+            class="tab"
+            tabindex="-1"
+            :class="{ 'tab-active': activeTab === 'changes' }"
+            @click="setActiveTab('changes')"
+          >
+            Изменения
+            <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
+          </button>
+          <button
+            role="tab"
+            class="tab"
+            tabindex="-1"
+            :class="{ 'tab-active': activeTab === 'git' }"
+            @click="setActiveTab('git')"
+          >
+            Гит
+          </button>
+        </div>
+
         <button
-          role="tab"
-          class="tab"
+          type="button"
+          class="btn btn-ghost btn-square btn-sm"
           tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'terminal' }"
-          @click="setActiveTab('terminal')"
+          title="Вернуть во вкладку"
+          @click="dockAgent"
         >
-          Терминал
-        </button>
-        <button
-          role="tab"
-          class="tab"
-          tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'files' }"
-          @click="setActiveTab('files')"
-        >
-          Файлы
-        </button>
-        <button
-          role="tab"
-          class="tab"
-          tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'changes' }"
-          @click="setActiveTab('changes')"
-        >
-          Изменения
-          <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
-        </button>
-        <button
-          role="tab"
-          class="tab"
-          tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'git' }"
-          @click="setActiveTab('git')"
-        >
-          Гит
+          <PanelLeftClose :size="16" />
         </button>
       </div>
 
@@ -48,11 +60,12 @@
 </template>
 
 <script setup lang="ts">
+import { PanelLeftClose } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 
 defineProps<{
   changesCount: number;
 }>();
 
-const { activeTab, setActiveTab } = useAppNavigationStore();
+const { activeTab, setActiveTab, dockAgent } = useAppNavigationStore();
 </script>

@@ -3,15 +3,6 @@
     <div role="tablist" class="tabs tabs-bordered">
       <template v-if="isAgentDetached">
         <span class="tab tab-active">Агент</span>
-        <button
-          type="button"
-          class="tab px-1"
-          tabindex="-1"
-          title="Вернуть во вкладку"
-          @click="dockAgent"
-        >
-          <PanelLeftClose :size="14" />
-        </button>
       </template>
       <template v-else>
         <button
@@ -22,15 +13,6 @@
           @click="setActiveTab('agent')"
         >
           Агент
-        </button>
-        <button
-          type="button"
-          class="tab px-1"
-          tabindex="-1"
-          title="Открепить вкладки в отдельную панель"
-          @click="detachAgent"
-        >
-          <PanelRightOpen :size="14" />
         </button>
         <button
           role="tab"
@@ -135,7 +117,7 @@
     >
       <button
         type="button"
-        class="btn btn-sm btn-ghost"
+        class="btn btn-ghost btn-sm"
         tabindex="-1"
         :aria-expanded="isHiddenPanelsDropdownOpen"
         title="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1089;&#1082;&#1088;&#1099;&#1090;&#1099;&#1077; &#1087;&#1072;&#1085;&#1077;&#1083;&#1080;"
@@ -162,7 +144,17 @@
     </div>
 
     <button
-      class="btn btn-sm btn-ghost"
+      v-if="!isAgentDetached"
+      class="btn btn-ghost btn-square btn-sm"
+      tabindex="-1"
+      title="Открепить вкладки в отдельную панель"
+      @click="detachAgent"
+    >
+      <PanelRightOpen :size="16" />
+    </button>
+
+    <button
+      class="btn btn-ghost btn-square btn-sm"
       tabindex="-1"
       :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
       @click="toggleTheme"
@@ -172,7 +164,7 @@
     </button>
 
     <button
-      class="btn btn-sm btn-ghost"
+      class="btn btn-ghost btn-square btn-sm"
       tabindex="-1"
       title="&#1053;&#1072;&#1089;&#1090;&#1088;&#1086;&#1081;&#1082;&#1080; &#1087;&#1088;&#1086;&#1077;&#1082;&#1090;&#1072;"
       @click="openProjectSettings"
@@ -183,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, Eye, Moon, PanelLeftClose, PanelRightOpen, Settings, Sun } from "lucide-vue-next";
+import { ChevronDown, Eye, Moon, PanelRightOpen, Settings, Sun } from "lucide-vue-next";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
@@ -206,7 +198,6 @@ const {
   getProjectNameFromPath,
   setActiveTab,
   detachAgent,
-  dockAgent,
   toggleProjectDropdown,
   handleProjectDropdownTriggerKeydown,
   setProjectDropdownOpen,
