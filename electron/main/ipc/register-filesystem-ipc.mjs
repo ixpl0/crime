@@ -42,10 +42,14 @@ function removeFilesystemHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.filesystemCreatePath);
 }
 
+function isAlwaysIgnoredEntry(entry) {
+  return entry.isDirectory && entry.name === ".git";
+}
+
 function withIgnoredState(entries, ignoredEntryPathKeySet, toPathKey) {
   return entries.map((entry) => ({
     ...entry,
-    isIgnored: ignoredEntryPathKeySet.has(toPathKey(entry.path))
+    isIgnored: isAlwaysIgnoredEntry(entry) || ignoredEntryPathKeySet.has(toPathKey(entry.path))
   }));
 }
 
