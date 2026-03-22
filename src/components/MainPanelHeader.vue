@@ -52,6 +52,17 @@
           Гит
         </button>
       </template>
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        tabindex="-1"
+        title="Секреты проекта (.env)"
+        @click="openSecretsEditor"
+      >
+        Секреты
+      </button>
+
       <div
         class="dropdown dropdown-bottom manual-dropdown"
         :class="{ 'dropdown-open': isProjectDropdownOpen }"
@@ -97,17 +108,6 @@
           </template>
         </ul>
       </div>
-
-      <button
-        type="button"
-        role="tab"
-        class="tab"
-        tabindex="-1"
-        title="Секреты проекта (.env)"
-        @click="openSecretsEditor"
-      >
-        Секреты
-      </button>
     </div>
 
     <div
