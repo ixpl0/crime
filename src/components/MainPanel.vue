@@ -32,6 +32,16 @@
           @close="closeTerminalToolbarConfigEditor"
         />
 
+        <ToolbarConfigEditor
+          :current-config="gitToolbarConfig"
+          :config-file-path="gitToolbarConfigFilePath"
+          :open="isGitToolbarConfigEditorOpen"
+          title="Git Toolbar Settings"
+          :default-config="defaultGitToolbarConfig"
+          @save="handleGitToolbarConfigSave"
+          @close="closeGitToolbarConfigEditor"
+        />
+
         <PromptSuffixConfigEditor
           :current-config="promptSuffixConfig"
           :config-file-path="promptSuffixConfigFilePath"
@@ -138,8 +148,16 @@
             </div>
           </div>
 
-          <div v-show="activeTab === 'git'" class="min-h-0 flex-1 overflow-y-auto px-1">
-            <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" />
+          <div v-show="activeTab === 'git'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-1">
+            <ToolbarPanel
+              :toolbar-config="gitToolbarConfig"
+              :is-terminal-ready="isTerminalReady"
+              @execute-action="executeGitToolbarAction"
+              @open-config-editor="openGitToolbarConfigEditor"
+            />
+            <div class="min-h-0 flex-1 overflow-y-auto">
+              <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" />
+            </div>
           </div>
         </div>
       </div>
@@ -160,11 +178,14 @@
 </template>
 
 <script setup lang="ts">
+/* eslint-disable max-lines */
 import { computed, ref, watchEffect } from "vue";
 import { useAppConfigStore } from "../config/config-store";
+import { useAppTerminalStore } from "../terminal/terminal-store";
 import { usePanelWidthResize } from "../composables/use-panel-width-resize";
 import { defaultSecretsContent } from "../settings/secrets-storage";
 import { useAppNavigationStore } from "../navigation/navigation-store";
+import { defaultGitToolbarConfig } from "../toolbar/git-toolbar-storage";
 import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { useGitStatus } from "../composables/use-git-status";
 import AgentPanel from "./AgentPanel.vue";
@@ -182,31 +203,38 @@ import SecondaryTabsPanel from "./SecondaryTabsPanel.vue";
 import SecretsEditor from "./SecretsEditor.vue";
 import TerminalWorkspacePanel from "./TerminalWorkspacePanel.vue";
 import ToolbarConfigEditor from "./ToolbarConfigEditor.vue";
+import ToolbarPanel from "./ToolbarPanel.vue";
 
 const {
   settingsDirectoryName,
   toolbarConfigFilename,
   terminalToolbarConfigFilename,
+  gitToolbarConfigFilename,
   promptSuffixConfigFilename,
   projectSettingsFilename,
   secretsFilename,
   isToolbarConfigEditorOpen,
   isTerminalToolbarConfigEditorOpen,
+  isGitToolbarConfigEditorOpen,
   isPromptSuffixConfigEditorOpen,
   isProjectSettingsEditorOpen,
   isSecretsEditorOpen,
   toolbarConfig,
   terminalToolbarConfig,
+  gitToolbarConfig,
   promptSuffixConfig,
   projectSettings,
   secretsConfig,
   handleToolbarConfigSave,
   handleTerminalToolbarConfigSave,
+  handleGitToolbarConfigSave,
   handlePromptSuffixConfigSave,
   handleProjectSettingsSave,
   handleSecretsSave,
   closeToolbarConfigEditor,
   closeTerminalToolbarConfigEditor,
+  closeGitToolbarConfigEditor,
+  openGitToolbarConfigEditor,
   closePromptSuffixConfigEditor,
   closeProjectSettingsEditor,
   closeSecretsEditor
@@ -229,6 +257,9 @@ const {
   handleChangesPathOpen,
   resetSelectedFile
 } = navigationStore;
+
+const { isTerminalReady, executeToolbarAction } = useAppTerminalStore();
+const executeGitToolbarAction = executeToolbarAction;
 
 const mainContainer = ref<HTMLElement | null>(null);
 const cardBody = ref<HTMLElement | null>(null);
@@ -322,6 +353,9 @@ const toolbarConfigFilePath = computed(
 );
 const terminalToolbarConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${terminalToolbarConfigFilename}`
+);
+const gitToolbarConfigFilePath = computed(
+  () => `${projectPath.value}/${settingsDirectoryName}/${gitToolbarConfigFilename}`
 );
 const promptSuffixConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${promptSuffixConfigFilename}`
