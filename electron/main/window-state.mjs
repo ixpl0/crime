@@ -114,7 +114,7 @@ function saveWindowState(snapshot) {
 }
 
 function persistWindowState(win) {
-  if (win.isDestroyed()) {
+  if (win.isDestroyed() || win.isMinimized()) {
     return;
   }
 
@@ -147,7 +147,26 @@ export function getInitialWindowState() {
 
 export function attachWindowStatePersistence(win, debounceMs) {
   let saveWindowStateTimer = null;
+  let lastGoodSnapshot = null;
+
+  const captureSnapshot = () => {
+    if (win.isDestroyed() || win.isMinimized()) {
+      return;
+    }
+
+    const bounds = win.getBounds();
+    // On Windows, minimizing moves the window to extreme coordinates
+    // (e.g., x ≈ -32000) before isMinimized() returns true.
+    if (bounds.x <= -10000 || bounds.y <= -10000) {
+      return;
+    }
+
+    lastGoodSnapshot = buildWindowStateSnapshot(win);
+  };
+
   const scheduleWindowStateSave = () => {
+    captureSnapshot();
+
     if (saveWindowStateTimer) {
       clearTimeout(saveWindowStateTimer);
     }
@@ -158,16 +177,48 @@ export function attachWindowStatePersistence(win, debounceMs) {
     }, debounceMs);
   };
 
+  captureSnapshot();
+
   win.on("move", scheduleWindowStateSave);
   win.on("resize", scheduleWindowStateSave);
   win.on("maximize", scheduleWindowStateSave);
   win.on("unmaximize", scheduleWindowStateSave);
+
+  win.on("restore", () => {
+    if (win.isDestroyed() || !lastGoodSnapshot) {
+      return;
+    }
+
+    const restoredDisplay = screen.getDisplayMatching(win.getBounds());
+    if (restoredDisplay.id !== lastGoodSnapshot.displayId) {
+      const targetDisplay = screen
+        .getAllDisplays()
+        .find((d) => d.id === lastGoodSnapshot.displayId);
+      if (targetDisplay) {
+        const bounds = {
+          x: lastGoodSnapshot.x,
+          y: lastGoodSnapshot.y,
+          width: lastGoodSnapshot.width,
+          height: lastGoodSnapshot.height
+        };
+        win.setBounds(clampWindowBoundsToWorkArea(bounds, targetDisplay.workArea));
+        if (lastGoodSnapshot.isMaximized) {
+          win.maximize();
+        }
+      }
+    }
+  });
+
   win.on("close", () => {
     if (saveWindowStateTimer) {
       clearTimeout(saveWindowStateTimer);
       saveWindowStateTimer = null;
     }
 
-    persistWindowState(win);
+    if (win.isMinimized() && lastGoodSnapshot) {
+      saveWindowState(lastGoodSnapshot);
+    } else {
+      persistWindowState(win);
+    }
   });
 }
