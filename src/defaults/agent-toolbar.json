@@ -260,6 +260,16 @@
           "label": "Обнови ветку",
           "value": "git pull",
           "type": "command"
+        },
+        {
+          "label": "Обнови из main",
+          "value": "git fetch origin main && git merge origin/main",
+          "type": "command"
+        },
+        {
+          "label": "Обнови из develop",
+          "value": "git fetch origin develop && git merge origin/develop",
+          "type": "command"
         }
       ]
     },
