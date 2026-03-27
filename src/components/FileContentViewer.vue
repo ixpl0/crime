@@ -3,13 +3,24 @@
     <div class="border-b border-base-300/80 bg-base-100/40 px-3 py-2">
       <div class="flex items-center gap-2">
         <span class="truncate text-sm font-semibold">{{ filePath ? fileName : "File preview" }}</span>
-        <span v-if="filePath && !isLoading && !isEditing" class="ml-auto flex items-center gap-2 text-[11px] text-base-content/45">
-          <span v-if="isTruncated" class="text-warning/70">{{ `showing first ${String(LARGE_FILE_LINE_THRESHOLD)} of ${String(displayLines.length)} lines` }}</span>
-          <span v-else>{{ `${String(displayLines.length)} lines` }}</span>
-        </span>
-        <button v-if="filePath && canEdit" class="ml-auto btn btn-ghost btn-xs btn-square" tabindex="-1" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
-          <component :is="isEditing ? Eye : Pencil" :size="14" />
-        </button>
+        <div class="ml-auto flex items-center gap-1.5">
+          <span v-if="filePath && !isLoading && !isEditing" class="text-[11px] text-base-content/45">
+            <span v-if="isTruncated" class="text-warning/70">{{ `showing first ${String(LARGE_FILE_LINE_THRESHOLD)} of ${String(displayLines.length)} lines` }}</span>
+            <span v-else>{{ `${String(displayLines.length)} lines` }}</span>
+          </span>
+          <template v-if="changeCount > 0 && !isEditing && !isLoading">
+            <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Previous change" @click="goToPrevChange">
+              <ChevronUp :size="14" />
+            </button>
+            <span class="min-w-6 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
+            <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Next change" @click="goToNextChange">
+              <ChevronDown :size="14" />
+            </button>
+          </template>
+          <button v-if="filePath && canEdit" class="btn btn-ghost btn-xs btn-square" tabindex="-1" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
+            <component :is="isEditing ? Eye : Pencil" :size="14" />
+          </button>
+        </div>
       </div>
       <div v-if="filePath" class="truncate text-xs text-base-content/55">{{ filePath }}</div>
     </div>
@@ -36,6 +47,7 @@
       </div>
       <CodeMirrorDiffViewer
         v-else
+        ref="diffViewerRef"
         :file-path="filePath"
         :display-lines="visibleLines"
         :target-line="targetLine"
@@ -54,13 +66,14 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { Eye, Pencil } from "lucide-vue-next";
+import { ChevronDown, ChevronUp, Eye, Pencil } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
 import { useAppToastStore } from "../toast/toast-store";
 import { LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
 import { toContextDiffLines } from "./file-content-viewer-utils";
 import FileEditor from "./FileEditor.vue";
 import CodeMirrorDiffViewer from "./CodeMirrorDiffViewer.vue";
+import { useDiffChangeNavigation } from "../composables/use-diff-change-navigation";
 
 const props = defineProps<{
   projectPath: string;
@@ -233,6 +246,20 @@ async function loadFilePreview() {
   const fallbackLines = buildFallbackLines(responses.fileResponse);
   applyDiffResultState(responses.diffResponse, responses.fileResponse, fallbackLines);
 }
+
+const diffViewerRef = ref<InstanceType<typeof CodeMirrorDiffViewer> | null>(null);
+
+const { changeCount, positionLabel, goToNext, goToPrevious } = useDiffChangeNavigation(() => visibleLines.value);
+
+const goToNextChange = () => {
+  const line = goToNext();
+  if (line !== null) { diffViewerRef.value?.scrollToLine(line); }
+};
+
+const goToPrevChange = () => {
+  const line = goToPrevious();
+  if (line !== null) { diffViewerRef.value?.scrollToLine(line); }
+};
 
 watch(loadError, (message) => {
   if (message) {

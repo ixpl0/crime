@@ -88,6 +88,27 @@ const createEditor = async () => {
   editorView = new EditorView({ state, parent: element });
 };
 
+const scrollToLineWithHighlight = (lineNumber: number) => {
+  if (!editorView) { return; }
+  const lineCount = editorView.state.doc.lines;
+  const clamped = Math.max(1, Math.min(lineNumber, lineCount));
+
+  editorView.dispatch({
+    effects: [
+      setTargetLineEffect.of(clamped),
+      EditorView.scrollIntoView(editorView.state.doc.line(clamped).from, { y: "center" }),
+    ],
+  });
+
+  clearHighlightTimer();
+  clearHighlightTimeoutId = window.setTimeout(() => {
+    if (editorView) {
+      editorView.dispatch({ effects: setTargetLineEffect.of(null) });
+    }
+    clearHighlightTimeoutId = null;
+  }, 1500);
+};
+
 const focusTargetLine = () => {
   if (!editorView) { return; }
 
@@ -102,21 +123,10 @@ const focusTargetLine = () => {
   const clampedLine = Math.min(targetLine, lineCount);
   if (clampedLine < 1) { return; }
 
-  editorView.dispatch({
-    effects: [
-      setTargetLineEffect.of(clampedLine),
-      EditorView.scrollIntoView(editorView.state.doc.line(clampedLine).from, { y: "center" }),
-    ],
-  });
-
-  clearHighlightTimer();
-  clearHighlightTimeoutId = window.setTimeout(() => {
-    if (editorView) {
-      editorView.dispatch({ effects: setTargetLineEffect.of(null) });
-    }
-    clearHighlightTimeoutId = null;
-  }, 2500);
+  scrollToLineWithHighlight(clampedLine);
 };
+
+defineExpose({ scrollToLine: scrollToLineWithHighlight });
 
 watch(
   () => [props.displayLines, props.filePath] as const,

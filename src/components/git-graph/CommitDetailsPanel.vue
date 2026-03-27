@@ -125,6 +125,17 @@
       >
         <div class="flex items-center gap-2 border-b border-base-300/80 bg-base-100/40 px-3 py-1.5">
           <span class="min-w-0 truncate font-mono text-xs text-base-content/70">{{ fileDiff.selectedFilePath }}</span>
+          <template v-if="changeCount > 0 && !fileDiff.isLoading">
+            <div class="ml-auto flex items-center">
+              <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Previous change" @click="goToPrevChange">
+                <ChevronUp :size="14" />
+              </button>
+              <span class="min-w-6 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
+              <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Next change" @click="goToNextChange">
+                <ChevronDown :size="14" />
+              </button>
+            </div>
+          </template>
         </div>
         <div v-if="fileDiff.isLoading" class="flex flex-1 items-center justify-center">
           <span class="loading loading-spinner loading-sm" />
@@ -137,6 +148,7 @@
         </div>
         <CodeMirrorDiffViewer
           v-else
+          ref="diffViewerRef"
           class="min-h-0 flex-1"
           :file-path="fileDiff.selectedFilePath"
           :display-lines="fileDiff.lines"
@@ -147,11 +159,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { X } from "lucide-vue-next";
+import { computed, ref } from "vue";
+import { ChevronDown, ChevronUp, X } from "lucide-vue-next";
 import { formatFullDate, formatRef, formatShortHash, refClasses } from "./git-graph-format";
 import type { CommitFileDiffState } from "./use-commit-file-diff";
 import CodeMirrorDiffViewer from "../CodeMirrorDiffViewer.vue";
+import { useDiffChangeNavigation } from "../../composables/use-diff-change-navigation";
 
 const props = defineProps<{
   details: GitCommitDetails;
@@ -166,6 +179,20 @@ defineEmits<{
   "copy-hash": [hash: string];
   "select-file": [filePath: string];
 }>();
+
+const diffViewerRef = ref<InstanceType<typeof CodeMirrorDiffViewer> | null>(null);
+
+const { changeCount, positionLabel, goToNext, goToPrevious } = useDiffChangeNavigation(() => props.fileDiff.lines);
+
+const goToNextChange = () => {
+  const line = goToNext();
+  if (line !== null) { diffViewerRef.value?.scrollToLine(line); }
+};
+
+const goToPrevChange = () => {
+  const line = goToPrevious();
+  if (line !== null) { diffViewerRef.value?.scrollToLine(line); }
+};
 
 const showCommitter = computed(() =>
   props.details.committerName !== props.details.authorName
