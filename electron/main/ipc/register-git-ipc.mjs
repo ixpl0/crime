@@ -9,6 +9,7 @@ function removeGitHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.gitRevertAll);
   ipcMain.removeHandler(IPC_CHANNELS.gitLog);
   ipcMain.removeHandler(IPC_CHANNELS.gitCommitDetails);
+  ipcMain.removeHandler(IPC_CHANNELS.gitCommitFileDiff);
 }
 
 function toProjectRelativeFilePath(projectPath, filePath, allowCurrentDirectory = false) {
@@ -110,5 +111,21 @@ export function registerGitIpcHandlers({ IPC_CHANNELS, gitService }) {
     }
 
     return gitService.getCommitDetails(projectPath, hash);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitCommitFileDiff, async (_event, projectPath, hash, filePath) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    if (!hash || typeof hash !== "string" || !/^[0-9a-f]{4,40}$/i.test(hash)) {
+      return { ok: false, error: "Invalid commit hash." };
+    }
+
+    if (!filePath || typeof filePath !== "string") {
+      return { ok: false, error: "File path is required." };
+    }
+
+    return gitService.getCommitFileDiff(projectPath, hash, filePath);
   });
 }

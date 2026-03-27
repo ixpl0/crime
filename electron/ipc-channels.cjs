@@ -25,6 +25,7 @@ const IPC_CHANNELS = Object.freeze({
   gitRevertAll: "git:revert-all",
   gitLog: "git:log",
   gitCommitDetails: "git:commit-details",
+  gitCommitFileDiff: "git:commit-file-diff",
   gitChanged: "git:changed",
   gitWatch: "git:watch",
   gitUnwatch: "git:unwatch",

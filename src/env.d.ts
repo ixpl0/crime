@@ -220,6 +220,7 @@ interface GitApi {
   revertAll: (projectPath: string) => Promise<GitMutateResponse>;
   getLog: (projectPath: string, maxCount?: number) => Promise<GitLogResponse>;
   getCommitDetails: (projectPath: string, hash: string) => Promise<GitCommitDetailsResponse>;
+  getCommitFileDiff: (projectPath: string, hash: string, filePath: string) => Promise<GitFileDiffResponse>;
   watch: (projectPath: string) => Promise<GitWatchResponse>;
   unwatch: () => Promise<GitWatchResponse>;
   onChanged: (listener: () => void) => () => void;

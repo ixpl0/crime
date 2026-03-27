@@ -482,6 +482,44 @@ export function createGitService(runCommand) {
     };
   }
 
+  async function getCommitFileDiff(projectPath, hash, filePath) {
+    const repositoryRoot = await getRepositoryRoot(resolve(projectPath));
+    if (repositoryRoot === null) {
+      return { ok: true, available: false, reason: "not-a-repository", lines: [] };
+    }
+
+    try {
+      const diffResponse = await runDiffForPath(repositoryRoot, filePath, [`${hash}^..${hash}`]);
+      if (!diffResponse.ok) {
+        return diffResponse;
+      }
+
+      if (diffResponse.lines.length === 0) {
+        // Possibly a newly added file in this commit — show full content as added lines
+        const showResult = await runCommand(
+          "git",
+          ["-c", "core.quotepath=false", "show", `${hash}:${filePath}`],
+          repositoryRoot
+        );
+        if (showResult.code === 0) {
+          return {
+            ok: true,
+            available: true,
+            lines: toLineEntries(showResult.stdout.toString("utf-8"), "added")
+          };
+        }
+      }
+
+      return { ok: true, available: true, lines: diffResponse.lines };
+    } catch (error) {
+      if (isCommandNotFoundError(error)) {
+        return { ok: true, available: false, reason: "git-not-installed", lines: [] };
+      }
+
+      return { ok: false, error: toErrorMessage(error, "Failed to get commit file diff.") };
+    }
+  }
+
   return {
     toPathKey,
     getIgnoredEntryPathKeySet,
@@ -492,6 +530,7 @@ export function createGitService(runCommand) {
     restorePath,
     getLog,
     getCommitDetails,
+    getCommitFileDiff,
     runGitCommandSafe
   };
 }

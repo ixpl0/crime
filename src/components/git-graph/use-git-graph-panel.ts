@@ -1,12 +1,7 @@
 ﻿import { computed, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
 import { buildGitGraphRows, type GraphRow } from "./git-graph-layout";
-import {
-  formatFullDate,
-  formatRef,
-  formatRelativeDate,
-  formatShortHash,
-  refClasses
-} from "./git-graph-format";
+import { formatRef, formatRelativeDate, formatShortHash, refClasses } from "./git-graph-format";
+import { useCommitFileDiff } from "./use-commit-file-diff";
 import { toErrorMessage } from "../../utils/fail-fast";
 
 const ROW_HEIGHT = 28;
@@ -68,24 +63,8 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
   const detailsError = ref("");
   const maxLaneCount = ref(0);
   const graphSvgWidth = computed(() => LANE_OFFSET + maxLaneCount.value * LANE_WIDTH + LANE_OFFSET);
-  const showCommitter = computed(() => {
-    const details = selectedCommitDetails.value;
-    if (!details) {
-      return false;
-    }
 
-    return details.committerName !== details.authorName || details.committerEmail !== details.authorEmail;
-  });
-  const totalAdditions = computed(() =>
-    selectedCommitDetails.value?.files.reduce((sum, file) => sum + file.additions, 0) ?? 0
-  );
-  const totalDeletions = computed(() =>
-    selectedCommitDetails.value?.files.reduce((sum, file) => sum + file.deletions, 0) ?? 0
-  );
-  const fileCountLabel = computed(() => {
-    const count = selectedCommitDetails.value?.files.length ?? 0;
-    return count === 1 ? "file changed" : "files changed";
-  });
+  const { fileDiff, selectFile, clearFileDiff } = useCommitFileDiff(projectPath, selectedCommitDetails);
 
   let loadRequestId = 0;
   let detailsRequestId = 0;
@@ -120,6 +99,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     detailsError.value = "";
     isDetailsLoading.value = false;
     detailsRequestId += 1;
+    clearFileDiff();
   }
 
   async function requestCommitDetails(
@@ -155,6 +135,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     }
 
     selectedRowIndex.value = rowIndex;
+    clearFileDiff();
     const selectedRow = graphRows.value[rowIndex];
     const requestId = ++detailsRequestId;
     isDetailsLoading.value = true;
@@ -276,19 +257,16 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     selectedRowIndex,
     isDetailsLoading,
     detailsError,
-    showCommitter,
-    totalAdditions,
-    totalDeletions,
-    fileCountLabel,
+    fileDiff,
     laneX,
     laneColor,
     formatShortHash,
     formatRelativeDate,
-    formatFullDate,
     formatRef,
     refClasses,
     copyHash,
     selectCommit,
+    selectFile,
     closeDetails
   };
 }
