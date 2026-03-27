@@ -115,7 +115,6 @@ function registerTerminalPathLinkProvider(state: TerminalViewState) {
   if (!state.terminal) {
     return;
   }
-
   disposeTerminalPathLinkProvider(state);
   state.terminalPathLinkProvider = state.terminal.registerLinkProvider({
     provideLinks(bufferLineNumber, callback) {
@@ -170,11 +169,14 @@ function bindTerminalInput(state: TerminalViewState, terminal: Terminal) {
 
 function startContainerResizeObserver(state: TerminalViewState, container: HTMLElement) {
   stopContainerResizeObserver(state);
-  const observer = new ResizeObserver(() => {
-    void resizeTerminalBackend(state);
+  const observer = new ResizeObserver((entries) => {
+    const { width, height } = entries[0].contentRect;
+    if (width > 0 && height > 0) {
+      void resizeTerminalBackend(state);
+    }
   });
-  observer.observe(container);
   state.resizeObserver = observer;
+  observer.observe(container);
 }
 
 function stopContainerResizeObserver(state: TerminalViewState) {
@@ -213,7 +215,8 @@ function initializeTerminalView(state: TerminalViewState) {
 
 function getTerminalSize(state: TerminalViewState) {
   const { terminal, fitAddon } = state;
-  if (!terminal || !fitAddon) {
+  const container = state.options.terminalContainer.value;
+  if (!terminal || !fitAddon || !container || container.offsetWidth === 0 || container.offsetHeight === 0) {
     return null;
   }
 
@@ -247,7 +250,6 @@ async function copyTerminalSelectionIfAny(state: TerminalViewState): Promise<boo
   if (selectedText.length === 0) {
     return false;
   }
-
   try {
     const response = await state.options.writeClipboardText(selectedText);
     if (!response.ok) {
@@ -271,34 +273,26 @@ function handleTerminalCopyEvent(state: TerminalViewState, event: MouseEvent) {
   void copyTerminalSelectionIfAny(state);
 }
 
-async function sendTerminalResize(state: TerminalViewState, size: TerminalSize) {
+async function resizeTerminalBackend(state: TerminalViewState) {
+  const size = getTerminalSize(state);
+  if (!size || !state.options.isTerminalReady.value) {
+    return;
+  }
   const response = await state.options.resizeTerminalBackendRequest(size).catch(() => null);
   if (response && !response.ok) {
     state.options.reportUiError("Terminal resize", response.error, "Failed to resize terminal backend.");
   }
 }
 
-async function resizeTerminalBackend(state: TerminalViewState) {
-  const size = getTerminalSize(state);
-  if (!size || !state.options.isTerminalReady.value) {
-    return;
-  }
-
-  await sendTerminalResize(state, size);
-}
-
 function prepareTerminalStart(state: TerminalViewState) {
   if (!initializeTerminalView(state)) {
     return null;
   }
-
-  const { terminal } = state;
   const size = getTerminalSize(state);
-  if (!size || !terminal) {
+  if (!size || !state.terminal) {
     return null;
   }
-
-  terminal.clear();
+  state.terminal.clear();
   return size;
 }
 
