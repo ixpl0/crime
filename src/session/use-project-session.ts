@@ -121,6 +121,7 @@ function assignProjectSettings(state: ProjectSessionState, settings: ProjectSett
 }
 
 function resetProjectSessionToDefaults(state: ProjectSessionState) {
+  document.title = "CRIME";
   state.options.projectPath.value = null;
   state.options.resetProjectRuntimeState();
   state.options.toolbarConfig.value = defaultToolbarConfig;
@@ -257,8 +258,13 @@ async function startSettingsWatcher(state: ProjectSessionState, path: string) {
   throw new Error(toErrorMessage(response.error, "Failed to start settings watcher."));
 }
 
+function getProjectFolderName(path: string) {
+  return path.split(/[\\/]/).pop() ?? path;
+}
+
 async function performProjectOpen(state: ProjectSessionState, path: string) {
   state.options.projectPath.value = path;
+  document.title = `CRIME — ${getProjectFolderName(path)}`;
   state.options.addRecentProject(path);
   state.options.resetProjectRuntimeState();
   await loadProjectResources(state, path);
