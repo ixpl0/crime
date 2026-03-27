@@ -322,9 +322,24 @@ async function openProjectFolder(state: ProjectSessionState) {
   );
 }
 
+async function isProjectFolderAccessible(path: string) {
+  try {
+    const response = await window.projectApi.filesystem.readDirectory(path);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function openLastProjectOnStartup(state: ProjectSessionState) {
   const lastProjectPath = getLastProjectPathFromStorage();
   if (!lastProjectPath) {
+    return;
+  }
+
+  const isAccessible = await isProjectFolderAccessible(lastProjectPath);
+  if (!isAccessible) {
+    clearLastProjectPathInStorage();
     return;
   }
 
