@@ -331,7 +331,16 @@ async function isProjectFolderAccessible(path: string) {
   }
 }
 
+function shouldSkipLastProjectRestore() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("skipRestore") === "1";
+}
+
 async function openLastProjectOnStartup(state: ProjectSessionState) {
+  if (shouldSkipLastProjectRestore()) {
+    return;
+  }
+
   const lastProjectPath = getLastProjectPathFromStorage();
   if (!lastProjectPath) {
     return;

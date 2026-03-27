@@ -34,7 +34,8 @@ function getProjectNameFromPath(path: string) {
 }
 
 export function useRecentProjects(storageKey: string, readDirectory: ReadDirectoryFn) {
-  const recentProjects = ref<string[]>([]);
+  const initialProjects = parseRecentProjects(window.localStorage.getItem(storageKey));
+  const recentProjects = ref<string[]>(initialProjects);
   const {
     getRecentProjectsFromStorage,
     setRecentProjectsInStorage,

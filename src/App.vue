@@ -5,25 +5,14 @@
       class="flex h-full min-h-0 flex-col gap-6"
       :class="projectPath ? 'w-full' : 'mx-auto w-full max-w-5xl'"
     >
-      <template v-if="!projectPath">
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-            <h1 class="card-title text-3xl">Crime</h1>
-            <p class="opacity-80">Choose a folder to open it as a project.</p>
-            <div class="card-actions justify-end">
-              <button
-                class="btn btn-primary"
-                tabindex="-1"
-                :class="{ loading: isOpening }"
-                :disabled="isOpening"
-                @click="openProjectFolder"
-              >
-                {{ isOpening ? "Opening..." : "Open Folder" }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </template>
+      <ProjectPicker
+        v-if="!projectPath"
+        :recent-projects="recentProjects"
+        :is-opening="isOpening"
+        :get-project-name-from-path="getProjectNameFromPath"
+        @open-folder="openProjectFolder"
+        @open-project="openProject"
+      />
 
       <div
         v-if="projectPath"
@@ -72,13 +61,22 @@ import DebugTasksPanel from "./components/DebugTasksPanel.vue";
 import MainPanel from "./components/MainPanel.vue";
 import PanelHeightResizeHandle from "./components/PanelHeightResizeHandle.vue";
 import PanelResizeHandle from "./components/PanelResizeHandle.vue";
+import ProjectPicker from "./components/ProjectPicker.vue";
 import TasksPanel from "./components/TasksPanel.vue";
 
 const TASKS_PANEL_DEFAULT_WIDTH = 288;
 const DEBUG_PANEL_DEFAULT_HEIGHT = 200;
 
-const { isOpening, isTodoPanelCollapsed, isDebugTodoPanelVisible, openProjectFolder, projectPath } =
-  useAppShell();
+const {
+  isOpening,
+  isTodoPanelCollapsed,
+  isDebugTodoPanelVisible,
+  recentProjects,
+  getProjectNameFromPath,
+  openProject,
+  openProjectFolder,
+  projectPath
+} = useAppShell();
 
 const outerContainer = ref<HTMLElement | null>(null);
 const tasksColumnContainer = ref<HTMLElement | null>(null);

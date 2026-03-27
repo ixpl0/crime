@@ -147,12 +147,16 @@ function getIconPath() {
   return join(__dirname, "assets", `icon.${extension}`);
 }
 
-function createWindow() {
+const NEW_WINDOW_POSITION_OFFSET = 30;
+
+function createWindow({ skipLastProjectRestore = false } = {}) {
   const initialWindowState = getInitialWindowState();
+  const existingWindowCount = BrowserWindow.getAllWindows().length;
+  const offset = existingWindowCount * NEW_WINDOW_POSITION_OFFSET;
   const mainWindow = new BrowserWindow({
     title: "CRIME",
-    x: initialWindowState.bounds.x,
-    y: initialWindowState.bounds.y,
+    x: initialWindowState.bounds.x + offset,
+    y: initialWindowState.bounds.y + offset,
     width: initialWindowState.bounds.width,
     height: initialWindowState.bounds.height,
     show: !initialWindowState.isMaximized,
@@ -180,17 +184,22 @@ function createWindow() {
     mainWindow.show();
   }
 
-
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
-    mainWindow.loadURL(devServerUrl);
+    const url = skipLastProjectRestore
+      ? `${devServerUrl}?skipRestore=1`
+      : devServerUrl;
+    mainWindow.loadURL(url);
     if (process.env.OPEN_DEVTOOLS === "1") {
       mainWindow.webContents.openDevTools({ mode: "detach" });
     }
     return;
   }
 
-  mainWindow.loadFile(join(__dirname, "../dist/index.html"));
+  const loadFileOptions = skipLastProjectRestore
+    ? { query: { skipRestore: "1" } }
+    : undefined;
+  mainWindow.loadFile(join(__dirname, "../dist/index.html"), loadFileOptions);
 }
 
 function registerIpcHandlers() {
@@ -235,44 +244,49 @@ function registerIpcHandlers() {
 function registerGlobalQuickKeys() {
   for (const binding of quickKeyBindings) {
     const isRegistered = globalShortcut.register(binding.accelerator, () => {
-      const windows = BrowserWindow.getAllWindows();
-      for (const win of windows) {
-        if (!win.isDestroyed()) {
-          win.flashFrame(false);
-          win.webContents.send(IPC_CHANNELS.globalQuickKey, binding.input);
-        }
+      const focusedWindow = BrowserWindow.getFocusedWindow();
+      if (focusedWindow && !focusedWindow.isDestroyed()) {
+        focusedWindow.flashFrame(false);
+        focusedWindow.webContents.send(IPC_CHANNELS.globalQuickKey, binding.input);
       }
     });
 
     if (!isRegistered) {
-      const message = `Failed to register global shortcut: ${binding.accelerator}`;
-      if (IS_FAIL_FAST) {
-        throw new Error(message);
-      }
-
-      console.error(message);
+      // Global shortcut conflict is an external condition (another app holds
+      // the accelerator), not a programming error — log but do not throw.
+      console.error(`Failed to register global shortcut: ${binding.accelerator}`);
     }
   }
 }
 
-app.whenReady().then(() => {
-  registerIpcHandlers();
-  createWindow();
-  registerGlobalQuickKeys();
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    createWindow({ skipLastProjectRestore: true });
+  });
+
+  app.whenReady().then(() => {
+    registerIpcHandlers();
+    createWindow();
+    registerGlobalQuickKeys();
+
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+      }
+    });
+  });
+
+  app.on("will-quit", () => {
+    globalShortcut.unregisterAll();
+  });
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      app.quit();
     }
   });
-});
-
-app.on("will-quit", () => {
-  globalShortcut.unregisterAll();
-});
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
+}

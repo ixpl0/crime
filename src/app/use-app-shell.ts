@@ -585,6 +585,9 @@ export function useAppShell() {
     isOpening,
     isTodoPanelCollapsed,
     isDebugTodoPanelVisible,
+    recentProjects,
+    getProjectNameFromPath,
+    openProject,
     openProjectFolder,
     projectPath
   };
