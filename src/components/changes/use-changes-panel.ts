@@ -203,6 +203,13 @@ export function useChangesPanel({
     }
   }
 
+  function handleContextMenuShowInFolder() {
+    if (contextMenu.value) {
+      void window.projectApi.shell.openPath(contextMenu.value.path);
+      closeContextMenu();
+    }
+  }
+
   function handleRevertAllClick() {
     void revertAllChanges();
   }
@@ -274,6 +281,7 @@ export function useChangesPanel({
     openContextMenu,
     isPathReverting,
     handleContextMenuRevertClick,
+    handleContextMenuShowInFolder,
     handleRevertAllClick
   };
 }

@@ -96,6 +96,16 @@
           Revert changes
         </button>
         <button
+          v-if="contextMenu.status !== 'deleted'"
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start"
+          tabindex="-1"
+          @click="handleContextMenuShowInFolder"
+        >
+          <FolderOpen :size="14" />
+          Show in folder
+        </button>
+        <button
           v-if="contextMenu.status !== 'deleted' && contextMenu.path !== props.projectPath"
           type="button"
           class="btn btn-ghost btn-sm w-full justify-start text-error"
@@ -126,7 +136,7 @@
 
 <script setup lang="ts">
 import { provide, toRef, watch } from "vue";
-import { FilePlus, FolderPlus, RotateCcw, Trash2 } from "lucide-vue-next";
+import { FilePlus, FolderOpen, FolderPlus, RotateCcw, Trash2 } from "lucide-vue-next";
 import { useConfirmDialog, usePromptDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import FileTreeNode from "./FileTreeNode.vue";
@@ -177,6 +187,7 @@ const {
   handleContextMenuDeleteClick,
   handleContextMenuNewFileClick,
   handleContextMenuNewFolderClick,
+  handleContextMenuShowInFolder,
   handleRevertAllClick,
   fileDragContext
 } = useFileManagerPanel({

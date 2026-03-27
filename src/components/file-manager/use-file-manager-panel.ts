@@ -233,6 +233,13 @@ export function useFileManagerPanel({
     loadRootDirectory
   });
 
+  function handleContextMenuShowInFolder() {
+    if (contextMenu.value) {
+      void window.projectApi.shell.openPath(contextMenu.value.path);
+      closeContextMenu();
+    }
+  }
+
   return {
     isLoading,
     loadError,
@@ -252,6 +259,7 @@ export function useFileManagerPanel({
     handleContextMenuDeleteClick,
     handleContextMenuNewFileClick,
     handleContextMenuNewFolderClick,
+    handleContextMenuShowInFolder,
     handleRevertAllClick,
     fileDragContext
   };

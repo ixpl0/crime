@@ -108,6 +108,16 @@
           <RotateCcw :size="14" />
           Revert changes
         </button>
+        <button
+          v-if="contextMenu.status !== 'deleted'"
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start"
+          tabindex="-1"
+          @click="handleContextMenuShowInFolder"
+        >
+          <FolderOpen :size="14" />
+          Show in folder
+        </button>
       </div>
     </div>
 
@@ -128,7 +138,7 @@
 
 <script setup lang="ts">
 import { toRef, watch } from "vue";
-import { ExternalLink, RotateCcw } from "lucide-vue-next";
+import { ExternalLink, FolderOpen, RotateCcw } from "lucide-vue-next";
 import { useConfirmDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import { useChangesPanel } from "./use-changes-panel";
@@ -168,6 +178,7 @@ const {
   openContextMenu,
   isPathReverting,
   handleContextMenuRevertClick,
+  handleContextMenuShowInFolder,
   handleRevertAllClick
 } = useChangesPanel({
   projectPath: toRef(props, "projectPath"),
