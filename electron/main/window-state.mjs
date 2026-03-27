@@ -1,6 +1,10 @@
 import { app, screen } from "electron";
 import { dirname, join } from "node:path";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  getWindowPlacement,
+  setWindowPlacement
+} from "./win32-window-placement.mjs";
 
 const WINDOW_STATE_FILENAME = "window-state.json";
 const DEFAULT_WINDOW_WIDTH = 1280;
@@ -145,6 +149,44 @@ export function getInitialWindowState() {
   };
 }
 
+// Keep Win32 WINDOWPLACEMENT.rcNormalPosition in sync with the actual
+// display.  Without this, Windows may restore a minimized window to a
+// stale monitor because Electron/Chromium does not update the placement
+// struct when the window moves between displays.
+function syncWindowPlacement(win) {
+  if (process.platform !== "win32") {
+    return;
+  }
+
+  const placement = getWindowPlacement(win);
+  if (!placement) {
+    return;
+  }
+
+  const actualDisplay = screen.getDisplayMatching(win.getBounds());
+  const normalRect = placement.rcNormalPosition;
+  const normalBounds = {
+    x: normalRect.left,
+    y: normalRect.top,
+    width: normalRect.right - normalRect.left,
+    height: normalRect.bottom - normalRect.top
+  };
+  const normalDisplay = screen.getDisplayMatching(normalBounds);
+
+  if (normalDisplay.id !== actualDisplay.id) {
+    const clamped = clampWindowBoundsToWorkArea(normalBounds, actualDisplay.workArea);
+    setWindowPlacement(win, {
+      ...placement,
+      rcNormalPosition: {
+        left: clamped.x,
+        top: clamped.y,
+        right: clamped.x + clamped.width,
+        bottom: clamped.y + clamped.height
+      }
+    });
+  }
+}
+
 export function attachWindowStatePersistence(win, debounceMs) {
   let saveWindowStateTimer = null;
   let lastGoodSnapshot = null;
@@ -162,6 +204,7 @@ export function attachWindowStatePersistence(win, debounceMs) {
     }
 
     lastGoodSnapshot = buildWindowStateSnapshot(win);
+    syncWindowPlacement(win);
   };
 
   const scheduleWindowStateSave = () => {
