@@ -47,14 +47,14 @@ export function nameClasses(status: GitFileStatus) {
 
 export function statusLabel(status: GitFileStatus) {
   if (status === "added") {
-    return "added";
+    return "A";
   }
 
   if (status === "modified") {
-    return "modified";
+    return "M";
   }
 
-  return "deleted";
+  return "D";
 }
 
 export function statusBadgeClasses(status: GitFileStatus) {

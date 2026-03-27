@@ -57,27 +57,29 @@
             @click="emit('select-file', entry.path)"
             @contextmenu="openContextMenu($event, entry)"
           >
-            <FilePlus v-if="entry.status === 'added'" :size="16" class="shrink-0 text-green-500" />
-            <FilePen v-else-if="entry.status === 'modified'" :size="16" class="shrink-0 text-blue-500" />
-            <FileX v-else-if="entry.status === 'deleted'" :size="16" class="shrink-0 text-red-500" />
-            <File v-else :size="16" class="shrink-0 text-base-content/50" />
-            <div class="min-w-0">
-              <div class="truncate font-medium" :class="nameClasses(entry.status)">
-                {{ entryDisplayName(entry.path) }}
-              </div>
-              <span
-                class="inline-block max-w-full cursor-pointer truncate text-[11px] text-base-content/45 hover:underline"
-                @click.stop="handleEntryPathClick(entry.path)"
-              >
-                {{ entryPathDisplay(entry.path) }}
-              </span>
-            </div>
             <span
-              class="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-              :class="statusBadgeClasses(entry.status)"
+              class="shrink-0 w-4 text-center text-[11px] font-bold leading-none"
+              :class="nameClasses(entry.status)"
             >
               {{ statusLabel(entry.status) }}
             </span>
+            <div class="min-w-0 flex-1">
+              <div class="truncate font-medium" :class="nameClasses(entry.status)">
+                {{ entryDisplayName(entry.path) }}
+              </div>
+              <div class="truncate text-[11px] text-base-content/45">
+                {{ entryPathDisplay(entry.path) }}
+              </div>
+            </div>
+            <button
+              type="button"
+              tabindex="-1"
+              class="shrink-0 cursor-pointer rounded p-0.5 text-base-content/30 hover:text-base-content/70"
+              title="Open in file tree"
+              @click.stop="handleEntryPathClick(entry.path)"
+            >
+              <ExternalLink :size="14" />
+            </button>
           </button>
         </div>
       </div>
@@ -126,7 +128,7 @@
 
 <script setup lang="ts">
 import { toRef, watch } from "vue";
-import { File, FilePen, FilePlus, FileX, RotateCcw } from "lucide-vue-next";
+import { ExternalLink, RotateCcw } from "lucide-vue-next";
 import { useConfirmDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import { useChangesPanel } from "./use-changes-panel";
@@ -161,7 +163,6 @@ const {
   isActionInProgress,
   nameClasses,
   statusLabel,
-  statusBadgeClasses,
   entryDisplayName,
   entryPathDisplay,
   openContextMenu,
