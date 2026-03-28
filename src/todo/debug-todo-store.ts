@@ -17,6 +17,8 @@ export interface DebugTodoStore {
   handleTodoTextareaKeydown: (event: KeyboardEvent) => void;
   handleTodoTextareaBlur: () => void;
   confirmTodoEntry: () => void;
+  removeTodoEntry: (index: number) => void;
+  forcePersistTodoEntries: () => void;
   hidePanel: () => void;
 }
 

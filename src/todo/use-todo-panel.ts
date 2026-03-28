@@ -335,6 +335,7 @@ export function useTodoPanel(options: UseTodoPanelOptions) {
     confirmTodoEntry: () => { finalizeTodoDraftEditing(state, { focusComposer: true }); },
     loadTodoEntriesForProject: loadTodoEntriesForProject.bind(null, state),
     getTodoEntry: getTodoEntry.bind(null, state), removeTodoEntry: removeTodoEntry.bind(null, state),
+    forcePersistTodoEntries: () => { persistCurrentTodoEntries(state, state.todoDraftEditVersion); },
     resetTodoRuntimeState: resetTodoRuntimeState.bind(null, state),
     resizeTodoTextareas: () => { resizeTodoTextareas(state.textareaDataAttribute); }
   };

@@ -125,6 +125,7 @@ export function useAppShell() {
     loadTodoEntriesForProject,
     getTodoEntry,
     removeTodoEntry,
+    forcePersistTodoEntries,
     resetTodoRuntimeState,
     resizeTodoTextareas
   } = useTodoPanel({
@@ -558,6 +559,8 @@ export function useAppShell() {
     handleTodoTextareaKeydown,
     handleTodoTextareaBlur,
     confirmTodoEntry,
+    removeTodoEntry,
+    forcePersistTodoEntries,
     sendTodoEntryToTerminal,
     isDebugTodoPanelVisible,
     toggleDebugTodoPanel
@@ -577,6 +580,8 @@ export function useAppShell() {
     handleTodoTextareaKeydown: debugTodo.handleTodoTextareaKeydown,
     handleTodoTextareaBlur: debugTodo.handleTodoTextareaBlur,
     confirmTodoEntry: debugTodo.confirmTodoEntry,
+    removeTodoEntry: debugTodo.removeTodoEntry,
+    forcePersistTodoEntries: debugTodo.forcePersistTodoEntries,
     hidePanel: () => { setDebugTodoPanelVisible(false); }
   });
 

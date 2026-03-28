@@ -19,6 +19,8 @@ export interface AppTodoStore {
   handleTodoTextareaKeydown: (event: KeyboardEvent) => void;
   handleTodoTextareaBlur: () => void;
   confirmTodoEntry: () => void;
+  removeTodoEntry: (index: number) => void;
+  forcePersistTodoEntries: () => void;
   sendTodoEntryToTerminal: (index: number) => MaybePromise;
   isDebugTodoPanelVisible: ReadableRef<boolean>;
   toggleDebugTodoPanel: () => void;

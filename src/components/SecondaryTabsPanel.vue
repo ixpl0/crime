@@ -44,7 +44,7 @@
 
         <button
           type="button"
-          class="btn btn-ghost btn-square btn-sm"
+          class="icon-btn text-base-content/40 hover:text-primary"
           tabindex="-1"
           title="Вернуть во вкладку"
           @click="dockAgent"

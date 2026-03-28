@@ -12,7 +12,7 @@
         <span class="min-w-0 flex-1 break-words">{{ toast.message }}</span>
         <button
           type="button"
-          class="btn btn-ghost btn-xs btn-square"
+          class="icon-btn text-base-content/40 hover:text-error"
           tabindex="-1"
           aria-label="Dismiss notification"
           @click="dismissToast(toast.id)"

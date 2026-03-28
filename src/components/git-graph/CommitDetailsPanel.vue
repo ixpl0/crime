@@ -3,7 +3,7 @@
     <div class="flex items-center gap-2 border-b border-base-300 px-3 py-1.5">
       <span class="text-xs font-semibold text-base-content/70">Commit details</span>
       <button
-        class="btn btn-ghost btn-sm btn-square ml-auto"
+        class="icon-btn ml-auto text-base-content/40 hover:text-error"
         tabindex="-1"
         title="Закрыть"
         @click="$emit('close')"
@@ -127,11 +127,11 @@
           <span class="min-w-0 truncate font-mono text-xs text-base-content/70">{{ fileDiff.selectedFilePath }}</span>
           <template v-if="changeCount > 0 && !fileDiff.isLoading">
             <div class="ml-auto flex items-center">
-              <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Previous change" @click="goToPrevChange">
+              <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Previous change" @click="goToPrevChange">
                 <ChevronUp :size="14" />
               </button>
               <span class="min-w-6 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
-              <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Next change" @click="goToNextChange">
+              <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Next change" @click="goToNextChange">
                 <ChevronDown :size="14" />
               </button>
             </div>

@@ -9,15 +9,15 @@
             <span v-else>{{ `${String(displayLines.length)} lines` }}</span>
           </span>
           <template v-if="changeCount > 0 && !isEditing && !isLoading">
-            <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Previous change" @click="goToPrevChange">
+            <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Previous change" @click="goToPrevChange">
               <ChevronUp :size="14" />
             </button>
             <span class="min-w-6 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
-            <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" title="Next change" @click="goToNextChange">
+            <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Next change" @click="goToNextChange">
               <ChevronDown :size="14" />
             </button>
           </template>
-          <button v-if="filePath && canEdit" class="btn btn-ghost btn-xs btn-square" tabindex="-1" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
+          <button v-if="filePath && canEdit" class="icon-btn text-base-content/40 hover:text-warning" tabindex="-1" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
             <component :is="isEditing ? Eye : Pencil" :size="14" />
           </button>
         </div>

@@ -62,7 +62,7 @@
 
     <button
       type="button"
-      class="btn btn-sm btn-square btn-ghost h-8 min-h-8"
+      class="icon-btn text-base-content/40 hover:text-warning"
       tabindex="-1"
       title="Edit toolbar"
       @click="$emit('open-config-editor')"

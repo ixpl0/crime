@@ -39,7 +39,7 @@
           class="textarea textarea-autosize-native textarea-bordered h-auto max-h-38 min-h-0 w-full resize-none overflow-y-auto"
           rows="1"
           :disabled="!isTerminalReady"
-          placeholder="&#1042;&#1074;&#1077;&#1076;&#1080;&#1090;&#1077; &#1090;&#1077;&#1082;&#1089;&#1090; &#1076;&#1083;&#1103; &#1086;&#1090;&#1087;&#1088;&#1072;&#1074;&#1082;&#1080; &#1074; &#1090;&#1077;&#1088;&#1084;&#1080;&#1085;&#1072;&#1083;"
+          placeholder="Введите текст для отправки в терминал"
           @keydown="handleTextareaKeydown"
           @input="handleTerminalInput"
           @paste="handleTextareaPaste"
@@ -58,7 +58,7 @@
               tabindex="-1"
               :disabled="!isTerminalReady || !terminalInputText.trim()"
             >
-              &#1054;&#1090;&#1087;&#1088;&#1072;&#1074;&#1080;&#1090;&#1100;
+              Отправить
             </button>
           </div>
         </div>

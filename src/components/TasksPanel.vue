@@ -5,24 +5,24 @@
         <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
           Задачи
         </h2>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-3">
           <button
-            class="btn btn-ghost btn-xs"
+            class="icon-btn text-base-content/40 hover:text-primary"
             type="button"
             tabindex="-1"
             :title="isDebugTodoPanelVisible ? 'Скрыть задачи Crime' : 'Показать задачи Crime'"
             @click="toggleDebugTodoPanel"
           >
-            <Bug :size="14" class="opacity-60" :class="{ 'text-primary opacity-100': isDebugTodoPanelVisible }" />
+            <Bug :size="14" :class="{ 'text-primary': isDebugTodoPanelVisible }" />
           </button>
           <button
-            class="btn btn-ghost btn-xs"
+            class="icon-btn text-base-content/40 hover:text-info"
             type="button"
             tabindex="-1"
             title="Hide todo panel"
             @click="toggleTodoPanelCollapse"
           >
-            <EyeOff :size="14" class="opacity-60" />
+            <EyeOff :size="14" />
           </button>
         </div>
       </div>
@@ -50,7 +50,7 @@
           <div class="flex items-center gap-2">
             <button
               v-if="shouldShowTodoDragHandle(todoDraftView.index)"
-              class="btn btn-ghost btn-xs btn-square cursor-grab text-base-content/60 active:cursor-grabbing"
+              class="icon-btn cursor-grab text-base-content/40 hover:text-primary active:cursor-grabbing"
               type="button"
               tabindex="-1"
               :draggable="canDragTodoDraft(todoDraftView.index)"
@@ -61,7 +61,7 @@
             >
               <GripVertical :size="14" />
             </button>
-            <div class="ml-auto flex items-center gap-1">
+            <div class="ml-auto flex items-center gap-3">
               <button
                 v-if="todoDraftView.index === todoDraftViewItems.length - 1"
                 class="btn btn-ghost btn-xs normal-case text-base-content/70"
@@ -72,17 +72,36 @@
               >
                 Создать задачу
               </button>
-              <button
-                v-else
-                class="btn btn-ghost btn-xs normal-case text-base-content/70"
-                type="button"
-                tabindex="-1"
-                :title="lastPrompt"
-                :disabled="!isTerminalReady || !todoDraftView.value.trim()"
-                @click="sendTodoEntryToTerminal(todoDraftView.index)"
-              >
-                Отправить
-              </button>
+              <template v-else>
+                <button
+                  class="icon-btn text-base-content/40 hover:text-success"
+                  type="button"
+                  tabindex="-1"
+                  title="Сохранить задачи"
+                  @click="forcePersistTodoEntries"
+                >
+                  <Save :size="14" />
+                </button>
+                <button
+                  class="icon-btn text-base-content/40 hover:text-error"
+                  type="button"
+                  tabindex="-1"
+                  title="Удалить задачу"
+                  @click="removeTodoEntry(todoDraftView.index)"
+                >
+                  <Trash2 :size="14" />
+                </button>
+                <button
+                  class="btn btn-ghost btn-xs normal-case text-base-content/70"
+                  type="button"
+                  tabindex="-1"
+                  :title="lastPrompt"
+                  :disabled="!isTerminalReady || !todoDraftView.value.trim()"
+                  @click="sendTodoEntryToTerminal(todoDraftView.index)"
+                >
+                  Отправить
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -92,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bug, EyeOff, GripVertical } from "lucide-vue-next";
+import { Bug, EyeOff, GripVertical, Save, Trash2 } from "lucide-vue-next";
 import { useAppTerminalStore } from "../terminal/terminal-store";
 import { useAppTodoStore } from "../todo/todo-store";
 
@@ -112,6 +131,8 @@ const {
   handleTodoTextareaKeydown,
   handleTodoTextareaBlur,
   confirmTodoEntry,
+  removeTodoEntry,
+  forcePersistTodoEntries,
   sendTodoEntryToTerminal,
   isDebugTodoPanelVisible,
   toggleDebugTodoPanel

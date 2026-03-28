@@ -76,7 +76,7 @@
           @click="handleProjectDropdownClick"
           @keydown="handleProjectDropdownKeydown"
         >
-          &#1055;&#1088;&#1086;&#1077;&#1082;&#1090;
+          Проект
           <ChevronDown :size="14" class="ml-1" />
         </button>
         <ul
@@ -89,7 +89,7 @@
               tabindex="-1"
               @click="openProjectFolder"
             >
-              &#1054;&#1090;&#1082;&#1088;&#1099;&#1090;&#1100;...
+              Открыть...
             </button>
           </li>
           <template v-if="recentProjects.length > 0">
@@ -117,10 +117,10 @@
     >
       <button
         type="button"
-        class="btn btn-ghost btn-sm"
+        class="icon-btn flex items-center gap-0.5 text-base-content/40 hover:text-info"
         tabindex="-1"
         :aria-expanded="isHiddenPanelsDropdownOpen"
-        title="&#1055;&#1086;&#1082;&#1072;&#1079;&#1072;&#1090;&#1100; &#1089;&#1082;&#1088;&#1099;&#1090;&#1099;&#1077; &#1087;&#1072;&#1085;&#1077;&#1083;&#1080;"
+        title="Показать скрытые панели"
         @click="handleHiddenPanelsDropdownClick"
         @keydown="handleHiddenPanelsDropdownKeydown"
       >
@@ -145,7 +145,7 @@
 
     <button
       v-if="!isAgentDetached"
-      class="btn btn-ghost btn-square btn-sm"
+      class="icon-btn text-base-content/40 hover:text-primary"
       tabindex="-1"
       title="Открепить вкладки в отдельную панель"
       @click="detachAgent"
@@ -154,7 +154,7 @@
     </button>
 
     <button
-      class="btn btn-ghost btn-square btn-sm"
+      class="icon-btn text-base-content/40 hover:text-warning"
       tabindex="-1"
       :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
       @click="toggleTheme"
@@ -164,9 +164,9 @@
     </button>
 
     <button
-      class="btn btn-ghost btn-square btn-sm"
+      class="icon-btn text-base-content/40 hover:text-info"
       tabindex="-1"
-      title="&#1053;&#1072;&#1089;&#1090;&#1088;&#1086;&#1081;&#1082;&#1080; &#1087;&#1088;&#1086;&#1077;&#1082;&#1090;&#1072;"
+      title="Настройки проекта"
       @click="openProjectSettings"
     >
       <Settings :size="16" />

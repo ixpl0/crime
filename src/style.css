@@ -20,6 +20,12 @@ body {
   margin: 0;
 }
 
+.icon-btn {
+  cursor: pointer;
+  transition: color 0.15s;
+  line-height: 0;
+}
+
 .textarea-autosize-native {
   field-sizing: content;
 }
