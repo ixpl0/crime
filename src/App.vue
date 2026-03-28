@@ -1,8 +1,8 @@
 <template>
   <AppToastViewport />
-  <main class="h-screen overflow-hidden bg-base-200 p-6 text-base-content" @mousedown="handleGlobalMousedown">
+  <main class="h-screen overflow-hidden bg-base-200 p-2 text-base-content" @mousedown="handleGlobalMousedown">
     <section
-      class="flex h-full min-h-0 flex-col gap-6"
+      class="flex h-full min-h-0 flex-col gap-2"
       :class="projectPath ? 'w-full' : 'mx-auto w-full max-w-5xl'"
     >
       <ProjectPicker
@@ -46,6 +46,8 @@
 
         <MainPanel class="min-w-0" />
       </div>
+
+      <TipBar v-if="projectPath" />
     </section>
   </main>
 </template>
@@ -63,6 +65,7 @@ import PanelHeightResizeHandle from "./components/PanelHeightResizeHandle.vue";
 import PanelResizeHandle from "./components/PanelResizeHandle.vue";
 import ProjectPicker from "./components/ProjectPicker.vue";
 import TasksPanel from "./components/TasksPanel.vue";
+import TipBar from "./components/TipBar.vue";
 
 const TASKS_PANEL_DEFAULT_WIDTH = 288;
 const DEBUG_PANEL_DEFAULT_HEIGHT = 200;
