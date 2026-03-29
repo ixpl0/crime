@@ -103,15 +103,6 @@ function resetTodoDragState(state: TodoPanelState) {
   state.todoDragOverIndex.value = null;
 }
 
-function getTodoDragSourceIndex(state: TodoPanelState, event: DragEvent) {
-  if (state.todoDragSourceIndex.value !== null) {
-    return state.todoDragSourceIndex.value;
-  }
-  const rawSourceIndex = event.dataTransfer?.getData("text/plain") ?? "";
-  const parsedSourceIndex = Number.parseInt(rawSourceIndex, 10);
-  return Number.isInteger(parsedSourceIndex) ? parsedSourceIndex : null;
-}
-
 function createPersistTodoOperation(state: TodoPanelState, path: string, entries: string[], version: number) {
   return async () => {
     try {
@@ -145,41 +136,63 @@ function updateTodoDrafts(state: TodoPanelState, drafts: string[]) {
   return state.todoDraftEditVersion;
 }
 
-function handleTodoDragStart(state: TodoPanelState, index: number, event: DragEvent) {
+function findDropTargetIndex(event: MouseEvent, dataAttribute: string): number | null {
+  const element = document.elementFromPoint(event.clientX, event.clientY);
+  const container = element?.closest(`[data-${dataAttribute}-drop]`);
+  if (!container) {
+    return null;
+  }
+  const raw = (container as HTMLElement).dataset[`${toCamelCase(dataAttribute)}Drop`];
+  if (raw === undefined) {
+    return null;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function toCamelCase(dashed: string): string {
+  return dashed.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+}
+
+function handleTodoDragMouseMove(state: TodoPanelState, event: MouseEvent) {
+  const targetIndex = findDropTargetIndex(event, state.textareaDataAttribute);
+  if (targetIndex !== null && isTodoDraftIndexValid(state, targetIndex)) {
+    state.todoDragOverIndex.value = targetIndex;
+  }
+}
+
+function finalizeTodoDrag(state: TodoPanelState, event: MouseEvent) {
+  const targetIndex = findDropTargetIndex(event, state.textareaDataAttribute);
+  if (
+    targetIndex !== null &&
+    isTodoDraftIndexValid(state, targetIndex) &&
+    state.todoDragSourceIndex.value !== null &&
+    state.todoDragSourceIndex.value !== targetIndex
+  ) {
+    applyReorderedTodoDrafts(state, state.todoDragSourceIndex.value, targetIndex);
+  }
+  resetTodoDragState(state);
+}
+
+function handleTodoGripMouseDown(state: TodoPanelState, index: number, event: MouseEvent) {
   if (!canDragTodoDraft(state, index)) {
-    event.preventDefault();
     return;
   }
+  event.preventDefault();
   state.todoDragSourceIndex.value = index;
   state.todoDragOverIndex.value = index;
-  if (!event.dataTransfer) {
-    return;
-  }
-  event.dataTransfer.effectAllowed = "move";
-  event.dataTransfer.setData("text/plain", String(index));
-}
+  document.documentElement.classList.add("cursor-grabbing");
 
-function handleTodoDragEnter(state: TodoPanelState, index: number, event: DragEvent) {
-  if (state.todoDragSourceIndex.value === null || !isTodoDraftIndexValid(state, index)) {
-    return;
-  }
-  event.preventDefault();
-  state.todoDragOverIndex.value = index;
-}
+  const onMouseMove = (moveEvent: MouseEvent) => { handleTodoDragMouseMove(state, moveEvent); };
+  const onMouseUp = (upEvent: MouseEvent) => {
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    document.documentElement.classList.remove("cursor-grabbing");
+    finalizeTodoDrag(state, upEvent);
+  };
 
-function handleTodoDragOver(state: TodoPanelState, index: number, event: DragEvent) {
-  if (state.todoDragSourceIndex.value === null || !isTodoDraftIndexValid(state, index)) {
-    return;
-  }
-  event.preventDefault();
-  state.todoDragOverIndex.value = index;
-  if (event.dataTransfer) {
-    event.dataTransfer.dropEffect = "move";
-  }
-}
-
-function handleTodoDragEnd(state: TodoPanelState) {
-  resetTodoDragState(state);
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 }
 
 function applyReorderedTodoDrafts(state: TodoPanelState, sourceIndex: number, targetIndex: number) {
@@ -203,20 +216,6 @@ function applyReorderedTodoDrafts(state: TodoPanelState, sourceIndex: number, ta
   });
 }
 
-function handleTodoDrop(state: TodoPanelState, index: number, event: DragEvent) {
-  if (!isTodoDraftIndexValid(state, index)) {
-    resetTodoDragState(state);
-    return;
-  }
-  const sourceIndex = getTodoDragSourceIndex(state, event);
-  if (sourceIndex === null || !canDragTodoDraft(state, sourceIndex) || sourceIndex === index) {
-    resetTodoDragState(state);
-    return;
-  }
-
-  applyReorderedTodoDrafts(state, sourceIndex, index);
-  resetTodoDragState(state);
-}
 
 function finalizeTodoDraftEditing(state: TodoPanelState, options: { focusComposer?: boolean } = {}) {
   const nextDrafts = getNormalizedTodoDrafts(state.todoDrafts.value, { includePlaceholder: true });
@@ -328,9 +327,8 @@ export function useTodoPanel(options: UseTodoPanelOptions) {
     toggleTodoPanelCollapse: toggleTodoPanelCollapse.bind(null, state),
     handleTodoPanelCollapsedChanged: handleTodoPanelCollapsedChanged.bind(null, state),
     canDragTodoDraft: canDragTodoDraft.bind(null, state), shouldShowTodoDragHandle: shouldShowTodoDragHandle.bind(null, state),
-    handleTodoDragStart: handleTodoDragStart.bind(null, state), handleTodoDragEnter: handleTodoDragEnter.bind(null, state),
-    handleTodoDragOver: handleTodoDragOver.bind(null, state), handleTodoDragEnd: handleTodoDragEnd.bind(null, state),
-    handleTodoDrop: handleTodoDrop.bind(null, state), handleTodoTextareaInput: handleTodoTextareaInput.bind(null, state),
+    handleTodoGripMouseDown: handleTodoGripMouseDown.bind(null, state),
+    handleTodoTextareaInput: handleTodoTextareaInput.bind(null, state),
     handleTodoTextareaKeydown: handleTodoTextareaKeydown.bind(null, state), handleTodoTextareaBlur: handleTodoTextareaBlur.bind(null, state),
     confirmTodoEntry: () => { finalizeTodoDraftEditing(state, { focusComposer: true }); },
     loadTodoEntriesForProject: loadTodoEntriesForProject.bind(null, state),

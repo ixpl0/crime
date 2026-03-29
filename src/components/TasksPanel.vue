@@ -31,10 +31,8 @@
           v-for="todoDraftView in todoDraftViewItems"
           :key="`todo-draft-${todoDraftView.index}`"
           class="space-y-1 rounded-lg border border-transparent p-1 transition-colors"
+          :data-todo-textarea-drop="todoDraftView.index"
           :class="{ 'border-primary/40 bg-primary/10': isActiveDropTarget(todoDraftView.index) }"
-          @dragenter.prevent="handleTodoDragEnter(todoDraftView.index, $event)"
-          @dragover.prevent="handleTodoDragOver(todoDraftView.index, $event)"
-          @drop.prevent="handleTodoDrop(todoDraftView.index, $event)"
         >
           <textarea
             :value="todoDraftView.value"
@@ -50,14 +48,11 @@
           <div class="flex items-center gap-2">
             <button
               v-if="shouldShowTodoDragHandle(todoDraftView.index)"
-              class="icon-btn cursor-grab text-base-content/40 hover:text-primary active:cursor-grabbing"
+              class="icon-btn cursor-grab! text-base-content/40 hover:text-primary"
               type="button"
               tabindex="-1"
-              :draggable="canDragTodoDraft(todoDraftView.index)"
-              :disabled="!canDragTodoDraft(todoDraftView.index)"
               title="Drag to reorder"
-              @dragstart="handleTodoDragStart(todoDraftView.index, $event)"
-              @dragend="handleTodoDragEnd"
+              @mousedown="handleTodoGripMouseDown(todoDraftView.index, $event)"
             >
               <GripVertical :size="14" />
             </button>
@@ -77,7 +72,7 @@
                   class="icon-btn text-base-content/40 hover:text-success"
                   type="button"
                   tabindex="-1"
-                  title="Сохранить задачи"
+                  title="Сохранить задачу"
                   @click="forcePersistTodoEntries"
                 >
                   <Save :size="14" />
@@ -120,13 +115,8 @@ const {
   todoDragSourceIndex,
   todoDragOverIndex,
   toggleTodoPanelCollapse,
-  canDragTodoDraft,
   shouldShowTodoDragHandle,
-  handleTodoDragStart,
-  handleTodoDragEnter,
-  handleTodoDragOver,
-  handleTodoDragEnd,
-  handleTodoDrop,
+  handleTodoGripMouseDown,
   handleTodoTextareaInput,
   handleTodoTextareaKeydown,
   handleTodoTextareaBlur,

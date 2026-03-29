@@ -8,11 +8,7 @@ export interface DebugTodoStore {
   todoDragOverIndex: ReadableRef<number | null>;
   canDragTodoDraft: (index: number) => boolean;
   shouldShowTodoDragHandle: (index: number) => boolean;
-  handleTodoDragStart: (index: number, event: DragEvent) => void;
-  handleTodoDragEnter: (index: number, event: DragEvent) => void;
-  handleTodoDragOver: (index: number, event: DragEvent) => void;
-  handleTodoDragEnd: () => void;
-  handleTodoDrop: (index: number, event: DragEvent) => void;
+  handleTodoGripMouseDown: (index: number, event: MouseEvent) => void;
   handleTodoTextareaInput: (index: number, event: Event) => void;
   handleTodoTextareaKeydown: (event: KeyboardEvent) => void;
   handleTodoTextareaBlur: () => void;

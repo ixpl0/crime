@@ -20,6 +20,11 @@ body {
   margin: 0;
 }
 
+html.cursor-grabbing,
+html.cursor-grabbing * {
+  cursor: grabbing !important;
+}
+
 .icon-btn {
   cursor: pointer;
   transition: color 0.15s;
