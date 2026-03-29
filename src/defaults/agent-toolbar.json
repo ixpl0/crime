@@ -175,6 +175,27 @@
       ]
     },
     {
+      "label": "Второе мнение",
+      "color": "oklch(0.75 0.18 330)",
+      "items": [
+        {
+          "label": "Claude Code ревью",
+          "type": "prompt",
+          "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Claude Code CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: claude -p 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
+        },
+        {
+          "label": "Codex ревью",
+          "type": "prompt",
+          "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Codex CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: codex exec -c hide_agent_reasoning=true 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
+        },
+        {
+          "label": "Gemini ревью",
+          "type": "prompt",
+          "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Gemini CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: gemini -p 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
+        }
+      ]
+    },
+    {
       "label": "/команды",
       "color": "oklch(0.80 0.18 150)",
       "items": [

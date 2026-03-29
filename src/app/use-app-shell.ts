@@ -44,6 +44,7 @@ import { useTerminalView } from "../terminal/use-terminal-view";
 import { provideDebugTodoStore } from "../todo/debug-todo-store";
 import { provideAppTodoStore } from "../todo/todo-store";
 import { useTodoPanel } from "../todo/use-todo-panel";
+import { useAgentFocusRedirect } from "../composables/use-agent-focus-redirect";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
 import { provideAppToastStore } from "../toast/toast-store";
 
@@ -429,6 +430,7 @@ export function useAppShell() {
   });
 
   useToolbarShortcuts(toolbarConfig, executeToolbarAction);
+  useAgentFocusRedirect({ activeTab, isAgentDetached, focusTerminal });
 
   provideConfirmDialog();
   providePromptDialog();
