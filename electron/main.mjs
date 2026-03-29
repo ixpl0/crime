@@ -148,6 +148,7 @@ function getIconPath() {
 }
 
 const NEW_WINDOW_POSITION_OFFSET = 30;
+let lastFocusedWindow = null;
 
 function createWindow({ skipLastProjectRestore = false } = {}) {
   const initialWindowState = getInitialWindowState();
@@ -171,7 +172,14 @@ function createWindow({ skipLastProjectRestore = false } = {}) {
   const webContentsId = mainWindow.webContents.id;
   attachWindowStatePersistence(mainWindow, WINDOW_STATE_SAVE_DEBOUNCE_MS);
 
+  mainWindow.on("focus", () => {
+    lastFocusedWindow = mainWindow;
+  });
+
   mainWindow.on("closed", () => {
+    if (lastFocusedWindow === mainWindow) {
+      lastFocusedWindow = null;
+    }
     stopAllTerminalSessions(webContentsId);
     stopSettingsWatcher(webContentsId);
     stopGitWatcher(webContentsId);
@@ -244,10 +252,12 @@ function registerIpcHandlers() {
 function registerGlobalQuickKeys() {
   for (const binding of quickKeyBindings) {
     const isRegistered = globalShortcut.register(binding.accelerator, () => {
-      const focusedWindow = BrowserWindow.getFocusedWindow();
-      if (focusedWindow && !focusedWindow.isDestroyed()) {
-        focusedWindow.flashFrame(false);
-        focusedWindow.webContents.send(IPC_CHANNELS.globalQuickKey, binding.input);
+      const targetWindow = BrowserWindow.getFocusedWindow()
+        ?? (lastFocusedWindow && !lastFocusedWindow.isDestroyed() ? lastFocusedWindow : null)
+        ?? BrowserWindow.getAllWindows().find((window) => !window.isDestroyed());
+      if (targetWindow) {
+        targetWindow.flashFrame(false);
+        targetWindow.webContents.send(IPC_CHANNELS.globalQuickKey, binding.input);
       }
     });
 
