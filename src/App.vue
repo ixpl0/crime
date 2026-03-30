@@ -17,8 +17,8 @@
       <div
         v-if="projectPath"
         ref="outerContainer"
-        class="flex min-h-0 flex-1 flex-col gap-4"
-        :class="{ 'lg:flex-row lg:gap-0': !isTodoPanelCollapsed }"
+        class="flex min-h-0 flex-1 flex-col"
+        :class="{ 'flex-row': !isTodoPanelCollapsed }"
       >
         <template v-if="!isTodoPanelCollapsed">
           <div
@@ -26,7 +26,7 @@
             class="flex min-h-0 flex-col panel-w-resizable"
             :style="{ '--panel-w': tasksPanelWidth + 'px', '--panel-max-w': tasksPanelMaxWidth }"
           >
-            <TasksPanel class="min-h-0 lg:flex-1" />
+            <TasksPanel class="min-h-0 flex-1" />
             <template v-if="isDebugTodoPanelVisible">
               <PanelHeightResizeHandle
                 :is-active="isDebugPanelResizeActive"

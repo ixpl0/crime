@@ -2,7 +2,7 @@
   <button
     type="button"
     tabindex="-1"
-    class="group hidden h-4 w-full shrink-0 cursor-row-resize items-center justify-center border-0 bg-transparent p-0 lg:flex"
+    class="group flex h-4 w-full shrink-0 cursor-row-resize items-center justify-center border-0 bg-transparent p-0"
     title="Потяните, чтобы изменить высоту панели"
     aria-label="Изменить высоту панели"
     @pointerdown="$emit('pointerdown', $event)"

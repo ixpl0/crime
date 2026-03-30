@@ -2,7 +2,7 @@
   <div
     ref="mainContainer"
     class="min-h-0 flex-1 overflow-hidden"
-    :class="isAgentDetached ? 'flex flex-col gap-4 lg:flex-row lg:gap-0' : 'flex'"
+    :class="isAgentDetached ? 'flex flex-row' : 'flex'"
   >
     <!-- Left card (agent + header), or the only card when not detached -->
     <div
@@ -85,9 +85,9 @@
           />
 
           <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
-            <div ref="filesContainer" class="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:gap-0">
+            <div ref="filesContainer" class="flex h-full min-h-0 flex-row">
               <FileManagerPanel
-                class="panel-w-resizable h-full min-h-[14rem] flex-1 lg:min-h-0 lg:flex-none"
+                class="panel-w-resizable h-full min-h-0 flex-none"
                 :style="sidebarStyle"
                 :project-path="projectPath"
                 :selected-path="filesDisplayPath"
@@ -105,7 +105,7 @@
               />
 
               <FileContentViewer
-                class="h-full min-h-0 min-w-0 flex-[2] lg:flex-1"
+                class="h-full min-h-0 min-w-0 flex-1"
                 :project-path="projectPath"
                 :file-path="selectedFilePath"
                 :target-line="selectedFileTargetLine"
@@ -118,9 +118,9 @@
           </div>
 
           <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
-            <div ref="changesContainer" class="flex h-full min-h-0 flex-col gap-4 lg:flex-row lg:gap-0">
+            <div ref="changesContainer" class="flex h-full min-h-0 flex-row">
               <ChangesPanel
-                class="panel-w-resizable h-full min-h-[14rem] flex-1 lg:min-h-0 lg:flex-none"
+                class="panel-w-resizable h-full min-h-0 flex-none"
                 :style="sidebarStyle"
                 :project-path="projectPath"
                 :selected-path="changesSelectedFilePath"
@@ -138,7 +138,7 @@
               />
 
               <FileContentViewer
-                class="h-full min-h-0 min-w-0 flex-[2] lg:flex-1"
+                class="h-full min-h-0 min-w-0 flex-1"
                 :project-path="projectPath"
                 :file-path="changesSelectedFilePath"
                 :refresh-token="gitStatusRefreshToken"
