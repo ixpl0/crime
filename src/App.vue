@@ -6,7 +6,7 @@
       :class="projectPath ? 'w-full' : 'mx-auto w-full max-w-5xl'"
     >
       <ProjectPicker
-        v-if="!projectPath"
+        v-if="isStartupReady && !projectPath"
         :recent-projects="recentProjects"
         :is-opening="isOpening"
         :get-project-name-from-path="getProjectNameFromPath"
@@ -73,6 +73,7 @@ const DEBUG_PANEL_DEFAULT_HEIGHT = 200;
 
 const {
   isOpening,
+  isStartupReady,
   isTodoPanelCollapsed,
   isDebugTodoPanelVisible,
   recentProjects,

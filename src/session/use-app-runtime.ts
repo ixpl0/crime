@@ -11,6 +11,7 @@ const PRIMARY_TERMINAL_SESSION_ID = "primary";
 interface UseAppRuntimeOptions {
   isTodoPanelCollapsed: Ref<boolean>;
   isTerminalReady: Ref<boolean>;
+  isStartupReady: Ref<boolean>;
   isDebugTodoPanelVisible: Ref<boolean>;
   loadRecentProjectsFromStorage: () => void;
   validateRecentProjects: () => Promise<void>;
@@ -131,14 +132,18 @@ function subscribeGlobalQuickKeys(
   });
 }
 
-function runStartupFlow(options: UseAppRuntimeOptions) {
+async function runStartupFlow(options: UseAppRuntimeOptions) {
   options.loadRecentProjectsFromStorage();
   void options.validateRecentProjects();
   options.startProjectLayoutListeners();
   void nextTick(() => {
     options.resizeTerminalInputTextareaElement();
   });
-  void options.openLastProjectOnStartup();
+  try {
+    await options.openLastProjectOnStartup();
+  } finally {
+    options.isStartupReady.value = true;
+  }
   void options.loadDebugTodoEntries();
 }
 
@@ -179,7 +184,7 @@ export function useAppRuntime(options: UseAppRuntimeOptions) {
     subscribeWindowHistoryNavigation(options, state);
     subscribeWindowErrorEvents(options, state);
     subscribeGlobalQuickKeys(options, state);
-    runStartupFlow(options);
+    void runStartupFlow(options);
   });
 
   watch(options.isTodoPanelCollapsed, (isCollapsed) => {

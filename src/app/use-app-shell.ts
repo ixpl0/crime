@@ -69,6 +69,7 @@ export function useAppShell() {
   const findQuickKeyByInput = (input: string) => quickKeysByInput.get(input);
 
   const isOpening = ref(false);
+  const isStartupReady = ref(false);
   const isTerminalReady = ref(false);
   const projectPath = ref<string | null>(null);
   const errorMessage = ref("");
@@ -434,6 +435,7 @@ export function useAppShell() {
   useAppRuntime({
     isTodoPanelCollapsed,
     isTerminalReady,
+    isStartupReady,
     isDebugTodoPanelVisible,
     loadRecentProjectsFromStorage,
     validateRecentProjects,
@@ -617,6 +619,7 @@ export function useAppShell() {
   return {
     errorMessage,
     isOpening,
+    isStartupReady,
     isTodoPanelCollapsed,
     isDebugTodoPanelVisible,
     recentProjects,
