@@ -14,6 +14,7 @@ interface UseAppNavigationOptions {
   isAgentDetached: Ref<boolean>;
   onOpenProjectFolder: () => void;
   onOpenRecentProject: (path: string) => void;
+  onOpenProjectInNewWindow: (path?: string) => void;
   onAgentTabActivated: () => void;
 }
 
@@ -161,6 +162,10 @@ function createDropdownActionApi(options: UseAppNavigationOptions, state: Dropdo
     handleProjectDropdownRecentClick: (path: string) => {
       setProjectDropdownOpen(false, state);
       options.onOpenRecentProject(path);
+    },
+    handleProjectDropdownOpenInNewWindowClick: (path?: string) => {
+      setProjectDropdownOpen(false, state);
+      options.onOpenProjectInNewWindow(path);
     },
     handleHiddenPanelOptionClick: (panelId: HiddenPanelId) => {
       void panelId;

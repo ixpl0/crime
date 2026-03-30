@@ -337,16 +337,33 @@ async function isProjectFolderAccessible(path: string) {
   }
 }
 
-function shouldSkipLastProjectRestore() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("skipRestore") === "1";
+function getStartupQueryParams() {
+  return new URLSearchParams(window.location.search);
 }
 
-async function openLastProjectOnStartup(state: ProjectSessionState) {
-  if (shouldSkipLastProjectRestore()) {
+function shouldSkipLastProjectRestore() {
+  return getStartupQueryParams().get("skipRestore") === "1";
+}
+
+function getStartupOpenProjectPath() {
+  const path = getStartupQueryParams().get("openProject");
+  return path && path.trim().length > 0 ? path.trim() : null;
+}
+
+async function openStartupProject(state: ProjectSessionState, path: string) {
+  const isAccessible = await isProjectFolderAccessible(path);
+  if (!isAccessible) {
     return;
   }
 
+  await runProjectOpenFlow(
+    state,
+    () => performProjectOpen(state, path),
+    (error) => handleStartupRestoreFailure(state, error)
+  );
+}
+
+async function restoreLastProject(state: ProjectSessionState) {
   const lastProjectPath = getLastProjectPathFromStorage();
   if (!lastProjectPath) {
     return;
@@ -363,6 +380,20 @@ async function openLastProjectOnStartup(state: ProjectSessionState) {
     () => performProjectOpen(state, lastProjectPath),
     (error) => handleStartupRestoreFailure(state, error)
   );
+}
+
+async function openLastProjectOnStartup(state: ProjectSessionState) {
+  const startupProjectPath = getStartupOpenProjectPath();
+  if (startupProjectPath) {
+    await openStartupProject(state, startupProjectPath);
+    return;
+  }
+
+  if (shouldSkipLastProjectRestore()) {
+    return;
+  }
+
+  await restoreLastProject(state);
 }
 
 export function useProjectSession(options: UseProjectSessionOptions) {

@@ -254,6 +254,7 @@ export function useAppShell() {
     handleHiddenPanelsDropdownTriggerKeydown,
     handleProjectDropdownOpenFolderClick,
     handleProjectDropdownRecentClick,
+    handleProjectDropdownOpenInNewWindowClick,
     handleHiddenPanelOptionClick,
     setActiveTab,
     clearTabNavigationHistory,
@@ -268,6 +269,9 @@ export function useAppShell() {
     },
     onOpenRecentProject: (path) => {
       void openProject(path);
+    },
+    onOpenProjectInNewWindow: (path) => {
+      void window.projectApi.openInNewWindow(path);
     },
     onAgentTabActivated: () => {
       void resizeTerminalBackend();
@@ -461,6 +465,7 @@ export function useAppShell() {
     setProjectDropdownOpen,
     openProjectFolder: handleProjectDropdownOpenFolderClick,
     openRecentProject: handleProjectDropdownRecentClick,
+    openProjectInNewWindow: handleProjectDropdownOpenInNewWindowClick,
     toggleHiddenPanelsDropdown,
     handleHiddenPanelsDropdownTriggerKeydown,
     setHiddenPanelsDropdownOpen,

@@ -150,7 +150,7 @@ function getIconPath() {
 const NEW_WINDOW_POSITION_OFFSET = 30;
 let lastFocusedWindow = null;
 
-function createWindow({ skipLastProjectRestore = false } = {}) {
+function createWindow({ skipLastProjectRestore = false, openProjectPath = null } = {}) {
   const initialWindowState = getInitialWindowState();
   const existingWindowCount = BrowserWindow.getAllWindows().length;
   const offset = existingWindowCount * NEW_WINDOW_POSITION_OFFSET;
@@ -194,9 +194,15 @@ function createWindow({ skipLastProjectRestore = false } = {}) {
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
-    const url = skipLastProjectRestore
-      ? `${devServerUrl}?skipRestore=1`
-      : devServerUrl;
+    const queryParams = new URLSearchParams();
+    if (skipLastProjectRestore) {
+      queryParams.set("skipRestore", "1");
+    }
+    if (openProjectPath) {
+      queryParams.set("openProject", openProjectPath);
+    }
+    const queryString = queryParams.toString();
+    const url = queryString ? `${devServerUrl}?${queryString}` : devServerUrl;
     mainWindow.loadURL(url);
     if (process.env.OPEN_DEVTOOLS === "1") {
       mainWindow.webContents.openDevTools({ mode: "detach" });
@@ -204,14 +210,19 @@ function createWindow({ skipLastProjectRestore = false } = {}) {
     return;
   }
 
-  const loadFileOptions = skipLastProjectRestore
-    ? { query: { skipRestore: "1" } }
-    : undefined;
+  const query = {};
+  if (skipLastProjectRestore) {
+    query.skipRestore = "1";
+  }
+  if (openProjectPath) {
+    query.openProject = openProjectPath;
+  }
+  const loadFileOptions = Object.keys(query).length > 0 ? { query } : undefined;
   mainWindow.loadFile(join(__dirname, "../dist/index.html"), loadFileOptions);
 }
 
 function registerIpcHandlers() {
-  registerProjectIpcHandlers({ IPC_CHANNELS });
+  registerProjectIpcHandlers({ IPC_CHANNELS, createWindow });
   registerSettingsIpcHandlers({
     IPC_CHANNELS,
     settingsDirName: SETTINGS_DIRNAME,

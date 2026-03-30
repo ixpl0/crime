@@ -37,7 +37,8 @@ const IPC_CHANNELS = Object.freeze({
   "globalQuickKey": "global:quick-key",
   "shellOpenExternal": "shell:open-external",
   "shellOpenPath": "shell:open-path",
-  "windowFlashFrame": "window:flash-frame"
+  "windowFlashFrame": "window:flash-frame",
+  "projectOpenInNewWindow": "project:open-in-new-window"
 });
 
 const SETTINGS_DIRNAME = ".crime";
@@ -166,6 +167,7 @@ function normalizeZoomFactor(value) {
 contextBridge.exposeInMainWorld("projectApi", {
   quickKeys: quickKeyBindings,
   openFolder: () => ipcRenderer.invoke(IPC_CHANNELS.projectOpenFolder),
+  openInNewWindow: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.projectOpenInNewWindow, projectPath),
   settings: {
     directoryName: SETTINGS_DIRNAME,
     read: (projectPath, filename) =>

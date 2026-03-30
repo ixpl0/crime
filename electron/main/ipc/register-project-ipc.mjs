@@ -2,9 +2,10 @@ import { BrowserWindow, dialog, ipcMain } from "electron";
 
 function removeProjectHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.projectOpenFolder);
+  ipcMain.removeHandler(IPC_CHANNELS.projectOpenInNewWindow);
 }
 
-export function registerProjectIpcHandlers({ IPC_CHANNELS }) {
+export function registerProjectIpcHandlers({ IPC_CHANNELS, createWindow }) {
   removeProjectHandlers(IPC_CHANNELS);
 
   ipcMain.handle(IPC_CHANNELS.projectOpenFolder, async (event) => {
@@ -18,5 +19,13 @@ export function registerProjectIpcHandlers({ IPC_CHANNELS }) {
     }
 
     return result.filePaths[0];
+  });
+
+  ipcMain.handle(IPC_CHANNELS.projectOpenInNewWindow, (_event, projectPath) => {
+    if (projectPath) {
+      createWindow({ openProjectPath: projectPath });
+    } else {
+      createWindow({ skipLastProjectRestore: true });
+    }
   });
 }
