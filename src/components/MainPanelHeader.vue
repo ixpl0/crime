@@ -134,11 +134,19 @@
               <button
                 :disabled="isOpening"
                 tabindex="-1"
-                class="flex flex-col items-start gap-0 py-2 pr-9"
+                class="flex flex-col items-start gap-0 py-2 pr-16"
                 @click="openRecentProject(recent)"
               >
                 <span class="font-medium text-base-content">{{ getProjectNameFromPath(recent) }}</span>
                 <span class="w-full truncate text-[10px] opacity-50" :title="recent">{{ recent }}</span>
+              </button>
+              <button
+                tabindex="-1"
+                class="icon-btn absolute right-8 top-1/2 -translate-y-1/2 p-1.5 text-base-content/30 hover:text-error"
+                title="Убрать из списка"
+                @click.stop="removeRecentProject(recent)"
+              >
+                <X :size="14" />
               </button>
               <button
                 tabindex="-1"
@@ -219,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, ExternalLink, Eye, FolderPlus, Moon, PanelRightOpen, Settings, Sun } from "lucide-vue-next";
+import { ChevronDown, ExternalLink, Eye, FolderPlus, Moon, PanelRightOpen, Settings, Sun, X } from "lucide-vue-next";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
@@ -251,6 +259,7 @@ const {
   createProjectInNewWindow,
   closeProject,
   openRecentProject,
+  removeRecentProject,
   openProjectInNewWindow,
   toggleHiddenPanelsDropdown,
   handleHiddenPanelsDropdownTriggerKeydown,

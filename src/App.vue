@@ -13,6 +13,7 @@
         @open-folder="openProjectFolder"
         @create-folder="createProjectFolder"
         @open-project="openProject"
+        @remove-project="removeRecentProject"
       />
 
       <div
@@ -78,6 +79,7 @@ const {
   isDebugTodoPanelVisible,
   recentProjects,
   getProjectNameFromPath,
+  removeRecentProject,
   openProject,
   openProjectFolder,
   createProjectFolder,

@@ -28,6 +28,7 @@ export interface AppNavigationStore {
   createProjectInNewWindow: () => void;
   closeProject: () => void;
   openRecentProject: (path: string) => void;
+  removeRecentProject: (path: string) => void;
   openProjectInNewWindow: (path: string) => void;
   toggleHiddenPanelsDropdown: () => void;
   handleHiddenPanelsDropdownTriggerKeydown: (event: KeyboardEvent) => void;

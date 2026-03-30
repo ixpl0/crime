@@ -95,6 +95,7 @@ export function useAppShell() {
     getProjectNameFromPath,
     loadRecentProjectsFromStorage,
     addRecentProject,
+    removeRecentProject,
     validateRecentProjects
   } = useRecentProjects(
     RECENT_PROJECTS_STORAGE_KEY,
@@ -419,6 +420,7 @@ export function useAppShell() {
     projectSettings,
     secretsConfig,
     addRecentProject,
+    removeRecentProject,
     resetProjectRuntimeState,
     applyProjectSettings,
     canReloadPromptSuffixConfig,
@@ -430,6 +432,18 @@ export function useAppShell() {
       disposeTerminalView();
     },
     reportUiError
+  });
+
+  watch(isProjectDropdownOpen, (isOpen) => {
+    if (isOpen) {
+      void validateRecentProjects();
+    }
+  });
+
+  watch(projectPath, (newPath, oldPath) => {
+    if (oldPath && !newPath) {
+      void validateRecentProjects();
+    }
   });
 
   useAppRuntime({
@@ -501,6 +515,7 @@ export function useAppShell() {
     createProjectInNewWindow: handleProjectDropdownCreateInNewWindowClick,
     closeProject: handleProjectDropdownCloseProjectClick,
     openRecentProject: handleProjectDropdownRecentClick,
+    removeRecentProject,
     openProjectInNewWindow: handleProjectDropdownOpenInNewWindowClick,
     toggleHiddenPanelsDropdown,
     handleHiddenPanelsDropdownTriggerKeydown,
@@ -624,6 +639,7 @@ export function useAppShell() {
     isDebugTodoPanelVisible,
     recentProjects,
     getProjectNameFromPath,
+    removeRecentProject,
     openProject,
     openProjectFolder,
     createProjectFolder,

@@ -51,6 +51,7 @@ export interface UseProjectSessionOptions {
   projectSettings: Ref<ProjectSettings>;
   secretsConfig: Ref<string>;
   addRecentProject: (path: string) => void;
+  removeRecentProject: (path: string) => void;
   resetProjectRuntimeState: () => void;
   applyProjectSettings: (settings: ProjectSettings) => void;
   canReloadPromptSuffixConfig: () => boolean;
@@ -310,6 +311,17 @@ async function runProjectOpenFlow(
 }
 
 async function openProject(state: ProjectSessionState, path: string) {
+  const isAccessible = await isProjectFolderAccessible(path);
+  if (!isAccessible) {
+    state.options.removeRecentProject(path);
+    state.options.reportUiError(
+      "Project open",
+      null,
+      `Project folder not found: ${path}`
+    );
+    return;
+  }
+
   await runProjectOpenFlow(
     state,
     () => performProjectOpen(state, path),

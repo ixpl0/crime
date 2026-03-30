@@ -33,32 +33,30 @@ function getProjectNameFromPath(path: string) {
   return parts[parts.length - 1] || path;
 }
 
+function createRecentProjectsOperations(
+  storageKey: string,
+  recentProjects: { value: string[] },
+  readDirectory: ReadDirectoryFn
+) {
+  const { getRecentProjectsFromStorage, setRecentProjectsInStorage, loadRecentProjectsFromStorage } =
+    createRecentProjectsStorage(storageKey, recentProjects);
+  return {
+    loadRecentProjectsFromStorage,
+    addRecentProject: createAddRecentProject(recentProjects, getRecentProjectsFromStorage, setRecentProjectsInStorage),
+    removeRecentProject: createRemoveRecentProject(recentProjects, getRecentProjectsFromStorage, setRecentProjectsInStorage),
+    validateRecentProjects: createRecentProjectsValidator(recentProjects, getRecentProjectsFromStorage, setRecentProjectsInStorage, readDirectory)
+  };
+}
+
 export function useRecentProjects(storageKey: string, readDirectory: ReadDirectoryFn) {
   const initialProjects = parseRecentProjects(window.localStorage.getItem(storageKey));
   const recentProjects = ref<string[]>(initialProjects);
-  const {
-    getRecentProjectsFromStorage,
-    setRecentProjectsInStorage,
-    loadRecentProjectsFromStorage
-  } = createRecentProjectsStorage(storageKey, recentProjects);
-  const addRecentProject = createAddRecentProject(
-    recentProjects,
-    getRecentProjectsFromStorage,
-    setRecentProjectsInStorage
-  );
-  const validateRecentProjects = createRecentProjectsValidator(
-    recentProjects,
-    getRecentProjectsFromStorage,
-    setRecentProjectsInStorage,
-    readDirectory
-  );
+  const operations = createRecentProjectsOperations(storageKey, recentProjects, readDirectory);
 
   return {
     recentProjects,
     getProjectNameFromPath,
-    loadRecentProjectsFromStorage,
-    addRecentProject,
-    validateRecentProjects
+    ...operations
   };
 }
 
@@ -96,6 +94,23 @@ function createAddRecentProject(
     const updatedPaths = [path, ...filteredPaths].slice(0, RECENT_PROJECTS_LIMIT);
     recentProjects.value = updatedPaths;
     setRecentProjectsInStorage(updatedPaths);
+  };
+}
+
+function createRemoveRecentProject(
+  recentProjects: { value: string[] },
+  getRecentProjectsFromStorage: () => string[],
+  setRecentProjectsInStorage: (paths: string[]) => void
+) {
+  return function removeRecentProject(path: string) {
+    const existingPaths = getRecentProjectsFromStorage();
+    const filteredPaths = existingPaths.filter((currentPath) =>
+      normalizePathForComparison(currentPath) !== normalizePathForComparison(path)
+    );
+    if (filteredPaths.length !== existingPaths.length) {
+      recentProjects.value = filteredPaths;
+      setRecentProjectsInStorage(filteredPaths);
+    }
   };
 }
 

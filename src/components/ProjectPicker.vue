@@ -31,28 +31,40 @@
           Recent
         </p>
         <div class="flex flex-col overflow-hidden rounded-box border border-base-300 bg-base-100">
-          <button
+          <div
             v-for="(projectPath, index) in recentProjects"
             :key="projectPath"
-            class="group flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary/10"
+            class="group relative"
             :class="{ 'border-t border-base-300': index > 0 }"
-            tabindex="-1"
-            :disabled="isOpening"
-            @click="$emit('openProject', projectPath)"
           >
-            <Folder
-              :size="16"
-              class="shrink-0 text-base-content/25 transition-colors group-hover:text-primary/70"
-            />
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-medium text-base-content/70 transition-colors group-hover:text-base-content">
-                {{ getProjectNameFromPath(projectPath) }}
+            <button
+              class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 pr-10 text-left transition-colors hover:bg-primary/10"
+              tabindex="-1"
+              :disabled="isOpening"
+              @click="$emit('openProject', projectPath)"
+            >
+              <Folder
+                :size="16"
+                class="shrink-0 text-base-content/25 transition-colors group-hover:text-primary/70"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="truncate text-sm font-medium text-base-content/70 transition-colors group-hover:text-base-content">
+                  {{ getProjectNameFromPath(projectPath) }}
+                </div>
+                <div class="truncate text-xs text-base-content/25">
+                  {{ projectPath }}
+                </div>
               </div>
-              <div class="truncate text-xs text-base-content/25">
-                {{ projectPath }}
-              </div>
-            </div>
-          </button>
+            </button>
+            <button
+              class="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer p-1 text-base-content/0 transition-colors group-hover:text-base-content/30 hover:!text-error"
+              tabindex="-1"
+              title="Убрать из списка"
+              @click="$emit('removeProject', projectPath)"
+            >
+              <X :size="14" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -60,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { Folder, FolderOpen, FolderPlus } from "lucide-vue-next";
+import { Folder, FolderOpen, FolderPlus, X } from "lucide-vue-next";
 
 defineProps<{
   recentProjects: readonly string[];
@@ -72,5 +84,6 @@ defineEmits<{
   openFolder: [];
   createFolder: [];
   openProject: [path: string];
+  removeProject: [path: string];
 }>();
 </script>
