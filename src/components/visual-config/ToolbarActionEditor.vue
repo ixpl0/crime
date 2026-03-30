@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-2">
-    <FieldText label="Label" :model-value="action.label" @update:model-value="updateField('label', $event)" />
-    <FieldSelect label="Type" :model-value="action.type" :options="ACTION_TYPE_OPTIONS" @update:model-value="handleTypeChange" />
+    <FieldText label="Название" :model-value="action.label" @update:model-value="updateField('label', $event)" />
+    <FieldSelect label="Тип" :model-value="action.type" :options="ACTION_TYPE_OPTIONS" @update:model-value="handleTypeChange" />
 
     <FieldText
       v-if="action.type !== 'scenario'"
-      label="Value"
+      label="Значение"
       :model-value="action.value"
       :multiline="action.type === 'prompt'"
       :rows="3"
@@ -13,14 +13,14 @@
       @update:model-value="updateField('value', $event)"
     />
 
-    <FieldColor label="Color" :model-value="action.color" @update:model-value="updateField('color', $event)" />
-    <FieldText label="Shortcut" :model-value="action.shortcut ?? ''" placeholder="e.g. ctrl+1" @update:model-value="updateOptionalString('shortcut', $event)" />
-    <FieldCheckbox label="Reset terminal" :model-value="action.resetTerminal ?? false" @update:model-value="updateOptionalBool('resetTerminal', $event)" />
-    <FieldCheckbox v-if="action.done !== undefined" label="Done" :model-value="action.done ?? false" @update:model-value="updateOptionalBool('done', $event)" />
+    <FieldColor label="Цвет" :model-value="action.color" @update:model-value="updateField('color', $event)" />
+    <FieldText label="Шорткат" :model-value="action.shortcut ?? ''" placeholder="e.g. ctrl+1" @update:model-value="updateOptionalString('shortcut', $event)" />
+    <FieldCheckbox label="Сбросить терминал" :model-value="action.resetTerminal ?? false" @update:model-value="updateOptionalBool('resetTerminal', $event)" />
+    <FieldCheckbox v-if="action.done !== undefined" label="Готово" :model-value="action.done ?? false" @update:model-value="updateOptionalBool('done', $event)" />
 
     <!-- Scenario steps -->
     <div v-if="action.type === 'scenario' && action.steps" class="mt-3">
-      <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/60">Steps</div>
+      <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/60">Шаги</div>
       <div
         v-for="(step, stepIndex) in action.steps"
         :key="stepIndex"
@@ -40,7 +40,7 @@
           type="text"
           class="input input-bordered input-xs min-w-0 flex-1 font-mono"
           :value="step.value ?? ''"
-          placeholder="Value"
+          placeholder="Значение"
           tabindex="-1"
           @input="updateStepField(stepIndex, 'value', ($event.target as HTMLInputElement).value)"
         />
@@ -117,7 +117,7 @@
 
       <button class="btn btn-ghost btn-xs mt-1" tabindex="-1" @click="addStep">
         <Plus :size="12" />
-        Add step
+        Добавить шаг
       </button>
     </div>
   </div>
@@ -169,12 +169,12 @@ const action = computed(() => props.modelValue as ToolbarAction);
 
 const valuePlaceholder = computed(() => {
   if (action.value.type === "command") {
-    return "Shell command";
+    return "Команда";
   }
   if (action.value.type === "prompt") {
-    return "Prompt text";
+    return "Текст промпта";
   }
-  return "Raw input";
+  return "Прямой ввод";
 });
 
 const updateField = (field: string, value: unknown) => {

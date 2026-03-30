@@ -85,7 +85,7 @@ export function useTerminalActions({
     if (action.type === "raw-input") {
       await sendTerminalInput(
         action.value,
-        "Failed to send raw input to terminal."
+        "Не удалось отправить ввод в терминал."
       );
       return;
     }
@@ -95,11 +95,11 @@ export function useTerminalActions({
 
   async function runTerminalCommand(command: string) {
     const result = await attemptSubmitTerminalText(command, {
-      notReady: "Terminal is not ready to run commands.",
+      notReady: "Терминал не готов к выполнению команд.",
       messages: {
-        sendSlash: "Failed to send slash command to terminal.",
-        sendText: "Failed to send command text to terminal.",
-        submit: "Failed to submit command in terminal."
+        sendSlash: "Не удалось отправить слеш-команду в терминал.",
+        sendText: "Не удалось отправить текст команды в терминал.",
+        submit: "Не удалось выполнить команду в терминале."
       },
       inputType: "command"
     });
@@ -110,11 +110,11 @@ export function useTerminalActions({
 
   async function runToolbarPrompt(promptText: string) {
     const result = await attemptSubmitTerminalText(promptText, {
-      notReady: "Terminal is not ready to send prompt.",
+      notReady: "Терминал не готов к отправке промпта.",
       messages: {
-        sendSlash: "Failed to send slash command from prompt.",
-        sendText: "Failed to send prompt text to terminal.",
-        submit: "Failed to submit prompt in terminal."
+        sendSlash: "Не удалось отправить слеш-команду из промпта.",
+        sendText: "Не удалось отправить текст промпта в терминал.",
+        submit: "Не удалось отправить промпт в терминал."
       },
       inputType: "prompt"
     });
@@ -133,16 +133,16 @@ export function useTerminalActions({
       return;
     }
 
-    void sendTerminalInput(quickKey.input, "Failed to send quick key to terminal.");
+    void sendTerminalInput(quickKey.input, "Не удалось отправить quick key в терминал.");
   }
 
   async function submitQuickKeyText(text: string) {
-    const textOk = await sendTerminalInput(text, "Failed to send text to terminal.");
+    const textOk = await sendTerminalInput(text, "Не удалось отправить текст в терминал.");
     if (!textOk) {
       return;
     }
 
-    await sendTerminalInput("\r", "Failed to send Enter to terminal.");
+    await sendTerminalInput("\r", "Не удалось отправить Enter в терминал.");
   }
 
   async function sendTodoEntryToTerminal(index: number) {
@@ -152,11 +152,11 @@ export function useTerminalActions({
     }
 
     const result = await attemptSubmitTerminalText(text, {
-      notReady: "Terminal is not ready to send input.",
+      notReady: "Терминал не готов к отправке ввода.",
       messages: {
-        sendSlash: "Failed to send slash command from todo to terminal.",
-        sendText: "Failed to send todo prompt to terminal.",
-        submit: "Failed to send Enter to terminal."
+        sendSlash: "Не удалось отправить слеш-команду задачи в терминал.",
+        sendText: "Не удалось отправить промпт задачи в терминал.",
+        submit: "Не удалось отправить Enter в терминал."
       },
       inputType: "prompt"
     });

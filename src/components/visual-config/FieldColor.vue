@@ -7,9 +7,9 @@
       tabindex="-1"
       @change="handleSelectChange"
     >
-      <option value="">(none)</option>
+      <option value="">(нет)</option>
       <option v-for="preset in PRESET_COLORS" :key="preset" :value="preset">{{ preset }}</option>
-      <option value="__custom__">custom</option>
+      <option value="__custom__">свой цвет</option>
     </select>
     <input
       v-if="isCustom"

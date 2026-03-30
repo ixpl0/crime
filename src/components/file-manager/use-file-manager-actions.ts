@@ -47,7 +47,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
     try {
       const response = await window.projectApi.git.revertFile(projectPath.value, path);
       if (!response.ok) {
-        loadError.value = response.error ?? "Failed to revert file changes.";
+        loadError.value = response.error ?? "Не удалось откатить изменения файла.";
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
@@ -56,7 +56,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
         forceRefreshTree();
       }
     } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to revert file changes.");
+      loadError.value = toErrorMessage(error, "Не удалось откатить изменения файла.");
     } finally {
       revertingPath.value = null;
     }
@@ -76,7 +76,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
     try {
       const response = await window.projectApi.git.revertAll(projectPath.value);
       if (!response.ok) {
-        loadError.value = response.error ?? "Failed to revert all changes.";
+        loadError.value = response.error ?? "Не удалось откатить все изменения.";
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
@@ -85,7 +85,7 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
         forceRefreshTree();
       }
     } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to revert all changes.");
+      loadError.value = toErrorMessage(error, "Не удалось откатить все изменения.");
     } finally {
       isRevertingAll.value = false;
     }
@@ -102,14 +102,14 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
     try {
       const response = await window.projectApi.filesystem.deletePath(projectPath.value, targetPath);
       if (!response.ok) {
-        loadError.value = response.error ?? "Failed to delete path.";
+        loadError.value = response.error ?? "Не удалось удалить.";
       } else {
         await refreshGitStatus();
         await loadRootDirectory(true);
         forceRefreshTree();
       }
     } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to delete path.");
+      loadError.value = toErrorMessage(error, "Не удалось удалить.");
     } finally {
       revertingPath.value = null;
     }
@@ -140,14 +140,14 @@ export function useFileManagerActions(options: UseFileManagerActionsOptions) {
         projectPath.value, targetDirectory, name, isDirectory
       );
       if (!response.ok) {
-        loadError.value = response.error ?? "Failed to create path.";
+        loadError.value = response.error ?? "Не удалось создать.";
       } else {
         await refreshGitStatus();
         await loadRootDirectory(true);
         forceRefreshTree();
       }
     } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to create path.");
+      loadError.value = toErrorMessage(error, "Не удалось создать.");
     } finally {
       revertingPath.value = null;
     }

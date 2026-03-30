@@ -2,22 +2,22 @@
   <div class="flex h-full min-h-0 flex-col rounded-box border border-base-300 bg-base-200/70 shadow-sm">
     <div class="border-b border-base-300/80 bg-base-100/40 px-3 py-2">
       <div class="flex items-center gap-2">
-        <span class="truncate text-sm font-semibold">{{ filePath ? fileName : "File preview" }}</span>
+        <span class="truncate text-sm font-semibold">{{ filePath ? fileName : "Просмотр файла" }}</span>
         <div class="ml-auto flex items-center gap-1.5">
           <span v-if="filePath && !isLoading && !isEditing" class="text-[11px] text-base-content/45">
-            <span v-if="isTruncated" class="text-warning/70">{{ `showing first ${String(LARGE_FILE_LINE_THRESHOLD)} of ${String(displayLines.length)} lines` }}</span>
-            <span v-else>{{ `${String(displayLines.length)} lines` }}</span>
+            <span v-if="isTruncated" class="text-warning/70">{{ `первые ${String(LARGE_FILE_LINE_THRESHOLD)} из ${String(displayLines.length)} строк` }}</span>
+            <span v-else>{{ `${String(displayLines.length)} строк` }}</span>
           </span>
           <template v-if="changeCount > 0 && !isEditing && !isLoading">
-            <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Previous change" @click="goToPrevChange">
+            <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Предыдущее изменение" @click="goToPrevChange">
               <ChevronUp :size="14" />
             </button>
             <span class="min-w-6 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
-            <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Next change" @click="goToNextChange">
+            <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Следующее изменение" @click="goToNextChange">
               <ChevronDown :size="14" />
             </button>
           </template>
-          <button v-if="filePath && canEdit" class="icon-btn text-base-content/40 hover:text-warning" tabindex="-1" :title="isEditing ? 'Switch to viewer' : 'Edit file'" @click="toggleEditMode">
+          <button v-if="filePath && canEdit" class="icon-btn text-base-content/40 hover:text-warning" tabindex="-1" :title="isEditing ? 'Режим просмотра' : 'Редактировать'" @click="toggleEditMode">
             <component :is="isEditing ? Eye : Pencil" :size="14" />
           </button>
         </div>
@@ -34,16 +34,16 @@
     />
     <div v-else class="min-h-0 flex-1 overflow-hidden bg-base-100/35">
       <div v-if="!filePath" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
-        Select a file in tree to preview it.
+        Выберите файл для просмотра.
       </div>
       <div v-else-if="isLoading" class="flex h-full items-center justify-center"><span class="loading loading-spinner loading-md" /></div>
-      <div v-else-if="loadError" class="flex h-full items-center justify-center px-4 text-sm text-base-content/55">Preview unavailable.</div>
+      <div v-else-if="loadError" class="flex h-full items-center justify-center px-4 text-sm text-base-content/55">Просмотр недоступен.</div>
       <div v-else-if="isBinaryFile" class="flex h-full flex-col items-center justify-center gap-2 px-4 text-sm text-base-content/60">
-        <span>Binary file — preview not available.</span>
-        <button class="btn btn-ghost btn-xs" tabindex="-1" @click="openFileExternally">Show in folder</button>
+        <span>Бинарный файл — просмотр невозможен.</span>
+        <button class="btn btn-ghost btn-xs" tabindex="-1" @click="openFileExternally">Показать в папке</button>
       </div>
       <div v-else-if="displayLines.length === 0" class="flex h-full items-center justify-center px-4 text-sm text-base-content/60">
-        File is empty.
+        Файл пуст.
       </div>
       <CodeMirrorDiffViewer
         v-else
@@ -55,8 +55,8 @@
       />
     </div>
     <div v-if="isTruncated && !isEditing" class="flex items-center gap-2 border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
-      <span>File too large for inline preview.</span>
-      <button class="btn btn-ghost btn-xs" tabindex="-1" @click="openFileExternally">Show in folder</button>
+      <span>Файл слишком большой для просмотра.</span>
+      <button class="btn btn-ghost btn-xs" tabindex="-1" @click="openFileExternally">Показать в папке</button>
     </div>
     <div v-else-if="diffInfoMessage" class="border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
       {{ diffInfoMessage }}
@@ -148,7 +148,7 @@ function buildFallbackLines(fileResponse: FilesystemReadFileResponse): ViewerLin
 }
 
 function applyFileReadError(fileResponse: FilesystemReadFileResponse) {
-  if (!fileResponse.ok) loadError.value = fileResponse.error ?? "Failed to read file.";
+  if (!fileResponse.ok) loadError.value = fileResponse.error ?? "Не удалось прочитать файл.";
 }
 
 function isFileNotFoundError(error: unknown): error is { code: string; message: string } {
@@ -161,20 +161,20 @@ function isFileNotFoundResponse(response: FilesystemReadFileResponse): boolean {
 
 function applyUnavailableDiffState(diffResponse: GitFileDiffResponse, fileResponse: FilesystemReadFileResponse, fallbackLines: ViewerLine[]) {
   displayLines.value = fallbackLines;
-  diffInfoMessage.value = diffResponse.error ? `Git diff unavailable: ${diffResponse.error}` : "Git diff unavailable.";
+  diffInfoMessage.value = diffResponse.error ? `Git diff недоступен: ${diffResponse.error}` : "Git diff недоступен.";
   applyFileReadError(fileResponse);
 }
 
 function applyUnavailableGitState(diffResponse: GitFileDiffResponse, fileResponse: FilesystemReadFileResponse, fallbackLines: ViewerLine[]) {
   displayLines.value = fallbackLines;
-  diffInfoMessage.value = diffResponse.reason === "git-not-installed" ? "Git is not installed. Showing plain file content." : "Selected folder is not a Git repository.";
+  diffInfoMessage.value = diffResponse.reason === "git-not-installed" ? "Git не установлен. Показано содержимое файла." : "Выбранная папка не является Git-репозиторием.";
   applyFileReadError(fileResponse);
 }
 
 function applyLineFocusFallback(fileResponse: FilesystemReadFileResponse, fallbackLines: ViewerLine[]) {
   displayLines.value = fallbackLines;
   if (fileResponse.ok) {
-    diffInfoMessage.value = "Showing plain file content for line navigation.";
+    diffInfoMessage.value = "Показано содержимое файла для навигации по строкам.";
     return;
   }
   applyFileReadError(fileResponse);
@@ -208,9 +208,9 @@ async function requestFilePreviewResponses(requestId: number, filePath: string):
       if (isEditing.value) { isEditing.value = false; }
       if (isFileNotFoundError(error)) {
         emit("file-not-found", filePath);
-        loadError.value = "File was removed or does not exist.";
+        loadError.value = "Файл удалён или не существует.";
       } else {
-        loadError.value = toErrorMessage(error, "Failed to load file preview.");
+        loadError.value = toErrorMessage(error, "Не удалось загрузить превью файла.");
       }
       diffInfoMessage.value = "";
       displayLines.value = [];

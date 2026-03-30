@@ -73,7 +73,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     if (!response.ok) {
       lastSnapshot = applyErrorResult(
         state,
-        response.error ?? "Git status unavailable.",
+        response.error ?? "Git статус недоступен.",
         lastSnapshot
       );
       return;
@@ -99,7 +99,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
       if (currentRequestId === requestId) {
         lastSnapshot = applyErrorResult(
           state,
-          toErrorMessage(thrown, "Failed to load git status."),
+          toErrorMessage(thrown, "Не удалось загрузить git status."),
           lastSnapshot
         );
       }

@@ -117,7 +117,7 @@ export function useChangesPanel({
     hasRefreshed.value = true;
 
     if (!response.ok) {
-      updateSnapshot([], "", response.error ?? "Git status unavailable.");
+      updateSnapshot([], "", response.error ?? "Git статус недоступен.");
       closeContextMenu();
       return;
     }
@@ -129,7 +129,7 @@ export function useChangesPanel({
     }
 
     const nextEntries = sortEntries(response.entries ?? []);
-    const nextInfo = nextEntries.length > 0 ? `${String(nextEntries.length)} changed` : "";
+    const nextInfo = nextEntries.length > 0 ? `${String(nextEntries.length)} изменено` : "";
     updateSnapshot(nextEntries, nextInfo, "");
     if (contextMenu.value && !nextEntries.some((entry) => entry.path === contextMenu.value?.path)) {
       closeContextMenu();
@@ -152,14 +152,14 @@ export function useChangesPanel({
     try {
       const response = await window.projectApi.git.revertFile(projectPath.value, path);
       if (!response.ok) {
-        loadError.value = response.error ?? "Failed to revert file changes.";
+        loadError.value = response.error ?? "Не удалось откатить изменения файла.";
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
         await refreshGitStatus();
       }
     } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to revert file changes.");
+      loadError.value = toErrorMessage(error, "Не удалось откатить изменения файла.");
     } finally {
       revertingPath.value = null;
     }
@@ -184,14 +184,14 @@ export function useChangesPanel({
     try {
       const response = await window.projectApi.git.revertAll(projectPath.value);
       if (!response.ok) {
-        loadError.value = response.error ?? "Failed to revert all changes.";
+        loadError.value = response.error ?? "Не удалось откатить все изменения.";
       } else if (!response.available) {
         loadError.value = getGitUnavailableMessage(response.reason);
       } else {
         await refreshGitStatus();
       }
     } catch (error) {
-      loadError.value = toErrorMessage(error, "Failed to revert all changes.");
+      loadError.value = toErrorMessage(error, "Не удалось откатить все изменения.");
     } finally {
       isRevertingAll.value = false;
     }

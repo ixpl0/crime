@@ -69,7 +69,7 @@ function tryHandleEscapePassthrough(
   }
 
   event.preventDefault();
-  void options.sendTerminalInput("\u001b", "Failed to send Esc to terminal.");
+  void options.sendTerminalInput("\u001b", "Не удалось отправить Esc в терминал.");
   return true;
 }
 
@@ -101,7 +101,7 @@ function tryHandleCtrlCPassthrough(
   void options.copyTerminalSelectionIfAny().then((copied) => {
     if (!copied) {
       const ctrlCInput = getCtrlKeyInput(event) ?? "\u0003";
-      void options.sendTerminalInput(ctrlCInput, "Failed to send Ctrl+C to terminal.");
+      void options.sendTerminalInput(ctrlCInput, "Не удалось отправить Ctrl+C в терминал.");
     }
   });
   return true;
@@ -122,7 +122,7 @@ function tryHandleEmptyTextareaPassthrough(
   }
 
   event.preventDefault();
-  void options.sendTerminalInput(passthroughInput, "Failed to send keyboard input to terminal.");
+  void options.sendTerminalInput(passthroughInput, "Не удалось отправить клавиатурный ввод в терминал.");
   return true;
 }
 

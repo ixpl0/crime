@@ -1,39 +1,39 @@
 <template>
   <div class="space-y-4">
     <fieldset class="rounded-lg border border-base-300 p-3 space-y-2">
-      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Slash Command</legend>
+      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Слеш-команды</legend>
       <FieldNumber
-        label="Char delay (ms)"
+        label="Задержка символа (мс)"
         :model-value="settings.slashCommand.charDelayMs"
         :min="0"
         @update:model-value="updateSlashCommand('charDelayMs', $event)"
       />
       <FieldNumber
-        label="After-slash delay (ms)"
+        label="Задержка после слеша (мс)"
         :model-value="settings.slashCommand.afterSlashDelayMs"
         :min="0"
         @update:model-value="updateSlashCommand('afterSlashDelayMs', $event)"
       />
       <FieldNumber
-        label="Enter delay (ms)"
+        label="Задержка Enter (мс)"
         :model-value="settings.slashCommand.enterDelayMs"
         :min="0"
         @update:model-value="updateSlashCommand('enterDelayMs', $event)"
       />
       <FieldNumber
-        label="Activity timeout (ms)"
+        label="Таймаут активности (мс)"
         :model-value="settings.slashCommand.activityTimeoutMs"
         :min="1"
         @update:model-value="updateSlashCommand('activityTimeoutMs', $event)"
       />
       <FieldNumber
-        label="Quiet timeout (ms)"
+        label="Таймаут тишины (мс)"
         :model-value="settings.slashCommand.quietTimeoutMs"
         :min="1"
         @update:model-value="updateSlashCommand('quietTimeoutMs', $event)"
       />
       <FieldNumber
-        label="Data poll interval (ms)"
+        label="Интервал опроса данных (мс)"
         :model-value="settings.slashCommand.dataPollIntervalMs"
         :min="1"
         @update:model-value="updateSlashCommand('dataPollIntervalMs', $event)"
@@ -41,9 +41,9 @@
     </fieldset>
 
     <fieldset class="rounded-lg border border-base-300 p-3 space-y-2">
-      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Zoom</legend>
+      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Масштаб</legend>
       <FieldNumber
-        label="IDE zoom factor"
+        label="Масштаб IDE"
         :model-value="settings.zoom.ideZoomFactor"
         :min="0.25"
         :max="5"
@@ -51,7 +51,7 @@
         @update:model-value="updateZoom('ideZoomFactor', $event)"
       />
       <FieldNumber
-        label="Terminal font size"
+        label="Размер шрифта терминала"
         :model-value="settings.zoom.terminalFontSize"
         :min="8"
         :max="32"
@@ -61,9 +61,9 @@
     </fieldset>
 
     <fieldset class="rounded-lg border border-base-300 p-3 space-y-2">
-      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Terminal</legend>
+      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Терминал</legend>
       <FieldNumber
-        label="Panel height (px)"
+        label="Высота панели (px)"
         :model-value="settings.terminal.panelHeight"
         :min="160"
         :max="10000"

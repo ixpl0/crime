@@ -26,13 +26,13 @@ async function executeMove(
       options.projectPath.value, sourcePath, destinationDirectory
     );
     if (!response.ok) {
-      options.loadError.value = response.error ?? "Failed to move.";
+      options.loadError.value = response.error ?? "Не удалось переместить.";
       return;
     }
     await options.refreshGitStatus();
     await options.loadRootDirectory(true);
   } catch (error) {
-    options.loadError.value = toErrorMessage(error, "Failed to move.");
+    options.loadError.value = toErrorMessage(error, "Не удалось переместить.");
   }
 }
 
@@ -46,13 +46,13 @@ async function executeCopy(
       options.projectPath.value, paths, destinationDirectory
     );
     if (!response.ok) {
-      options.loadError.value = response.error ?? "Failed to copy files.";
+      options.loadError.value = response.error ?? "Не удалось скопировать файлы.";
       return;
     }
     await options.refreshGitStatus();
     await options.loadRootDirectory(true);
   } catch (error) {
-    options.loadError.value = toErrorMessage(error, "Failed to copy files.");
+    options.loadError.value = toErrorMessage(error, "Не удалось скопировать файлы.");
   }
 }
 

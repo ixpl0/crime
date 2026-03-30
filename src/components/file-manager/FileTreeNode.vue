@@ -52,7 +52,7 @@
       class="py-0.5 text-sm text-base-content/50"
       :style="{ paddingLeft: `${NODE_BASE_PADDING_REM + (depth + 1) * NODE_INDENT_REM}rem` }"
     >
-      Folder contents unavailable.
+      Содержимое папки недоступно.
     </div>
   </div>
 </template>
@@ -172,7 +172,7 @@ async function readChildrenDirectory(
   try {
     return await window.projectApi.filesystem.readDirectory(props.entry.path);
   } catch (error) {
-    const message = toErrorMessage(error, "Failed to read directory.");
+    const message = toErrorMessage(error, "Не удалось прочитать папку.");
     if (!silent) {
       isLoading.value = false;
     }
@@ -198,7 +198,7 @@ function applyChildrenFromResponse(
   }
 
   if (!silent) {
-    loadError.value = response.error ?? "Failed to read directory.";
+    loadError.value = response.error ?? "Не удалось прочитать папку.";
   }
 }
 

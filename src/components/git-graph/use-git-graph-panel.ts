@@ -47,8 +47,8 @@ function computeMaxLaneCount(rows: readonly GraphRow[]) {
 
 function getUnavailableLogMessage(reason?: GitLogResponse["reason"]) {
   return reason === "git-not-installed"
-    ? "Git is not installed."
-    : "The selected folder is not a Git repository.";
+    ? "Git не установлен."
+    : "Выбранная папка не является Git-репозиторием.";
 }
 
 // eslint-disable-next-line max-lines-per-function
@@ -116,7 +116,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
       return requestId === detailsRequestId ? response : null;
     } catch (error) {
       if (requestId === detailsRequestId) {
-        detailsError.value = toErrorMessage(error, "Failed to load commit details.");
+        detailsError.value = toErrorMessage(error, "Не удалось загрузить детали коммита.");
         isDetailsLoading.value = false;
       }
       return null;
@@ -126,7 +126,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
   function applyCommitDetailsResponse(response: GitCommitDetailsResponse) {
     isDetailsLoading.value = false;
     if (!response.ok || !response.details) {
-      detailsError.value = response.error ?? "Failed to load commit details.";
+      detailsError.value = response.error ?? "Не удалось загрузить детали коммита.";
       return;
     }
 
@@ -160,7 +160,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
         : null;
     graphRows.value = rows;
     maxLaneCount.value = computeMaxLaneCount(rows);
-    infoMessage.value = entries.length > 0 ? `${String(entries.length)} commits` : "";
+    infoMessage.value = entries.length > 0 ? `${String(entries.length)} коммитов` : "";
 
     if (selectedHash !== null) {
       const newIndex = rows.findIndex((r) => r.commit.hash === selectedHash);
@@ -185,7 +185,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     } catch (error) {
       if (requestId === loadRequestId) {
         isLoading.value = false;
-        loadError.value = toErrorMessage(error, "Failed to load git log.");
+        loadError.value = toErrorMessage(error, "Не удалось загрузить историю Git.");
       }
       return null;
     }
@@ -206,7 +206,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     isInitialized = true;
 
     if (!response.ok) {
-      loadError.value = response.error ?? "Git log unavailable.";
+      loadError.value = response.error ?? "История Git недоступна.";
       lastCommitsSnapshot = "";
       return;
     }

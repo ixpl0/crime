@@ -10,7 +10,7 @@
           type="text"
           class="input input-bordered input-sm min-w-0 flex-1 font-mono"
           :value="item.label"
-          placeholder="Label"
+          placeholder="Название"
           tabindex="-1"
           @input="updateItemField(index, 'label', ($event.target as HTMLInputElement).value)"
         />
@@ -24,7 +24,7 @@
             class="btn btn-ghost btn-xs btn-square"
             tabindex="-1"
             :disabled="index === 0"
-            title="Move up"
+            title="Вверх"
             @click="handleMoveUp(index)"
           >
             <ArrowUp :size="12" />
@@ -33,7 +33,7 @@
             class="btn btn-ghost btn-xs btn-square"
             tabindex="-1"
             :disabled="index === config.items.length - 1"
-            title="Move down"
+            title="Вниз"
             @click="handleMoveDown(index)"
           >
             <ArrowDown :size="12" />
@@ -41,7 +41,7 @@
           <button
             class="btn btn-ghost btn-xs btn-square text-error"
             tabindex="-1"
-            title="Remove"
+            title="Удалить"
             @click="handleRemove(index)"
           >
             <X :size="12" />
@@ -50,7 +50,7 @@
       </div>
       <FieldText
         :model-value="item.value"
-        placeholder="Suffix text"
+        placeholder="Текст суффикса"
         multiline
         :rows="2"
         @update:model-value="updateItemField(index, 'value', $event)"
@@ -59,7 +59,7 @@
 
     <button class="btn btn-ghost btn-sm" tabindex="-1" @click="handleAdd">
       <Plus :size="14" />
-      Add suffix
+      Добавить суффикс
     </button>
   </div>
 </template>

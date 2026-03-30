@@ -1,12 +1,12 @@
 <template>
   <JsonConfigEditorDialog
     :open="open"
-    title="Prompt Suffix Settings"
+    title="Настройки суффиксов"
     :file-path="configFilePath"
     :current-value="currentConfig"
     :default-value="defaultPromptSuffixConfig"
     :parser="parsePromptSuffixConfig"
-    invalid-structure-message="Invalid prompt suffix configuration structure"
+    invalid-structure-message="Некорректная структура конфигурации суффиксов"
     @save="handleSave"
     @close="$emit('close')"
   >

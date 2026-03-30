@@ -211,7 +211,7 @@ async function sendTextareaTextInput(state: TerminalSubmitState, text: string) {
   const startOk = await sendTerminalInput(
     state,
     BRACKET_PASTE_START,
-    "Failed to send bracket paste start."
+    "Не удалось отправить начало bracket paste."
   );
   if (!startOk) {
     return false;
@@ -219,13 +219,13 @@ async function sendTextareaTextInput(state: TerminalSubmitState, text: string) {
 
   for (let index = 0; index < text.length; index += state.options.terminalInputChunkSize) {
     const chunk = text.slice(index, index + state.options.terminalInputChunkSize);
-    const ok = await sendTerminalInput(state, chunk, "Failed to send input to terminal.");
+    const ok = await sendTerminalInput(state, chunk, "Не удалось отправить ввод в терминал.");
     if (!ok) {
       return false;
     }
   }
 
-  return sendTerminalInput(state, BRACKET_PASTE_END, "Failed to send bracket paste end.");
+  return sendTerminalInput(state, BRACKET_PASTE_END, "Не удалось отправить конец bracket paste.");
 }
 
 async function sendSlashCommand(state: TerminalSubmitState, slashCommandText: string) {
@@ -236,7 +236,7 @@ async function sendSlashCommand(state: TerminalSubmitState, slashCommandText: st
     const ok = await sendTerminalInput(
       state,
       char,
-      "Failed to send slash command character to terminal."
+      "Не удалось отправить символ слеш-команды в терминал."
     );
     if (!ok) {
       return false;
@@ -250,7 +250,7 @@ async function sendSlashCommand(state: TerminalSubmitState, slashCommandText: st
   }
 
   await waitForTerminalQuiet(state, timings.enterDelayMs, timings.quietTimeoutMs);
-  return sendTerminalInput(state, "\r", "Failed to send Enter to terminal.");
+  return sendTerminalInput(state, "\r", "Не удалось отправить Enter в терминал.");
 }
 
 async function submitTerminalText(
@@ -308,12 +308,12 @@ async function attemptSubmitTerminalText(
 
 async function sendAltVShortcut(state: TerminalSubmitState) {
   if (!state.options.isTerminalReady.value) {
-    state.options.errorMessage.value = "Terminal is not ready.";
+    state.options.errorMessage.value = "Терминал не готов.";
     return false;
   }
 
   state.options.errorMessage.value = "";
-  return sendTerminalInput(state, "\u001bv", "Failed to send Alt+V to terminal.");
+  return sendTerminalInput(state, "\u001bv", "Не удалось отправить Alt+V в терминал.");
 }
 
 function markTerminalDataReceived(state: TerminalSubmitState, data: string) {

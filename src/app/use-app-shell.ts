@@ -230,11 +230,11 @@ export function useAppShell() {
     sendTerminalInput,
     submitTextFromTextarea: (text) =>
       attemptSubmitTerminalText(text, {
-        notReady: "Terminal is not ready to send input.",
+        notReady: "Терминал не готов к отправке ввода.",
         messages: {
-          sendSlash: "Failed to send slash command to terminal.",
-          sendText: "Failed to send input to terminal.",
-          submit: "Failed to send Enter to terminal."
+          sendSlash: "Не удалось отправить слеш-команду в терминал.",
+          sendText: "Не удалось отправить ввод в терминал.",
+          submit: "Не удалось отправить Enter в терминал."
         },
         inputType: "prompt"
       }),
@@ -693,7 +693,7 @@ export function useAppShell() {
       await startTerminal(currentProjectPath);
       return true;
     } catch (error) {
-      reportUiError("Terminal reset", error, "Failed to reset terminal.");
+      reportUiError("Terminal reset", error, "Не удалось сбросить терминал.");
       return false;
     }
   }

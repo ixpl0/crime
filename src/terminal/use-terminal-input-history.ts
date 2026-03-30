@@ -115,7 +115,7 @@ function createPersistTerminalHistoryOperation(
       state.options.reportUiError(
         "Terminal history",
         error,
-        "Failed to persist terminal input history."
+        "Не удалось сохранить историю ввода терминала."
       );
       return;
     }

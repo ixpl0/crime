@@ -46,7 +46,7 @@ type TerminalViewState = {
   resizeObserver: ResizeObserver | null;
 };
 
-const DEFAULT_INPUT_ERROR = "Failed to send input to terminal.";
+const DEFAULT_INPUT_ERROR = "Не удалось отправить ввод в терминал.";
 const INITIAL_TERMINAL_MESSAGE = "Терминал готов. Выберите папку проекта.";
 const PREPARE_TERMINAL_ERROR = "Не удалось подготовить окно терминала.";
 const START_TERMINAL_ERROR = "Не удалось запустить терминал.";
@@ -131,10 +131,10 @@ async function pasteClipboardToTerminal(state: TerminalViewState) {
   try {
     const text = await navigator.clipboard.readText();
     if (text.length > 0) {
-      await state.options.sendTerminalInput(`\x1b[200~${text}\x1b[201~`, "Failed to paste to terminal.");
+      await state.options.sendTerminalInput(`\x1b[200~${text}\x1b[201~`, "Не удалось вставить в терминал.");
     }
   } catch (error) {
-    state.options.reportUiError("Terminal paste", error, "Failed to paste to terminal.");
+    state.options.reportUiError("Terminal paste", error, "Не удалось вставить в терминал.");
   }
 }
 
@@ -253,11 +253,11 @@ async function copyTerminalSelectionIfAny(state: TerminalViewState): Promise<boo
   try {
     const response = await state.options.writeClipboardText(selectedText);
     if (!response.ok) {
-      state.options.reportUiError("Terminal copy", response.error, "Failed to copy terminal selection.");
+      state.options.reportUiError("Terminal copy", response.error, "Не удалось скопировать выделение терминала.");
       return false;
     }
   } catch (error) {
-    state.options.reportUiError("Terminal copy", error, "Failed to copy terminal selection.");
+    state.options.reportUiError("Terminal copy", error, "Не удалось скопировать выделение терминала.");
     return false;
   }
 
@@ -280,7 +280,7 @@ async function resizeTerminalBackend(state: TerminalViewState) {
   }
   const response = await state.options.resizeTerminalBackendRequest(size).catch(() => null);
   if (response && !response.ok) {
-    state.options.reportUiError("Terminal resize", response.error, "Failed to resize terminal backend.");
+    state.options.reportUiError("Terminal resize", response.error, "Не удалось изменить размер терминала.");
   }
 }
 

@@ -83,7 +83,7 @@ export function useGitGraphContextMenu(projectPath: Ref<string>) {
     try {
       const response = await window.projectApi.git.checkout(projectPath.value, target);
       if (!response.ok) {
-        return { ok: false, error: response.error ?? "Failed to checkout." };
+        return { ok: false, error: response.error ?? "Не удалось переключиться." };
       }
       return {
         ok: true,
@@ -91,7 +91,7 @@ export function useGitGraphContextMenu(projectPath: Ref<string>) {
         conflictFiles: response.conflictFiles ?? []
       };
     } catch (error) {
-      return { ok: false, error: toErrorMessage(error, "Failed to checkout.") };
+      return { ok: false, error: toErrorMessage(error, "Не удалось переключиться.") };
     }
   }
 
@@ -108,11 +108,11 @@ export function useGitGraphContextMenu(projectPath: Ref<string>) {
     try {
       const response = await window.projectApi.git.createBranch(projectPath.value, branchName, hash);
       if (!response.ok) {
-        return { ok: false, error: response.error ?? "Failed to create branch." };
+        return { ok: false, error: response.error ?? "Не удалось создать ветку." };
       }
       return { ok: true };
     } catch (error) {
-      return { ok: false, error: toErrorMessage(error, "Failed to create branch.") };
+      return { ok: false, error: toErrorMessage(error, "Не удалось создать ветку.") };
     }
   }
 
@@ -131,11 +131,11 @@ export function useGitGraphContextMenu(projectPath: Ref<string>) {
         ? await window.projectApi.git.deleteRemoteBranch(projectPath.value, branch.remote, branch.branchName)
         : await window.projectApi.git.deleteBranch(projectPath.value, branch.branchName);
       if (!response.ok) {
-        return { ok: false, error: response.error ?? "Failed to delete branch." };
+        return { ok: false, error: response.error ?? "Не удалось удалить ветку." };
       }
       return { ok: true };
     } catch (error) {
-      return { ok: false, error: toErrorMessage(error, "Failed to delete branch.") };
+      return { ok: false, error: toErrorMessage(error, "Не удалось удалить ветку.") };
     }
   }
 

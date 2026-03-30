@@ -108,7 +108,7 @@ function createPersistTodoOperation(state: TodoPanelState, path: string, entries
     try {
       await saveTodoEntries(path, entries);
     } catch (error) {
-      state.options.reportUiError("Todo entries", error, "Failed to persist todo entries.");
+      state.options.reportUiError("Todo entries", error, "Не удалось сохранить задачи.");
       return;
     }
     if (state.options.projectPath.value === path && version > state.todoPersistedVersion) {

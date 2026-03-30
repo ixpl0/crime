@@ -25,7 +25,7 @@
       type="button"
       class="icon-btn text-base-content/40 hover:text-warning"
       tabindex="-1"
-      title="Edit suffixes"
+      title="Редактировать суффиксы"
       @click="$emit('open-config-editor')"
     >
       <Pencil :size="16" />

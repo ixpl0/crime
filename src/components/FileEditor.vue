@@ -2,7 +2,7 @@
   <div class="relative flex h-full min-h-0 flex-col">
     <div ref="editorContainer" class="min-h-0 flex-1" />
     <div v-if="saveStatus === 'error'" class="border-t border-base-300/80 bg-base-100/40 px-3 py-1.5">
-      <span class="text-xs text-error">Action failed</span>
+      <span class="text-xs text-error">Действие не удалось</span>
     </div>
   </div>
 </template>
@@ -71,14 +71,14 @@ const saveFile = async () => {
     const response = await window.projectApi.filesystem.writeFile(props.projectPath, props.filePath, content);
     if (!response.ok) {
       saveStatus.value = "error";
-      saveError.value = response.error ?? "Failed to save file.";
+      saveError.value = response.error ?? "Не удалось сохранить файл.";
       return;
     }
     saveStatus.value = "idle";
     emit("saved");
   } catch (error) {
     saveStatus.value = "error";
-    saveError.value = toErrorMessage(error, "Failed to save file.");
+    saveError.value = toErrorMessage(error, "Не удалось сохранить файл.");
   }
 };
 
@@ -147,13 +147,13 @@ const loadAndCreateEditor = async () => {
     const response = await window.projectApi.filesystem.readFile(props.projectPath, props.filePath);
     if (!response.ok || typeof response.content !== "string") {
       saveStatus.value = "error";
-      saveError.value = response.error ?? "Failed to read file.";
+      saveError.value = response.error ?? "Не удалось прочитать файл.";
       return;
     }
     editorView = await createEditor(container, response.content);
   } catch (error) {
     saveStatus.value = "error";
-    saveError.value = toErrorMessage(error, "Failed to load file.");
+    saveError.value = toErrorMessage(error, "Не удалось загрузить файл.");
   }
 };
 

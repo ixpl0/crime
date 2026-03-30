@@ -19,7 +19,7 @@
           tabindex="-1"
           @click="switchToVisual"
         >
-          Visual
+          Визуально
         </button>
         <button
           role="tab"
@@ -94,11 +94,11 @@ const props = withDefaults(
   {
     description: "",
     serializer: undefined,
-    invalidJsonMessage: "Invalid JSON",
-    validJsonMessage: "JSON is valid",
-    resetLabel: "Reset",
-    cancelLabel: "Cancel",
-    saveLabel: "Save"
+    invalidJsonMessage: "Некорректный JSON",
+    validJsonMessage: "JSON корректен",
+    resetLabel: "Сброс",
+    cancelLabel: "Отмена",
+    saveLabel: "Сохранить"
   }
 );
 

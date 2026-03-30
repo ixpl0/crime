@@ -25,13 +25,13 @@
         <span v-if="element.color" class="truncate text-xs opacity-50">{{ element.color }}</span>
 
         <div class="flex gap-1" @click.stop>
-          <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="elementIndex === 0" title="Move up" @click="handleMoveElementUp(elementIndex)">
+          <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="elementIndex === 0" title="Вверх" @click="handleMoveElementUp(elementIndex)">
             <ArrowUp :size="12" />
           </button>
-          <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="elementIndex === config.elements.length - 1" title="Move down" @click="handleMoveElementDown(elementIndex)">
+          <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="elementIndex === config.elements.length - 1" title="Вниз" @click="handleMoveElementDown(elementIndex)">
             <ArrowDown :size="12" />
           </button>
-          <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" title="Remove" @click="handleRemoveElement(elementIndex)">
+          <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" title="Удалить" @click="handleRemoveElement(elementIndex)">
             <X :size="12" />
           </button>
         </div>
@@ -39,14 +39,14 @@
 
       <!-- Expanded content -->
       <div v-if="isExpanded(elementIndex)" class="space-y-3 border-t border-base-300 p-3">
-        <FieldText label="Label" :model-value="element.label" @update:model-value="updateElementLabel(elementIndex, $event)" />
-        <FieldColor label="Color" :model-value="element.color" @update:model-value="updateElementColor(elementIndex, $event)" />
+        <FieldText label="Название" :model-value="element.label" @update:model-value="updateElementLabel(elementIndex, $event)" />
+        <FieldColor label="Цвет" :model-value="element.color" @update:model-value="updateElementColor(elementIndex, $event)" />
 
         <!-- Dropdown: nested items -->
         <template v-if="isDropdown(element)">
           <div class="mt-3">
             <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-              Items ({{ (element as ToolbarDropdown).items.length }})
+              Элементы ({{ (element as ToolbarDropdown).items.length }})
             </div>
             <div
               v-for="(item, itemIndex) in (element as ToolbarDropdown).items"
@@ -89,7 +89,7 @@
 
             <button class="btn btn-ghost btn-xs ml-2 mt-1" tabindex="-1" @click="handleAddItem(elementIndex)">
               <Plus :size="12" />
-              Add item
+              Добавить
             </button>
           </div>
         </template>
@@ -108,11 +108,11 @@
     <div class="flex gap-2 pt-1">
       <button class="btn btn-ghost btn-sm" tabindex="-1" @click="handleAddDropdown">
         <Plus :size="14" />
-        Add group
+        Добавить группу
       </button>
       <button class="btn btn-ghost btn-sm" tabindex="-1" @click="handleAddAction">
         <Plus :size="14" />
-        Add button
+        Добавить кнопку
       </button>
     </div>
   </div>
@@ -220,12 +220,12 @@ const handleRemoveElement = (index: number) => {
 };
 
 const handleAddDropdown = () => {
-  const newDropdown: ToolbarDropdown = { label: "New Group", items: [] };
+  const newDropdown: ToolbarDropdown = { label: "Новая группа", items: [] };
   emitElements([...config.value.elements, newDropdown]);
 };
 
 const handleAddAction = () => {
-  const newAction: ToolbarAction = { label: "New Button", value: "", type: "command" };
+  const newAction: ToolbarAction = { label: "Новая кнопка", value: "", type: "command" };
   emitElements([...config.value.elements, newAction]);
 };
 
@@ -265,7 +265,7 @@ const handleAddItem = (elementIndex: number) => {
     if (!isDropdown(el)) {
       return el;
     }
-    const newAction: ToolbarAction = { label: "New Action", value: "", type: "command" };
+    const newAction: ToolbarAction = { label: "Новое действие", value: "", type: "command" };
     return { ...el, items: [...el.items, newAction] };
   });
 };

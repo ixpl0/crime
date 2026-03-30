@@ -4,7 +4,7 @@
       v-if="conflictFiles.length > 0"
       class="flex flex-col gap-1 border-b border-warning/30 bg-warning/10 px-3 py-2"
     >
-      <span class="text-xs font-medium text-warning">Stash conflicts</span>
+      <span class="text-xs font-medium text-warning">Конфликты stash</span>
       <button
         v-for="file in conflictFiles"
         :key="file"
@@ -25,11 +25,11 @@
       </div>
 
       <div v-else-if="loadError" class="py-4 text-center text-sm text-base-content/50">
-        Git history unavailable
+        История Git недоступна
       </div>
 
       <div v-else-if="graphRows.length === 0" class="py-4 text-center text-sm text-base-content/50">
-        No commits found
+        Коммиты не найдены
       </div>
 
       <div v-else class="relative">
@@ -69,7 +69,7 @@
               tabindex="-1"
               :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
               @click.stop="copyHash(row.commit.hash)"
-            >{{ copiedHash === row.commit.hash ? "copied" : formatShortHash(row.commit.hash) }}</button>
+            >{{ copiedHash === row.commit.hash ? "скопировано" : formatShortHash(row.commit.hash) }}</button>
             <span class="shrink-0 text-xs text-base-content/40">{{ formatRelativeDate(row.commit.date) }}</span>
             <span class="shrink-0 text-xs text-base-content/50">{{ row.commit.author }}</span>
           </div>
@@ -116,7 +116,7 @@
         @click="handleCheckout"
       >
         <ArrowRightLeft :size="14" />
-        Checkout {{ contextMenu.targetBranch ? contextMenu.targetBranch.displayName : formatShortHash(contextMenu.hash) }}
+        Переключиться на {{ contextMenu.targetBranch ? contextMenu.targetBranch.displayName : formatShortHash(contextMenu.hash) }}
       </button>
       <button
         v-if="contextMenu.targetBranch"
@@ -127,7 +127,7 @@
         @click="handleDeleteBranch"
       >
         <Trash2 :size="14" />
-        Delete {{ contextMenu.targetBranch.displayName }}{{ contextMenu.targetBranch.remote ? ' (REMOTE)' : '' }}
+        Удалить {{ contextMenu.targetBranch.displayName }}{{ contextMenu.targetBranch.remote ? ' (удалённая)' : '' }}
       </button>
       <button
         type="button"
@@ -136,7 +136,7 @@
         @click="handleCreateBranch"
       >
         <GitBranch :size="14" />
-        Create branch
+        Создать ветку
       </button>
     </div>
   </div>
@@ -219,10 +219,10 @@ const handleCheckout = async () => {
   const result = await checkout(target);
   if (result.ok && result.stashConflict) {
     conflictFiles.value = result.conflictFiles ?? [];
-    pushToast(`Checked out ${label}, but stash pop had conflicts`, { tone: "warning" });
+    pushToast(`Переключено на ${label}, но stash pop вызвал конфликты`, { tone: "warning" });
   } else if (result.ok) {
     conflictFiles.value = [];
-    pushToast(`Checked out ${label}`, { tone: "success" });
+    pushToast(`Переключено на ${label}`, { tone: "success" });
   } else if (result.error) {
     pushError(result.error);
   }
@@ -235,16 +235,16 @@ const handleDeleteBranch = async () => {
   }
   const name = escapeHtml(branch.displayName);
   const title = branch.remote
-    ? `Delete REMOTE branch <strong>${name}</strong>?`
-    : `Delete branch <strong>${name}</strong>?`;
+    ? `Удалить УДАЛЁННУЮ ветку <strong>${name}</strong>?`
+    : `Удалить ветку <strong>${name}</strong>?`;
   const body = branch.remote
-    ? `This will permanently delete the branch on <strong>${escapeHtml(branch.remote)}</strong>. This action cannot be undone.`
+    ? `Ветка будет удалена на <strong>${escapeHtml(branch.remote)}</strong>. Это действие нельзя отменить.`
     : undefined;
   const result = await deleteBranch(branch, () =>
     requestConfirm({ title, body })
   );
   if (result.ok) {
-    pushToast(`Branch "${branch.displayName}" deleted`, { tone: "success" });
+    pushToast(`Ветка «${branch.displayName}» удалена`, { tone: "success" });
   } else if (result.error) {
     pushError(result.error);
   }
@@ -256,10 +256,10 @@ const handleCreateBranch = async () => {
   }
   const hash = contextMenu.value.hash;
   const result = await createBranch(hash, () =>
-    requestPrompt({ title: "Create branch", placeholder: "Branch name" })
+    requestPrompt({ title: "Создать ветку", placeholder: "Имя ветки" })
   );
   if (result.ok) {
-    pushToast("Branch created", { tone: "success" });
+    pushToast("Ветка создана", { tone: "success" });
   } else if (result.error) {
     pushError(result.error);
   }

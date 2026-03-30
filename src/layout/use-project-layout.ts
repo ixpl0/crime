@@ -158,7 +158,7 @@ function applyProjectZoomSettings(state: ProjectLayoutState, settings: ProjectSe
     normalizedZoom.terminalFontSize
   );
   if (!didSetIdeZoom) {
-    state.options.reportUiError("Zoom", null, "Failed to apply IDE zoom factor.");
+    state.options.reportUiError("Zoom", null, "Не удалось применить масштаб IDE.");
   }
   if (didSetIdeZoom || didUpdateTerminalFontSize) {
     scheduleTerminalResizeAfterZoom(state);

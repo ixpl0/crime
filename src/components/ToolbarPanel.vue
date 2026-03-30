@@ -64,7 +64,7 @@
       type="button"
       class="icon-btn text-base-content/40 hover:text-warning"
       tabindex="-1"
-      title="Edit toolbar"
+      title="Редактировать панель"
       @click="$emit('open-config-editor')"
     >
       <Pencil :size="16" />
@@ -170,7 +170,7 @@ function getActionTitle(action: ToolbarAction): string | undefined {
   const titleParts: string[] = [];
   if (action.resetTerminal) {
     const hasValue = typeof action.value === "string" && action.value.length > 0;
-    titleParts.push(hasValue ? "Reset terminal before action" : "Reset terminal");
+    titleParts.push(hasValue ? "Сброс терминала перед действием" : "Сброс терминала");
   }
   if (action.value) {
     titleParts.push(action.value);

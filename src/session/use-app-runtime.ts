@@ -160,11 +160,11 @@ function stopTerminalRuntime(options: UseAppRuntimeOptions) {
   void options.stopTerminalRequest()
     .then((response) => {
       if (!response.ok) {
-        options.reportUiError("Terminal teardown", response.error, "Failed to stop terminal.");
+        options.reportUiError("Terminal teardown", response.error, "Не удалось остановить терминал.");
       }
     })
     .catch((error: unknown) => {
-      options.reportUiError("Terminal teardown", error, "Failed to stop terminal.");
+      options.reportUiError("Terminal teardown", error, "Не удалось остановить терминал.");
     });
 }
 

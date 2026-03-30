@@ -7,7 +7,7 @@
     :default-value="serializeToolbarConfig(props.defaultConfig)"
     :parser="parseToolbarConfig"
     :serializer="toolbarSerializer"
-    invalid-structure-message="Invalid toolbar configuration structure"
+    invalid-structure-message="Некорректная структура конфигурации панели"
     @save="handleSave"
     @close="$emit('close')"
   >
@@ -30,7 +30,7 @@ const props = withDefaults(defineProps<{
   title?: string;
   defaultConfig?: ToolbarConfig;
 }>(), {
-  title: "Toolbar Settings",
+  title: "Настройки панели",
   defaultConfig: () => defaultToolbarConfig
 });
 

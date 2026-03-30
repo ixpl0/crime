@@ -27,30 +27,30 @@ export function formatShortHash(hash: string) {
 export function formatRelativeDate(isoDate: string) {
   const units = toRelativeUnits(isoDate);
   if (units.diffSeconds < 60) {
-    return "just now";
+    return "только что";
   }
 
   if (units.diffMinutes < 60) {
-    return `${String(units.diffMinutes)}m ago`;
+    return `${String(units.diffMinutes)} мин`;
   }
 
   if (units.diffHours < 24) {
-    return `${String(units.diffHours)}h ago`;
+    return `${String(units.diffHours)} ч`;
   }
 
   if (units.diffDays < 7) {
-    return `${String(units.diffDays)}d ago`;
+    return `${String(units.diffDays)} дн`;
   }
 
   if (units.diffWeeks < 5) {
-    return `${String(units.diffWeeks)}w ago`;
+    return `${String(units.diffWeeks)} нед`;
   }
 
   if (units.diffMonths < 12) {
-    return `${String(units.diffMonths)}mo ago`;
+    return `${String(units.diffMonths)} мес`;
   }
 
-  return `${String(units.diffYears)}y ago`;
+  return `${String(units.diffYears)} г`;
 }
 
 export function formatFullDate(isoDate: string) {

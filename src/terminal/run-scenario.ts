@@ -32,11 +32,11 @@ const executeCommandStep = async (
   value: string
 ): Promise<boolean> => {
   const result = await deps.attemptSubmitTerminalText(value, {
-    notReady: "Terminal is not ready to run scenario command.",
+    notReady: "Терминал не готов к выполнению команды сценария.",
     messages: {
-      sendSlash: "Failed to send slash command in scenario.",
-      sendText: "Failed to send command text in scenario.",
-      submit: "Failed to submit command in scenario."
+      sendSlash: "Не удалось отправить слеш-команду в сценарии.",
+      sendText: "Не удалось отправить текст команды в сценарии.",
+      submit: "Не удалось выполнить команду в сценарии."
     },
     inputType: "command"
   });
@@ -48,11 +48,11 @@ const executePromptStep = async (
   value: string
 ): Promise<boolean> => {
   const result = await deps.attemptSubmitTerminalText(value, {
-    notReady: "Terminal is not ready to send scenario prompt.",
+    notReady: "Терминал не готов к отправке промпта сценария.",
     messages: {
-      sendSlash: "Failed to send slash command from scenario prompt.",
-      sendText: "Failed to send scenario prompt text.",
-      submit: "Failed to submit scenario prompt."
+      sendSlash: "Не удалось отправить слеш-команду из промпта сценария.",
+      sendText: "Не удалось отправить текст промпта сценария.",
+      submit: "Не удалось отправить промпт сценария."
     },
     inputType: "prompt"
   });
@@ -73,7 +73,7 @@ const executeScenarioStep = async (
     case "raw-input":
       return deps.sendTerminalInput(
         step.value ?? "",
-        "Failed to send raw input in scenario."
+        "Не удалось отправить ввод в сценарии."
       );
 
     case "wait":

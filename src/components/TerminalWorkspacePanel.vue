@@ -301,7 +301,7 @@ async function runInitialSessionAction(
   const didSendInput = await sendInputToSession(
     sessionId,
     commandText,
-    "Failed to send command to mini terminal."
+    "Не удалось отправить команду в мини-терминал."
   );
   if (!didSendInput || !shouldSubmit) {
     return;
@@ -310,7 +310,7 @@ async function runInitialSessionAction(
   await sendInputToSession(
     sessionId,
     "\r",
-    "Failed to submit command in mini terminal."
+    "Не удалось выполнить команду в мини-терминале."
   );
 }
 
@@ -337,7 +337,7 @@ async function createTerminalSession(options?: {
     }
   } catch (error) {
     session.writeTerminalNotice("\r\n[start failed]");
-    reportPanelError("Mini terminal start", error, "Failed to start mini terminal.");
+    reportPanelError("Mini terminal start", error, "Не удалось запустить мини-терминал.");
   }
 }
 
@@ -390,7 +390,7 @@ async function closeSession(sessionId: string) {
   try {
     await window.projectApi.terminal.stop(sessionId);
   } catch (error) {
-    reportPanelError("Mini terminal stop", error, "Failed to stop mini terminal.");
+    reportPanelError("Mini terminal stop", error, "Не удалось остановить мини-терминал.");
   }
 }
 
@@ -415,7 +415,7 @@ async function restartSession(sessionId: string) {
     }
   } catch (error) {
     session.writeTerminalNotice("\r\n[restart failed]");
-    reportPanelError("Mini terminal restart", error, "Failed to restart mini terminal.");
+    reportPanelError("Mini terminal restart", error, "Не удалось перезапустить мини-терминал.");
   }
 }
 
@@ -446,7 +446,7 @@ async function disposeAllSessions() {
     try {
       await window.projectApi.terminal.stop(session.id);
     } catch (error) {
-      reportPanelError("Mini terminal stop", error, "Failed to stop mini terminal.");
+      reportPanelError("Mini terminal stop", error, "Не удалось остановить мини-терминал.");
     }
   }
 }

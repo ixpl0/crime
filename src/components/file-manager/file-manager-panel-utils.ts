@@ -28,8 +28,8 @@ export function normalizeGitState(projectPath: string, response: GitStatusRespon
       statuses: {},
       deletedChildren: {},
       infoMessage: response.error
-        ? `Git status unavailable: ${response.error}`
-        : "Git status unavailable."
+        ? `Git статус недоступен: ${response.error}`
+        : "Git статус недоступен."
     };
   }
 
@@ -38,8 +38,8 @@ export function normalizeGitState(projectPath: string, response: GitStatusRespon
       statuses: {},
       deletedChildren: {},
       infoMessage: response.reason === "git-not-installed"
-        ? "Git is not installed. File status colors are disabled."
-        : "The selected folder is not a Git repository."
+        ? "Git не установлен. Статус файлов по цвету недоступен."
+        : "Выбранная папка не является Git-репозиторием."
     };
   }
 
@@ -100,7 +100,7 @@ export function buildNextTreeState(
   const normalizedGitState = normalizeGitState(projectPath, gitResponse);
   const loadError = directoryResponse.ok
     ? ""
-    : directoryResponse.error ?? "Failed to read project directory.";
+    : directoryResponse.error ?? "Не удалось прочитать папку проекта.";
   const entries = directoryResponse.ok
     ? mergeDirectoryEntries(
         directoryResponse.entries ?? [],

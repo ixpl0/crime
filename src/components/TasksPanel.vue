@@ -19,7 +19,7 @@
             class="icon-btn text-base-content/40 hover:text-info"
             type="button"
             tabindex="-1"
-            title="Hide todo panel"
+            title="Скрыть панель задач"
             @click="toggleTodoPanelCollapse"
           >
             <EyeOff :size="14" />
@@ -51,7 +51,7 @@
               class="icon-btn cursor-grab! text-base-content/40 hover:text-primary"
               type="button"
               tabindex="-1"
-              title="Drag to reorder"
+              title="Перетащите для сортировки"
               @mousedown="handleTodoGripMouseDown(todoDraftView.index, $event)"
             >
               <GripVertical :size="14" />

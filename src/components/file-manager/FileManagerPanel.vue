@@ -3,7 +3,7 @@
     <div class="relative flex min-h-0 flex-1 flex-col rounded-box border border-base-300 bg-base-200/70 shadow-sm">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-base-300/80 px-3 py-2">
         <span class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-          Files
+          Файлы
         </span>
         <span class="ml-auto whitespace-nowrap text-[11px] text-base-content/45">
           {{ headerSummary }}
@@ -23,11 +23,11 @@
         </div>
 
         <div v-else-if="loadError" class="py-4 text-center text-sm text-base-content/50">
-          Files unavailable
+          Файлы недоступны
         </div>
 
         <div v-else-if="entries.length === 0" class="py-4 text-center text-sm text-base-content/50">
-          Empty directory
+          Пустая папка
         </div>
 
         <div v-else class="space-y-0.5">
@@ -71,7 +71,7 @@
           @click="handleContextMenuNewFileClick"
         >
           <FilePlus :size="14" />
-          New file
+          Новый файл
         </button>
         <button
           v-if="contextMenu.status !== 'deleted'"
@@ -82,7 +82,7 @@
           @click="handleContextMenuNewFolderClick"
         >
           <FolderPlus :size="14" />
-          New folder
+          Новая папка
         </button>
         <button
           v-if="contextMenu.status !== null"
@@ -93,7 +93,7 @@
           @click="handleContextMenuRevertClick"
         >
           <RotateCcw :size="14" />
-          Revert changes
+          Откатить изменения
         </button>
         <button
           v-if="contextMenu.status !== 'deleted'"
@@ -103,7 +103,7 @@
           @click="handleContextMenuShowInFolder"
         >
           <FolderOpen :size="14" />
-          Show in folder
+          Показать в папке
         </button>
         <button
           v-if="contextMenu.status !== 'deleted' && contextMenu.path !== props.projectPath"
@@ -114,7 +114,7 @@
           @click="handleContextMenuDeleteClick"
         >
           <Trash2 :size="14" />
-          Delete
+          Удалить
         </button>
       </div>
     </div>
@@ -128,7 +128,7 @@
         @click="handleRevertAllClick"
       >
         <span v-if="isRevertingAll" class="loading loading-spinner loading-xs" />
-        Revert all changes
+        Откатить все изменения
       </button>
     </div>
   </div>

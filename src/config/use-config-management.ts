@@ -154,7 +154,7 @@ export function useConfigManagement({
         reportUiError(
           "Toolbar tracking",
           error,
-          "Failed to save toolbar tracking data."
+          "Не удалось сохранить данные отслеживания."
         );
       }
     }
@@ -176,7 +176,7 @@ export function useConfigManagement({
         reportUiError(
           "Prompt suffix config",
           error,
-          "Failed to persist prompt suffix configuration."
+          "Не удалось сохранить конфигурацию суффиксов."
         );
         return;
       }
@@ -210,7 +210,7 @@ export function useConfigManagement({
         reportUiError(
           "Toolbar config",
           error,
-          "Failed to save toolbar configuration."
+          "Не удалось сохранить конфигурацию панели."
         );
         return;
       }
@@ -227,7 +227,7 @@ export function useConfigManagement({
         reportUiError(
           "Terminal toolbar config",
           error,
-          "Failed to save terminal toolbar configuration."
+          "Не удалось сохранить конфигурацию панели терминала."
         );
         return;
       }
@@ -244,7 +244,7 @@ export function useConfigManagement({
         reportUiError(
           "Git toolbar config",
           error,
-          "Failed to save git toolbar configuration."
+          "Не удалось сохранить конфигурацию панели Git."
         );
         return;
       }
@@ -285,7 +285,7 @@ export function useConfigManagement({
         reportUiError(
           "Secrets config",
           error,
-          "Failed to save secrets configuration."
+          "Не удалось сохранить секреты."
         );
         return;
       }
@@ -306,7 +306,7 @@ export function useConfigManagement({
         reportUiError(
           "Project settings",
           error,
-          "Failed to persist project settings."
+          "Не удалось сохранить настройки проекта."
         );
       }
     };

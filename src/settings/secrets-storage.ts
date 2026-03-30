@@ -14,7 +14,7 @@ export const loadSecrets = async (projectPath: string): Promise<string> => {
     }
     return response.content ?? defaultSecretsContent;
   } catch (error) {
-    console.error(toContextualErrorMessage("Failed to load secrets", error, "Unable to read .env file."));
+    console.error(toContextualErrorMessage("Не удалось загрузить секреты", error, "Не удалось прочитать .env файл."));
     return defaultSecretsContent;
   }
 };
@@ -26,7 +26,7 @@ export const saveSecrets = async (projectPath: string, content: string): Promise
       throw new Error(String(response.error));
     }
   } catch (error) {
-    const message = toContextualErrorMessage("Failed to save secrets", error, "Failed to save .env file.");
+    const message = toContextualErrorMessage("Не удалось сохранить секреты", error, "Не удалось сохранить .env файл.");
     console.error(message);
     throw new Error(message);
   }

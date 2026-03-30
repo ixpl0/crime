@@ -137,7 +137,7 @@ function resetProjectSessionToDefaults(state: ProjectSessionState) {
 
 function handleProjectOpenFailure(state: ProjectSessionState, error: unknown) {
   state.options.isTerminalReady.value = false;
-  state.options.reportUiError("Project open", error, "Failed to open project or start terminal.");
+  state.options.reportUiError("Project open", error, "Не удалось открыть проект или запустить терминал.");
 }
 
 async function stopPreviousSettingsWatcher(state: ProjectSessionState) {
@@ -145,7 +145,7 @@ async function stopPreviousSettingsWatcher(state: ProjectSessionState) {
   const response = await window.projectApi.settings.unwatch();
   if (!response.ok) {
     throw new Error(
-      toErrorMessage(response.error, "Failed to stop previous settings watcher.")
+      toErrorMessage(response.error, "Не удалось остановить наблюдатель настроек.")
     );
   }
 }
@@ -158,14 +158,14 @@ async function stopSettingsWatcher(state: ProjectSessionState) {
       state.options.reportUiError(
         "Settings watcher teardown",
         response.error,
-        "Failed to stop settings watcher."
+        "Не удалось остановить наблюдатель настроек."
       );
     }
   } catch (error) {
     state.options.reportUiError(
       "Settings watcher teardown",
       error,
-      "Failed to stop settings watcher."
+      "Не удалось остановить наблюдатель настроек."
     );
   }
 }
@@ -178,7 +178,7 @@ async function loadPromptSuffixConfigForProject(state: ProjectSessionState, path
     state.options.reportUiError(
       "Prompt suffix config",
       error,
-      "Failed to load prompt suffix config. Fix .crime/prompt-suffixes.json or use Reset in Prompt Suffix Settings."
+      "Не удалось загрузить конфигурацию суффиксов. Исправьте .crime/prompt-suffixes.json или нажмите «Сброс» в настройках суффиксов."
     );
   }
 }
@@ -242,7 +242,7 @@ function subscribeToSettingsFileChanges(state: ProjectSessionState) {
       state.options.reportUiError(
         "Settings watcher event",
         error,
-        "Failed to reload settings after file change."
+        "Не удалось перезагрузить настройки после изменения файла."
       );
     });
   });
@@ -257,7 +257,7 @@ async function startSettingsWatcher(state: ProjectSessionState, path: string) {
   }
 
   clearSettingsFileChangedSubscription(state);
-  throw new Error(toErrorMessage(response.error, "Failed to start settings watcher."));
+  throw new Error(toErrorMessage(response.error, "Не удалось запустить наблюдатель настроек."));
 }
 
 function getProjectFolderName(path: string) {
@@ -290,7 +290,7 @@ async function handleStartupRestoreFailure(state: ProjectSessionState, error: un
   state.options.reportUiError(
     "Startup project restore",
     error,
-    "Failed to open the last project. Pick a folder manually."
+    "Не удалось открыть последний проект. Выберите папку вручную."
   );
 }
 

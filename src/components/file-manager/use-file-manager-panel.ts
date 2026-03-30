@@ -42,7 +42,7 @@ export function useFileManagerPanel({
   const hasChanges = computed(() => Object.keys(gitStatuses.value).length > 0);
   const headerSummary = computed(() => {
     const count = Object.keys(gitStatuses.value).length;
-    return count > 0 ? `${String(count)} changed` : `${String(entries.value.length)} items`;
+    return count > 0 ? `${String(count)} изменено` : `${String(entries.value.length)} элементов`;
   });
   const isActionInProgress = computed(() => isRevertingAll.value || revertingPath.value !== null);
 
@@ -114,12 +114,12 @@ export function useFileManagerPanel({
       if (requestId !== loadRequestId) {
         return null;
       }
-      const message = toErrorMessage(error, "Failed to load project directory.");
+      const message = toErrorMessage(error, "Не удалось загрузить папку проекта.");
       if (!isBackgroundRefresh) {
         isLoading.value = false;
         loadError.value = message;
       } else {
-        gitInfoMessage.value = `Auto-refresh failed: ${message}`;
+        gitInfoMessage.value = `Автообновление не удалось: ${message}`;
       }
       return null;
     }

@@ -1,13 +1,13 @@
 <template>
   <JsonConfigEditorDialog
     :open="open"
-    title="Project Settings"
-    description="Configure slash-command timing and zoom for this project."
+    title="Настройки проекта"
+    description="Задержки слеш-команд и масштаб проекта."
     :file-path="configFilePath"
     :current-value="currentSettings"
     :default-value="defaultProjectSettings"
     :parser="parseProjectSettings"
-    invalid-structure-message="Invalid settings structure"
+    invalid-structure-message="Некорректная структура настроек"
     @save="handleSave"
     @close="$emit('close')"
   >

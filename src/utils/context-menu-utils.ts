@@ -14,5 +14,5 @@ export const clampContextMenuY = (value: number) =>
 
 export const getGitUnavailableMessage = (reason?: GitMutateResponse["reason"]) =>
   reason === "git-not-installed"
-    ? "Git is not installed."
-    : "The selected folder is not a Git repository.";
+    ? "Git не установлен."
+    : "Выбранная папка не является Git-репозиторием.";

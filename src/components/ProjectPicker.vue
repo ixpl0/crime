@@ -13,7 +13,7 @@
       >
         <span v-if="isOpening" class="loading loading-spinner loading-sm" />
         <FolderOpen v-else :size="18" />
-        {{ isOpening ? "Opening…" : "Open Folder" }}
+        {{ isOpening ? "Открываем…" : "Открыть папку" }}
       </button>
 
       <button
@@ -23,12 +23,12 @@
         @click="$emit('createFolder')"
       >
         <FolderPlus :size="18" />
-        Create Folder
+        Создать папку
       </button>
 
       <div v-if="recentProjects.length > 0" class="mt-4 flex w-full flex-col gap-2">
         <p class="px-1 text-xs uppercase tracking-wider text-base-content/30">
-          Recent
+          Недавние
         </p>
         <div class="flex flex-col overflow-hidden rounded-box border border-base-300 bg-base-100">
           <div

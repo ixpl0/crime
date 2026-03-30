@@ -13,7 +13,7 @@ const EMPTY_STATE: CommitFileDiffState = { selectedFilePath: null, lines: [], is
 const toFileDiffState = (filePath: string, response: GitFileDiffResponse): CommitFileDiffState =>
   response.ok
     ? { selectedFilePath: filePath, lines: response.lines ?? [], isLoading: false, error: "" }
-    : { selectedFilePath: filePath, lines: [], isLoading: false, error: response.error ?? "Failed to load file diff." };
+    : { selectedFilePath: filePath, lines: [], isLoading: false, error: response.error ?? "Не удалось загрузить diff файла." };
 
 export function useCommitFileDiff(
   projectPath: Ref<string>,
@@ -38,7 +38,7 @@ export function useCommitFileDiff(
       if (id === requestId) { fileDiff.value = toFileDiffState(filePath, response); }
     } catch (error) {
       if (id === requestId) {
-        fileDiff.value = { selectedFilePath: filePath, lines: [], isLoading: false, error: toErrorMessage(error, "Failed to load file diff.") };
+        fileDiff.value = { selectedFilePath: filePath, lines: [], isLoading: false, error: toErrorMessage(error, "Не удалось загрузить diff файла.") };
       }
     }
   };

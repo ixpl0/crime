@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col border-t border-base-300">
     <div class="flex items-center gap-2 border-b border-base-300 px-3 py-1.5">
-      <span class="text-xs font-semibold text-base-content/70">Commit details</span>
+      <span class="text-xs font-semibold text-base-content/70">Детали коммита</span>
       <button
         class="icon-btn ml-auto text-base-content/40 hover:text-error"
         tabindex="-1"
@@ -17,27 +17,27 @@
     </div>
 
     <div v-else-if="error" class="px-3 py-4 text-sm text-base-content/50">
-      Commit details unavailable
+      Детали коммита недоступны
     </div>
 
     <div v-else class="flex min-h-0 flex-1">
       <div class="min-h-0 min-w-0 shrink-0 overflow-y-auto px-3 py-2" :class="fileDiff.selectedFilePath ? 'w-2/5' : 'flex-1'">
         <div class="mb-3 flex flex-col gap-1.5">
           <div class="flex items-center gap-2">
-            <span class="shrink-0 w-16 text-xs text-base-content/50">Hash</span>
+            <span class="shrink-0 w-16 text-xs text-base-content/50">Хеш</span>
             <button
               class="cursor-pointer rounded px-1.5 py-0.5 font-mono text-xs text-base-content/80 transition-colors hover:bg-base-content/10"
               tabindex="-1"
               :title="copiedHash === details.hash ? 'Скопировано!' : 'Скопировать полный хеш'"
               @click="$emit('copy-hash', details.hash)"
             >
-              {{ copiedHash === details.hash ? "copied!" : details.hash }}
+              {{ copiedHash === details.hash ? "скопировано!" : details.hash }}
             </button>
           </div>
 
           <div v-if="details.parentHashes.length > 0" class="flex items-start gap-2">
             <span class="shrink-0 w-16 text-xs text-base-content/50">
-              {{ details.parentHashes.length > 1 ? "Parents" : "Parent" }}
+              {{ details.parentHashes.length > 1 ? "Родители" : "Родитель" }}
             </span>
             <div class="flex flex-wrap gap-1">
               <button
@@ -48,13 +48,13 @@
                 :title="copiedHash === parentHash ? 'Скопировано!' : 'Скопировать хеш'"
                 @click="$emit('copy-hash', parentHash)"
               >
-                {{ copiedHash === parentHash ? "copied!" : formatShortHash(parentHash) }}
+                {{ copiedHash === parentHash ? "скопировано!" : formatShortHash(parentHash) }}
               </button>
             </div>
           </div>
 
           <div class="flex items-center gap-2">
-            <span class="shrink-0 w-16 text-xs text-base-content/50">Author</span>
+            <span class="shrink-0 w-16 text-xs text-base-content/50">Автор</span>
             <span class="text-xs">
               {{ details.authorName }}
               <span class="text-base-content/40">&lt;{{ details.authorEmail }}&gt;</span>
@@ -62,12 +62,12 @@
           </div>
 
           <div class="flex items-center gap-2">
-            <span class="shrink-0 w-16 text-xs text-base-content/50">Date</span>
+            <span class="shrink-0 w-16 text-xs text-base-content/50">Дата</span>
             <span class="text-xs text-base-content/70">{{ formatFullDate(details.authorDate) }}</span>
           </div>
 
           <div v-if="showCommitter" class="flex items-center gap-2">
-            <span class="shrink-0 w-16 text-xs text-base-content/50">Committer</span>
+            <span class="shrink-0 w-16 text-xs text-base-content/50">Коммитер</span>
             <span class="text-xs">
               {{ details.committerName }}
               <span class="text-base-content/40">&lt;{{ details.committerEmail }}&gt;</span>
@@ -75,7 +75,7 @@
           </div>
 
           <div v-if="details.refs.length > 0" class="flex items-center gap-2">
-            <span class="shrink-0 w-16 text-xs text-base-content/50">Refs</span>
+            <span class="shrink-0 w-16 text-xs text-base-content/50">Ссылки</span>
             <div class="flex flex-wrap gap-1">
               <span
                 v-for="ref in details.refs"
@@ -127,11 +127,11 @@
           <span class="min-w-0 truncate font-mono text-xs text-base-content/70">{{ fileDiff.selectedFilePath }}</span>
           <template v-if="changeCount > 0 && !fileDiff.isLoading">
             <div class="ml-auto flex items-center">
-              <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Previous change" @click="goToPrevChange">
+              <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Предыдущее изменение" @click="goToPrevChange">
                 <ChevronUp :size="14" />
               </button>
               <span class="min-w-6 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
-              <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Next change" @click="goToNextChange">
+              <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Следующее изменение" @click="goToNextChange">
                 <ChevronDown :size="14" />
               </button>
             </div>
@@ -141,10 +141,10 @@
           <span class="loading loading-spinner loading-sm" />
         </div>
         <div v-else-if="fileDiff.error" class="flex flex-1 items-center justify-center px-4 text-sm text-base-content/50">
-          Diff unavailable
+          Diff недоступен
         </div>
         <div v-else-if="fileDiff.lines.length === 0" class="flex flex-1 items-center justify-center px-4 text-sm text-base-content/50">
-          No changes
+          Нет изменений
         </div>
         <CodeMirrorDiffViewer
           v-else
@@ -208,6 +208,6 @@ const totalDeletions = computed(() =>
 );
 
 const fileCountLabel = computed(() =>
-  props.details.files.length === 1 ? "file changed" : "files changed"
+  props.details.files.length === 1 ? "файл изменён" : "файлов изменено"
 );
 </script>

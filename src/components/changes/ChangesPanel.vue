@@ -3,7 +3,7 @@
     <div class="relative flex min-h-0 flex-1 flex-col rounded-box border border-base-300 bg-base-200/70 shadow-sm">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-base-300/80 px-3 py-2">
         <span class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-          Changes
+          Изменения
         </span>
         <div v-if="hasChanges" class="ml-auto flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold tracking-wide">
           <span
@@ -26,7 +26,7 @@
           </span>
         </div>
         <span v-else class="ml-auto whitespace-nowrap text-[11px] text-base-content/45">
-          Working tree clean
+          Нет изменений
         </span>
       </div>
 
@@ -36,11 +36,11 @@
         </div>
 
         <div v-else-if="loadError" class="py-4 text-center text-sm text-base-content/50">
-          Changes unavailable
+          Изменения недоступны
         </div>
 
         <div v-else-if="changeEntries.length === 0" class="py-4 text-center text-sm text-base-content/50">
-          No changes detected
+          Изменений не найдено
         </div>
 
         <div v-else class="space-y-1">
@@ -75,7 +75,7 @@
               type="button"
               tabindex="-1"
               class="shrink-0 cursor-pointer rounded p-0.5 text-base-content/30 hover:text-base-content/70"
-              title="Open in file tree"
+              title="Открыть в дереве файлов"
               @click.stop="handleEntryPathClick(entry.path)"
             >
               <ExternalLink :size="14" />
@@ -106,7 +106,7 @@
           @click="handleContextMenuRevertClick"
         >
           <RotateCcw :size="14" />
-          Revert changes
+          Откатить изменения
         </button>
         <button
           v-if="contextMenu.status !== 'deleted'"
@@ -116,7 +116,7 @@
           @click="handleContextMenuShowInFolder"
         >
           <FolderOpen :size="14" />
-          Show in folder
+          Показать в папке
         </button>
       </div>
     </div>
@@ -130,7 +130,7 @@
         @click="handleRevertAllClick"
       >
         <span v-if="isRevertingAll" class="loading loading-spinner loading-xs" />
-        Revert all changes
+        Откатить все изменения
       </button>
     </div>
   </div>
