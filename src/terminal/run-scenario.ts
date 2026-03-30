@@ -21,7 +21,6 @@ interface ScenarioRunnerDeps {
   ) => Promise<boolean>;
   readonly waitForTerminalQuiet: (quietMs: number, timeoutMs: number) => Promise<void>;
   readonly waitForTerminalPattern: (pattern: string, timeoutMs: number) => Promise<boolean>;
-  readonly focusTerminal: () => void;
 }
 
 const delay = (ms: number) => new Promise((resolve) => {
@@ -125,6 +124,5 @@ export const runScenario = async (
     }
   }
 
-  deps.focusTerminal();
   return true;
 };

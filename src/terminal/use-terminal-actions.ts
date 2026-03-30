@@ -20,7 +20,6 @@ interface TerminalActionsDeps {
   ) => Promise<boolean>;
   readonly waitForTerminalQuiet: (quietMs: number, timeoutMs: number) => Promise<void>;
   readonly waitForTerminalPattern: (pattern: string, timeoutMs: number) => Promise<boolean>;
-  readonly focusTerminal: () => void;
   readonly getTodoEntry: (index: number) => string | null;
   readonly removeTodoEntry: (index: number) => void;
   readonly appendTerminalInputHistory: (text: string) => void;
@@ -33,7 +32,6 @@ export function useTerminalActions({
   sendTerminalInput,
   waitForTerminalQuiet,
   waitForTerminalPattern,
-  focusTerminal,
   getTodoEntry,
   removeTodoEntry,
   appendTerminalInputHistory
@@ -58,8 +56,7 @@ export function useTerminalActions({
             attemptSubmitTerminalText,
             sendTerminalInput,
             waitForTerminalQuiet,
-            waitForTerminalPattern,
-            focusTerminal
+            waitForTerminalPattern
           },
           action.steps
         );
@@ -109,8 +106,6 @@ export function useTerminalActions({
     if (result !== "submitted") {
       return;
     }
-
-    focusTerminal();
   }
 
   async function runToolbarPrompt(promptText: string) {
@@ -126,8 +121,6 @@ export function useTerminalActions({
     if (result !== "submitted") {
       return;
     }
-
-    focusTerminal();
   }
 
   function sendQuickKey(quickKey: QuickKeyBinding) {
@@ -150,7 +143,6 @@ export function useTerminalActions({
     }
 
     await sendTerminalInput("\r", "Failed to send Enter to terminal.");
-    focusTerminal();
   }
 
   async function sendTodoEntryToTerminal(index: number) {
