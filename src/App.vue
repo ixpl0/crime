@@ -11,6 +11,7 @@
         :is-opening="isOpening"
         :get-project-name-from-path="getProjectNameFromPath"
         @open-folder="openProjectFolder"
+        @create-folder="createProjectFolder"
         @open-project="openProject"
       />
 
@@ -78,6 +79,7 @@ const {
   getProjectNameFromPath,
   openProject,
   openProjectFolder,
+  createProjectFolder,
   projectPath
 } = useAppShell();
 

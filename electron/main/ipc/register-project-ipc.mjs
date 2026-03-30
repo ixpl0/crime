@@ -1,8 +1,10 @@
+import { mkdir } from "node:fs/promises";
 import { BrowserWindow, dialog, ipcMain } from "electron";
 
 function removeProjectHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.projectOpenFolder);
   ipcMain.removeHandler(IPC_CHANNELS.projectOpenInNewWindow);
+  ipcMain.removeHandler(IPC_CHANNELS.projectCreateFolder);
 }
 
 export function registerProjectIpcHandlers({ IPC_CHANNELS, createWindow }) {
@@ -26,6 +28,24 @@ export function registerProjectIpcHandlers({ IPC_CHANNELS, createWindow }) {
       createWindow({ openProjectPath: projectPath });
     } else {
       createWindow({ skipLastProjectRestore: true });
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.projectCreateFolder, async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
+    const result = await dialog.showSaveDialog(win, {
+      title: "Создать проект",
+      buttonLabel: "Создать"
+    });
+    if (result.canceled || !result.filePath) {
+      return null;
+    }
+
+    try {
+      await mkdir(result.filePath, { recursive: true });
+      return result.filePath;
+    } catch {
+      return null;
     }
   });
 }

@@ -60,6 +60,7 @@ export interface UseProjectSessionOptions {
   ) => Promise<void>;
   loadTodoEntriesForProject: (path: string, source: TodoEntriesLoadSource) => Promise<void>;
   startTerminal: (path: string) => Promise<void>;
+  stopTerminal: () => void;
   reportUiError: (context: string, error: unknown, fallbackMessage: string) => unknown;
 }
 
@@ -274,6 +275,13 @@ async function performProjectOpen(state: ProjectSessionState, path: string) {
   setLastProjectPathInStorage(path);
 }
 
+async function closeProject(state: ProjectSessionState) {
+  clearLastProjectPathInStorage();
+  await stopSettingsWatcher(state);
+  state.options.stopTerminal();
+  resetProjectSessionToDefaults(state);
+}
+
 async function handleStartupRestoreFailure(state: ProjectSessionState, error: unknown) {
   clearLastProjectPathInStorage();
   resetProjectSessionToDefaults(state);
@@ -321,6 +329,23 @@ async function openProjectFolder(state: ProjectSessionState) {
       }
 
       await performProjectOpen(state, selectedPath);
+    },
+    (error) => {
+      handleProjectOpenFailure(state, error);
+    }
+  );
+}
+
+async function createProjectFolder(state: ProjectSessionState) {
+  await runProjectOpenFlow(
+    state,
+    async () => {
+      const createdPath = await window.projectApi.createFolder();
+      if (!createdPath) {
+        return;
+      }
+
+      await performProjectOpen(state, createdPath);
     },
     (error) => {
       handleProjectOpenFailure(state, error);
@@ -401,6 +426,8 @@ export function useProjectSession(options: UseProjectSessionOptions) {
   return {
     openProject: openProject.bind(null, state),
     openProjectFolder: openProjectFolder.bind(null, state),
+    createProjectFolder: createProjectFolder.bind(null, state),
+    closeProject: closeProject.bind(null, state),
     openLastProjectOnStartup: openLastProjectOnStartup.bind(null, state),
     stopSettingsWatcher: stopSettingsWatcher.bind(null, state)
   };

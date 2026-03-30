@@ -238,6 +238,7 @@ interface WindowApi {
 interface ProjectApi {
   quickKeys: readonly QuickKeyBinding[];
   openFolder: () => Promise<string | null>;
+  createFolder: () => Promise<string | null>;
   openInNewWindow: (projectPath?: string) => Promise<void>;
   settings: SettingsApi;
   terminal: TerminalApi;

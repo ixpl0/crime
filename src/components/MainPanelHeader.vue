@@ -83,22 +83,49 @@
           class="dropdown-content menu bg-base-100 rounded-box z-10 w-72 p-0 shadow"
           @keydown.esc.stop.prevent="setProjectDropdownOpen(false)"
         >
-          <li>
+          <li class="relative">
             <button
               :disabled="isOpening"
               tabindex="-1"
+              class="pr-9"
               @click="openProjectFolder"
             >
               Открыть...
+            </button>
+            <button
+              tabindex="-1"
+              class="icon-btn absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-base-content/30 hover:text-primary"
+              title="Открыть в новом окне"
+              @click.stop="openProjectFolderInNewWindow"
+            >
+              <ExternalLink :size="14" />
+            </button>
+          </li>
+          <li class="relative">
+            <button
+              :disabled="isOpening"
+              tabindex="-1"
+              class="pr-9"
+              @click="createProjectFolder"
+            >
+              <FolderPlus :size="14" />
+              Создать...
+            </button>
+            <button
+              tabindex="-1"
+              class="icon-btn absolute right-1 top-1/2 -translate-y-1/2 p-1.5 text-base-content/30 hover:text-primary"
+              title="Создать в новом окне"
+              @click.stop="createProjectInNewWindow"
+            >
+              <ExternalLink :size="14" />
             </button>
           </li>
           <li>
             <button
               tabindex="-1"
-              @click="openProjectInNewWindow()"
+              @click="closeProject"
             >
-              <ExternalLink :size="14" />
-              Новое окно...
+              Закрыть проект
             </button>
           </li>
           <template v-if="recentProjects.length > 0">
@@ -192,7 +219,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, ExternalLink, Eye, Moon, PanelRightOpen, Settings, Sun } from "lucide-vue-next";
+import { ChevronDown, ExternalLink, Eye, FolderPlus, Moon, PanelRightOpen, Settings, Sun } from "lucide-vue-next";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
@@ -219,6 +246,10 @@ const {
   handleProjectDropdownTriggerKeydown,
   setProjectDropdownOpen,
   openProjectFolder,
+  openProjectFolderInNewWindow,
+  createProjectFolder,
+  createProjectInNewWindow,
+  closeProject,
   openRecentProject,
   openProjectInNewWindow,
   toggleHiddenPanelsDropdown,

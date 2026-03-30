@@ -33,7 +33,8 @@ const IPC_CHANNELS = Object.freeze({
   shellOpenExternal: "shell:open-external",
   shellOpenPath: "shell:open-path",
   windowFlashFrame: "window:flash-frame",
-  projectOpenInNewWindow: "project:open-in-new-window"
+  projectOpenInNewWindow: "project:open-in-new-window",
+  projectCreateFolder: "project:create-folder"
 });
 
 module.exports = {

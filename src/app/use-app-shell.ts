@@ -253,6 +253,10 @@ export function useAppShell() {
     handleProjectDropdownTriggerKeydown,
     handleHiddenPanelsDropdownTriggerKeydown,
     handleProjectDropdownOpenFolderClick,
+    handleProjectDropdownOpenFolderInNewWindowClick,
+    handleProjectDropdownCreateFolderClick,
+    handleProjectDropdownCreateInNewWindowClick,
+    handleProjectDropdownCloseProjectClick,
     handleProjectDropdownRecentClick,
     handleProjectDropdownOpenInNewWindowClick,
     handleHiddenPanelOptionClick,
@@ -266,6 +270,26 @@ export function useAppShell() {
     isAgentDetached,
     onOpenProjectFolder: () => {
       void openProjectFolder();
+    },
+    onOpenProjectFolderInNewWindow: () => {
+      void window.projectApi.openFolder().then((selectedPath) => {
+        if (selectedPath) {
+          void window.projectApi.openInNewWindow(selectedPath);
+        }
+      });
+    },
+    onCreateProjectFolder: () => {
+      void createProjectFolder();
+    },
+    onCreateProjectInNewWindow: () => {
+      void window.projectApi.createFolder().then((createdPath) => {
+        if (createdPath) {
+          void window.projectApi.openInNewWindow(createdPath);
+        }
+      });
+    },
+    onCloseProject: () => {
+      void closeProject();
     },
     onOpenRecentProject: (path) => {
       void openProject(path);
@@ -378,6 +402,8 @@ export function useAppShell() {
   const {
     openProject,
     openProjectFolder,
+    createProjectFolder,
+    closeProject,
     openLastProjectOnStartup,
     stopSettingsWatcher
   } = useProjectSession({
@@ -398,6 +424,10 @@ export function useAppShell() {
     loadTerminalInputHistoryForProject,
     loadTodoEntriesForProject,
     startTerminal,
+    stopTerminal: () => {
+      void window.projectApi.terminal.stop();
+      disposeTerminalView();
+    },
     reportUiError
   });
 
@@ -464,6 +494,10 @@ export function useAppShell() {
     handleProjectDropdownTriggerKeydown,
     setProjectDropdownOpen,
     openProjectFolder: handleProjectDropdownOpenFolderClick,
+    openProjectFolderInNewWindow: handleProjectDropdownOpenFolderInNewWindowClick,
+    createProjectFolder: handleProjectDropdownCreateFolderClick,
+    createProjectInNewWindow: handleProjectDropdownCreateInNewWindowClick,
+    closeProject: handleProjectDropdownCloseProjectClick,
     openRecentProject: handleProjectDropdownRecentClick,
     openProjectInNewWindow: handleProjectDropdownOpenInNewWindowClick,
     toggleHiddenPanelsDropdown,
@@ -589,6 +623,7 @@ export function useAppShell() {
     getProjectNameFromPath,
     openProject,
     openProjectFolder,
+    createProjectFolder,
     projectPath
   };
 

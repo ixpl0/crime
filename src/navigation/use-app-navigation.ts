@@ -13,8 +13,12 @@ interface UseAppNavigationOptions {
   isTodoPanelCollapsed: Ref<boolean>;
   isAgentDetached: Ref<boolean>;
   onOpenProjectFolder: () => void;
+  onOpenProjectFolderInNewWindow: () => void;
+  onCreateProjectFolder: () => void;
+  onCreateProjectInNewWindow: () => void;
+  onCloseProject: () => void;
   onOpenRecentProject: (path: string) => void;
-  onOpenProjectInNewWindow: (path?: string) => void;
+  onOpenProjectInNewWindow: (path: string) => void;
   onAgentTabActivated: () => void;
 }
 
@@ -148,6 +152,23 @@ function dockAgent(
   setActiveTab("agent", tabState, onAgentTabActivated);
 }
 
+function closeProjectDropdownAndRun(state: DropdownState, action: () => void) {
+  setProjectDropdownOpen(false, state);
+  action();
+}
+
+function createProjectDropdownActionApi(options: UseAppNavigationOptions, state: DropdownState) {
+  return {
+    handleProjectDropdownOpenFolderClick: () => { closeProjectDropdownAndRun(state, options.onOpenProjectFolder); },
+    handleProjectDropdownOpenFolderInNewWindowClick: () => { closeProjectDropdownAndRun(state, options.onOpenProjectFolderInNewWindow); },
+    handleProjectDropdownCreateFolderClick: () => { closeProjectDropdownAndRun(state, options.onCreateProjectFolder); },
+    handleProjectDropdownCreateInNewWindowClick: () => { closeProjectDropdownAndRun(state, options.onCreateProjectInNewWindow); },
+    handleProjectDropdownCloseProjectClick: () => { closeProjectDropdownAndRun(state, options.onCloseProject); },
+    handleProjectDropdownRecentClick: (path: string) => { closeProjectDropdownAndRun(state, () => { options.onOpenRecentProject(path); }); },
+    handleProjectDropdownOpenInNewWindowClick: (path: string) => { closeProjectDropdownAndRun(state, () => { options.onOpenProjectInNewWindow(path); }); }
+  };
+}
+
 function createDropdownActionApi(options: UseAppNavigationOptions, state: DropdownState) {
   const hiddenPanelOptions = computed<HiddenPanelOption[]>(() =>
     options.isTodoPanelCollapsed.value ? [{ id: "todo", title: "Задачи" }] : []
@@ -155,18 +176,7 @@ function createDropdownActionApi(options: UseAppNavigationOptions, state: Dropdo
 
   return {
     hiddenPanelOptions,
-    handleProjectDropdownOpenFolderClick: () => {
-      setProjectDropdownOpen(false, state);
-      options.onOpenProjectFolder();
-    },
-    handleProjectDropdownRecentClick: (path: string) => {
-      setProjectDropdownOpen(false, state);
-      options.onOpenRecentProject(path);
-    },
-    handleProjectDropdownOpenInNewWindowClick: (path?: string) => {
-      setProjectDropdownOpen(false, state);
-      options.onOpenProjectInNewWindow(path);
-    },
+    ...createProjectDropdownActionApi(options, state),
     handleHiddenPanelOptionClick: (panelId: HiddenPanelId) => {
       void panelId;
       setHiddenPanelsDropdownOpen(false, state);

@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full flex-col items-center overflow-y-auto">
-    <div class="my-auto flex w-full max-w-sm flex-col items-center gap-10 py-12">
-      <h1 class="select-none text-4xl font-bold tracking-[0.25em] text-base-content/80">
+    <div class="my-auto flex w-full max-w-sm flex-col items-center gap-3 py-12">
+      <h1 class="mb-7 select-none text-4xl font-bold tracking-[0.25em] text-base-content/80">
         CRIME
       </h1>
 
@@ -16,7 +16,17 @@
         {{ isOpening ? "Opening…" : "Open Folder" }}
       </button>
 
-      <div v-if="recentProjects.length > 0" class="flex w-full flex-col gap-2">
+      <button
+        class="btn btn-outline btn-primary w-full gap-2"
+        tabindex="-1"
+        :disabled="isOpening"
+        @click="$emit('createFolder')"
+      >
+        <FolderPlus :size="18" />
+        Create Folder
+      </button>
+
+      <div v-if="recentProjects.length > 0" class="mt-4 flex w-full flex-col gap-2">
         <p class="px-1 text-xs uppercase tracking-wider text-base-content/30">
           Recent
         </p>
@@ -24,7 +34,7 @@
           <button
             v-for="(projectPath, index) in recentProjects"
             :key="projectPath"
-            class="group flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary/10"
+            class="group flex cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary/10"
             :class="{ 'border-t border-base-300': index > 0 }"
             tabindex="-1"
             :disabled="isOpening"
@@ -50,7 +60,7 @@
 </template>
 
 <script setup lang="ts">
-import { Folder, FolderOpen } from "lucide-vue-next";
+import { Folder, FolderOpen, FolderPlus } from "lucide-vue-next";
 
 defineProps<{
   recentProjects: readonly string[];
@@ -60,6 +70,7 @@ defineProps<{
 
 defineEmits<{
   openFolder: [];
+  createFolder: [];
   openProject: [path: string];
 }>();
 </script>

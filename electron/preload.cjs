@@ -38,7 +38,8 @@ const IPC_CHANNELS = Object.freeze({
   "shellOpenExternal": "shell:open-external",
   "shellOpenPath": "shell:open-path",
   "windowFlashFrame": "window:flash-frame",
-  "projectOpenInNewWindow": "project:open-in-new-window"
+  "projectOpenInNewWindow": "project:open-in-new-window",
+  "projectCreateFolder": "project:create-folder"
 });
 
 const SETTINGS_DIRNAME = ".crime";
@@ -167,6 +168,7 @@ function normalizeZoomFactor(value) {
 contextBridge.exposeInMainWorld("projectApi", {
   quickKeys: quickKeyBindings,
   openFolder: () => ipcRenderer.invoke(IPC_CHANNELS.projectOpenFolder),
+  createFolder: () => ipcRenderer.invoke(IPC_CHANNELS.projectCreateFolder),
   openInNewWindow: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.projectOpenInNewWindow, projectPath),
   settings: {
     directoryName: SETTINGS_DIRNAME,
