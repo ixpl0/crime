@@ -134,7 +134,7 @@ export function registerGitIpcHandlers({ IPC_CHANNELS, gitService }) {
     return gitService.getCommitFileDiff(projectPath, hash, filePath);
   });
 
-  ipcMain.handle(IPC_CHANNELS.gitCheckout, async (_event, projectPath, target) => {
+  ipcMain.handle(IPC_CHANNELS.gitCheckout, async (_event, projectPath, target, remote) => {
     if (!projectPath || typeof projectPath !== "string") {
       return { ok: false, error: "Project path is required." };
     }
@@ -143,7 +143,11 @@ export function registerGitIpcHandlers({ IPC_CHANNELS, gitService }) {
       return { ok: false, error: "Invalid checkout target." };
     }
 
-    return gitService.checkout(projectPath, target);
+    if (remote !== undefined && (typeof remote !== "string" || remote.startsWith("-"))) {
+      return { ok: false, error: "Invalid remote name." };
+    }
+
+    return gitService.checkout(projectPath, target, remote);
   });
 
   ipcMain.handle(IPC_CHANNELS.gitUnmergedFiles, async (_event, projectPath) => {

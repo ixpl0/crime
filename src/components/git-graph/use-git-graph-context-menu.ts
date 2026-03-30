@@ -77,11 +77,12 @@ export function useGitGraphContextMenu(projectPath: Ref<string>) {
   }
 
   async function checkout(
-    target: string
+    target: string,
+    remote?: string | null
   ): Promise<{ ok: boolean; stashConflict?: boolean; conflictFiles?: string[]; error?: string }> {
     closeContextMenu();
     try {
-      const response = await window.projectApi.git.checkout(projectPath.value, target);
+      const response = await window.projectApi.git.checkout(projectPath.value, target, remote ?? undefined);
       if (!response.ok) {
         return { ok: false, error: response.error ?? "Не удалось переключиться." };
       }

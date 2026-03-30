@@ -245,8 +245,8 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.invoke(IPC_CHANNELS.gitCommitDetails, projectPath, hash),
     getCommitFileDiff: (projectPath, hash, filePath) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitCommitFileDiff, projectPath, hash, filePath),
-    checkout: (projectPath, target) =>
-      ipcRenderer.invoke(IPC_CHANNELS.gitCheckout, projectPath, target),
+    checkout: (projectPath, target, remote) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitCheckout, projectPath, target, remote),
     getUnmergedFiles: (projectPath) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitUnmergedFiles, projectPath),
     createBranch: (projectPath, branchName, startPoint) =>

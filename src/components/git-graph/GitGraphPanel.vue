@@ -216,7 +216,7 @@ const handleCheckout = async () => {
   const branch = contextMenu.value.targetBranch;
   const target = branch ? branch.branchName : contextMenu.value.hash;
   const label = branch ? branch.displayName : formatShortHash(contextMenu.value.hash);
-  const result = await checkout(target);
+  const result = await checkout(target, branch?.remote);
   if (result.ok && result.stashConflict) {
     conflictFiles.value = result.conflictFiles ?? [];
     pushToast(`Переключено на ${label}, но stash pop вызвал конфликты`, { tone: "warning" });

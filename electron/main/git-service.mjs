@@ -541,7 +541,7 @@ export function createGitService(runCommand) {
     }
   }
 
-  async function checkout(projectPath, target) {
+  async function checkout(projectPath, target, remote) {
     const repositoryState = await getRepositoryState(projectPath);
     if (!repositoryState.ok || !repositoryState.available) {
       return repositoryState;
@@ -556,7 +556,30 @@ export function createGitService(runCommand) {
       }
     }
 
-    const response = await runGitCommandSafe(projectPath, ["checkout", target], "Failed to checkout.");
+    let response;
+    if (remote) {
+      // Check if local branch already exists
+      const localExists = await runGitCommandSafe(
+        projectPath,
+        ["rev-parse", "--verify", `refs/heads/${target}`],
+        "Failed to check branch."
+      );
+      const hasLocalBranch = localExists.ok && localExists.available && localExists.result.code === 0;
+
+      if (hasLocalBranch) {
+        response = await runGitCommandSafe(projectPath, ["checkout", target], "Failed to checkout.");
+      } else {
+        // Create a local tracking branch from the remote branch
+        response = await runGitCommandSafe(
+          projectPath,
+          ["checkout", "-b", target, "--track", `${remote}/${target}`],
+          "Failed to checkout."
+        );
+      }
+    } else {
+      response = await runGitCommandSafe(projectPath, ["checkout", target], "Failed to checkout.");
+    }
+
     if (!response.ok || !response.available || response.result.code !== 0) {
       if (didStash) {
         const restoreResponse = await runGitCommandSafe(projectPath, ["stash", "pop"], "Failed to restore stash.");
