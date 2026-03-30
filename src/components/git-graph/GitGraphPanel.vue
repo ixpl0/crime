@@ -1,6 +1,20 @@
 <template>
   <div ref="panelContainer" class="flex h-full min-h-0 flex-col rounded-box border border-base-300 bg-base-200">
     <div
+      v-if="conflictFiles.length > 0"
+      class="flex flex-col gap-1 border-b border-warning/30 bg-warning/10 px-3 py-2"
+    >
+      <span class="text-xs font-medium text-warning">Stash conflicts</span>
+      <button
+        v-for="file in conflictFiles"
+        :key="file"
+        type="button"
+        class="cursor-pointer truncate text-left text-xs text-warning/80 underline decoration-warning/30 hover:text-warning"
+        tabindex="-1"
+        @click="emit('openFile', file)"
+      >{{ file }}</button>
+    </div>
+    <div
       class="min-h-0 overflow-y-auto"
       :class="selectedCommitDetails ? 'shrink-0' : 'flex-1'"
       :style="selectedCommitDetails ? commitListStyle : undefined"
@@ -25,6 +39,7 @@
           class="group flex cursor-pointer items-stretch hover:bg-base-300/50"
           :class="rowIndex === selectedRowIndex ? 'bg-base-300' : ''"
           @click="selectCommit(rowIndex)"
+          @contextmenu="openContextMenu($event, row.commit.hash)"
         >
           <svg class="shrink-0" :width="graphSvgWidth" :height="ROW_HEIGHT">
             <template v-for="(line, lineIndex) in row.lines" :key="lineIndex">
@@ -46,6 +61,7 @@
               v-for="ref in row.commit.refs" :key="ref"
               class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-xs font-medium"
               :class="refClasses(ref)"
+              @contextmenu.stop="isBranchRef(ref) ? openContextMenu($event, row.commit.hash, ref) : undefined"
             >{{ formatRef(ref) }}</span>
             <span class="min-w-0 truncate text-sm">{{ row.commit.subject }}</span>
             <button
@@ -85,35 +101,91 @@
     >
       {{ infoMessage }}
     </div>
+
+    <div
+      v-if="contextMenu"
+      ref="contextMenuRef"
+      class="fixed z-50 min-w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
+      :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
+      @contextmenu.prevent
+    >
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm w-full justify-start"
+        tabindex="-1"
+        @click="handleCheckout"
+      >
+        <ArrowRightLeft :size="14" />
+        Checkout {{ contextMenu.targetBranch ? contextMenu.targetBranch.displayName : formatShortHash(contextMenu.hash) }}
+      </button>
+      <button
+        v-if="contextMenu.targetBranch"
+        type="button"
+        class="btn btn-ghost btn-sm w-full justify-start"
+        :class="contextMenu.targetBranch.remote ? 'text-warning' : 'text-error'"
+        tabindex="-1"
+        @click="handleDeleteBranch"
+      >
+        <Trash2 :size="14" />
+        Delete {{ contextMenu.targetBranch.displayName }}{{ contextMenu.targetBranch.remote ? ' (REMOTE)' : '' }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm w-full justify-start"
+        tabindex="-1"
+        @click="handleCreateBranch"
+      >
+        <GitBranch :size="14" />
+        Create branch
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from "vue";
+import { ArrowRightLeft, GitBranch, Trash2 } from "lucide-vue-next";
+import { isBranchRef } from "./git-graph-format";
 import { useAppToastStore } from "../../toast/toast-store";
+import { useConfirmDialog, usePromptDialog } from "../../utils/dialog-utils";
 import { usePanelHeightResize } from "../../composables/use-panel-height-resize";
 import { useGitGraphPanel } from "./use-git-graph-panel";
 import CommitDetailsPanel from "./CommitDetailsPanel.vue";
 import PanelHeightResizeHandle from "../PanelHeightResizeHandle.vue";
 
-const { pushError } = useAppToastStore();
+const escapeHtml = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+const { pushToast, pushError } = useAppToastStore();
+const { requestConfirm } = useConfirmDialog();
+const { requestPrompt } = usePromptDialog();
 
 const props = defineProps<{
   projectPath: string;
   gitRefreshToken: number;
 }>();
 
+const emit = defineEmits<{
+  openFile: [path: string];
+}>();
+
 const panelContainer = ref<HTMLElement | null>(null);
+const conflictFiles = ref<string[]>([]);
 
 const {
   ROW_HEIGHT, COMMIT_RADIUS,
   graphRows, infoMessage, isLoading, loadError, graphSvgWidth,
   copiedHash, selectedCommitDetails, selectedRowIndex,
   isDetailsLoading, detailsError, fileDiff,
+  contextMenu, contextMenuElement,
   laneX, laneColor,
   formatShortHash, formatRelativeDate, formatRef, refClasses,
-  copyHash, selectCommit, selectFile, closeDetails
+  copyHash, selectCommit, selectFile, closeDetails,
+  openContextMenu, checkout, createBranch, deleteBranch
 } = useGitGraphPanel(toRef(props, "projectPath"), toRef(props, "gitRefreshToken"));
+
+const contextMenuRef = ref<HTMLElement | null>(null);
+watch(contextMenuRef, (element) => { contextMenuElement.value = element; });
 
 const {
   panelHeight: detailsPanelHeight,
@@ -137,6 +209,72 @@ const handleDetailsResize = (event: PointerEvent) => {
   }
 };
 
+const handleCheckout = async () => {
+  if (!contextMenu.value) {
+    return;
+  }
+  const branch = contextMenu.value.targetBranch;
+  const target = branch ? branch.branchName : contextMenu.value.hash;
+  const label = branch ? branch.displayName : formatShortHash(contextMenu.value.hash);
+  const result = await checkout(target);
+  if (result.ok && result.stashConflict) {
+    conflictFiles.value = result.conflictFiles ?? [];
+    pushToast(`Checked out ${label}, but stash pop had conflicts`, { tone: "warning" });
+  } else if (result.ok) {
+    conflictFiles.value = [];
+    pushToast(`Checked out ${label}`, { tone: "success" });
+  } else if (result.error) {
+    pushError(result.error);
+  }
+};
+
+const handleDeleteBranch = async () => {
+  const branch = contextMenu.value?.targetBranch;
+  if (!branch) {
+    return;
+  }
+  const name = escapeHtml(branch.displayName);
+  const title = branch.remote
+    ? `Delete REMOTE branch <strong>${name}</strong>?`
+    : `Delete branch <strong>${name}</strong>?`;
+  const body = branch.remote
+    ? `This will permanently delete the branch on <strong>${escapeHtml(branch.remote)}</strong>. This action cannot be undone.`
+    : undefined;
+  const result = await deleteBranch(branch, () =>
+    requestConfirm({ title, body })
+  );
+  if (result.ok) {
+    pushToast(`Branch "${branch.displayName}" deleted`, { tone: "success" });
+  } else if (result.error) {
+    pushError(result.error);
+  }
+};
+
+const handleCreateBranch = async () => {
+  if (!contextMenu.value) {
+    return;
+  }
+  const hash = contextMenu.value.hash;
+  const result = await createBranch(hash, () =>
+    requestPrompt({ title: "Create branch", placeholder: "Branch name" })
+  );
+  if (result.ok) {
+    pushToast("Branch created", { tone: "success" });
+  } else if (result.error) {
+    pushError(result.error);
+  }
+};
+
 watch(loadError, (message) => { if (message) { pushError(message); } });
 watch(detailsError, (message) => { if (message) { pushError(message); } });
+
+watch(() => props.projectPath, () => { conflictFiles.value = []; });
+
+watch(() => props.gitRefreshToken, async () => {
+  if (conflictFiles.value.length === 0) {
+    return;
+  }
+  const unmerged = await window.projectApi.git.getUnmergedFiles(props.projectPath);
+  conflictFiles.value = unmerged;
+});
 </script>

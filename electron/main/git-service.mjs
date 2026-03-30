@@ -520,6 +520,168 @@ export function createGitService(runCommand) {
     }
   }
 
+  async function getUnmergedFiles(projectPath) {
+    try {
+      const result = await runCommand("git", ["diff", "--name-only", "--diff-filter=U"], projectPath);
+      if (result.code !== 0) {
+        return [];
+      }
+      return result.stdout.toString("utf-8").trim().split("\n").filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
+  async function hasLocalChanges(projectPath) {
+    try {
+      const result = await runCommand("git", ["status", "--porcelain"], projectPath);
+      return result.code === 0 && result.stdout.toString("utf-8").trim().length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  async function checkout(projectPath, target) {
+    const repositoryState = await getRepositoryState(projectPath);
+    if (!repositoryState.ok || !repositoryState.available) {
+      return repositoryState;
+    }
+
+    const didStash = await hasLocalChanges(projectPath);
+    if (didStash) {
+      const stashResponse = await runGitCommandSafe(projectPath, ["stash", "push", "-u"], "Failed to stash changes.");
+      if (!stashResponse.ok || !stashResponse.available || stashResponse.result.code !== 0) {
+        const stderr = stashResponse.ok && stashResponse.available ? stashResponse.result.stderr.toString("utf-8").trim() : "";
+        return { ok: false, error: stderr || "Failed to stash changes before checkout." };
+      }
+    }
+
+    const response = await runGitCommandSafe(projectPath, ["checkout", target], "Failed to checkout.");
+    if (!response.ok || !response.available || response.result.code !== 0) {
+      if (didStash) {
+        const restoreResponse = await runGitCommandSafe(projectPath, ["stash", "pop"], "Failed to restore stash.");
+        const restored = restoreResponse.ok && restoreResponse.available && restoreResponse.result.code === 0;
+        if (!restored) {
+          const stderr = response.ok && response.available ? response.result.stderr.toString("utf-8").trim() : "";
+          return { ok: false, error: (stderr || "Failed to checkout.") + " Your changes are saved in git stash." };
+        }
+      }
+      const stderr = response.ok && response.available ? response.result.stderr.toString("utf-8").trim() : "";
+      return { ok: false, error: stderr || "Failed to checkout." };
+    }
+
+    if (didStash) {
+      const popResponse = await runGitCommandSafe(projectPath, ["stash", "pop"], "Failed to restore stashed changes.");
+      if (!popResponse.ok || !popResponse.available || popResponse.result.code !== 0) {
+        const conflictFiles = await getUnmergedFiles(projectPath);
+        return { ok: true, available: true, stashConflict: true, conflictFiles };
+      }
+    }
+
+    return { ok: true, available: true };
+  }
+
+  async function createBranch(projectPath, branchName, startPoint) {
+    const repositoryState = await getRepositoryState(projectPath);
+    if (!repositoryState.ok || !repositoryState.available) {
+      return repositoryState;
+    }
+
+    const args = ["branch", "--", branchName];
+    if (startPoint) {
+      args.push(startPoint);
+    }
+
+    const response = await runGitCommandSafe(projectPath, args, "Failed to create branch.");
+    if (!response.ok || !response.available) {
+      return response;
+    }
+
+    if (response.result.code !== 0) {
+      const stderr = response.result.stderr.toString("utf-8").trim();
+      return { ok: false, error: stderr || "Failed to create branch." };
+    }
+
+    return { ok: true, available: true };
+  }
+
+  async function getCurrentBranch(projectPath) {
+    try {
+      const result = await runCommand("git", ["symbolic-ref", "--short", "HEAD"], projectPath);
+      if (result.code !== 0) {
+        return null;
+      }
+      const branch = result.stdout.toString("utf-8").trim();
+      return branch.length > 0 ? branch : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function deleteBranch(projectPath, branchName) {
+    const repositoryState = await getRepositoryState(projectPath);
+    if (!repositoryState.ok || !repositoryState.available) {
+      return repositoryState;
+    }
+
+    const currentBranch = await getCurrentBranch(projectPath);
+    if (currentBranch === branchName) {
+      const detachResponse = await runGitCommandSafe(
+        projectPath,
+        ["checkout", "--detach"],
+        "Failed to detach HEAD."
+      );
+      if (!detachResponse.ok || !detachResponse.available) {
+        return detachResponse;
+      }
+      if (detachResponse.result.code !== 0) {
+        const stderr = detachResponse.result.stderr.toString("utf-8").trim();
+        return { ok: false, error: stderr || "Failed to detach HEAD." };
+      }
+    }
+
+    const deleteResponse = await runGitCommandSafe(
+      projectPath,
+      ["branch", "-d", "--", branchName],
+      "Failed to delete branch."
+    );
+
+    if (!deleteResponse.ok || !deleteResponse.available || deleteResponse.result.code !== 0) {
+      if (currentBranch === branchName) {
+        await runGitCommandSafe(projectPath, ["checkout", branchName], "Failed to restore branch.");
+      }
+      const stderr = deleteResponse.ok && deleteResponse.available
+        ? deleteResponse.result.stderr.toString("utf-8").trim()
+        : "";
+      return { ok: false, error: stderr || "Failed to delete branch." };
+    }
+
+    return { ok: true, available: true };
+  }
+
+  async function deleteRemoteBranch(projectPath, remoteName, branchName) {
+    const repositoryState = await getRepositoryState(projectPath);
+    if (!repositoryState.ok || !repositoryState.available) {
+      return repositoryState;
+    }
+
+    const deleteResponse = await runGitCommandSafe(
+      projectPath,
+      ["push", remoteName, "--delete", "--", branchName],
+      "Failed to delete remote branch."
+    );
+    if (!deleteResponse.ok || !deleteResponse.available) {
+      return deleteResponse;
+    }
+
+    if (deleteResponse.result.code !== 0) {
+      const stderr = deleteResponse.result.stderr.toString("utf-8").trim();
+      return { ok: false, error: stderr || "Failed to delete remote branch." };
+    }
+
+    return { ok: true, available: true };
+  }
+
   return {
     toPathKey,
     getIgnoredEntryPathKeySet,
@@ -531,6 +693,11 @@ export function createGitService(runCommand) {
     getLog,
     getCommitDetails,
     getCommitFileDiff,
+    checkout,
+    getUnmergedFiles,
+    createBranch,
+    deleteBranch,
+    deleteRemoteBranch,
     runGitCommandSafe
   };
 }

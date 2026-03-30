@@ -10,6 +10,11 @@ function removeGitHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.gitLog);
   ipcMain.removeHandler(IPC_CHANNELS.gitCommitDetails);
   ipcMain.removeHandler(IPC_CHANNELS.gitCommitFileDiff);
+  ipcMain.removeHandler(IPC_CHANNELS.gitCheckout);
+  ipcMain.removeHandler(IPC_CHANNELS.gitUnmergedFiles);
+  ipcMain.removeHandler(IPC_CHANNELS.gitCreateBranch);
+  ipcMain.removeHandler(IPC_CHANNELS.gitDeleteBranch);
+  ipcMain.removeHandler(IPC_CHANNELS.gitDeleteRemoteBranch);
 }
 
 function toProjectRelativeFilePath(projectPath, filePath, allowCurrentDirectory = false) {
@@ -127,5 +132,69 @@ export function registerGitIpcHandlers({ IPC_CHANNELS, gitService }) {
     }
 
     return gitService.getCommitFileDiff(projectPath, hash, filePath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitCheckout, async (_event, projectPath, target) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    if (!target || typeof target !== "string" || target.startsWith("-")) {
+      return { ok: false, error: "Invalid checkout target." };
+    }
+
+    return gitService.checkout(projectPath, target);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitUnmergedFiles, async (_event, projectPath) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return [];
+    }
+
+    return gitService.getUnmergedFiles(projectPath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitCreateBranch, async (_event, projectPath, branchName, startPoint) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    if (!branchName || typeof branchName !== "string" || branchName.startsWith("-")) {
+      return { ok: false, error: "Invalid branch name." };
+    }
+
+    if (startPoint !== undefined && (typeof startPoint !== "string" || !/^[0-9a-f]{4,40}$/i.test(startPoint))) {
+      return { ok: false, error: "Invalid start point." };
+    }
+
+    return gitService.createBranch(projectPath, branchName, startPoint);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitDeleteBranch, async (_event, projectPath, branchName) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    if (!branchName || typeof branchName !== "string" || branchName.startsWith("-")) {
+      return { ok: false, error: "Invalid branch name." };
+    }
+
+    return gitService.deleteBranch(projectPath, branchName);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitDeleteRemoteBranch, async (_event, projectPath, remoteName, branchName) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    if (!remoteName || typeof remoteName !== "string" || remoteName.startsWith("-")) {
+      return { ok: false, error: "Invalid remote name." };
+    }
+
+    if (!branchName || typeof branchName !== "string" || branchName.startsWith("-")) {
+      return { ok: false, error: "Invalid branch name." };
+    }
+
+    return gitService.deleteRemoteBranch(projectPath, remoteName, branchName);
   });
 }

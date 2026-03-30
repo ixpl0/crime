@@ -221,6 +221,11 @@ interface GitApi {
   getLog: (projectPath: string, maxCount?: number) => Promise<GitLogResponse>;
   getCommitDetails: (projectPath: string, hash: string) => Promise<GitCommitDetailsResponse>;
   getCommitFileDiff: (projectPath: string, hash: string, filePath: string) => Promise<GitFileDiffResponse>;
+  checkout: (projectPath: string, target: string) => Promise<GitMutateResponse & { stashConflict?: boolean; conflictFiles?: string[] }>;
+  getUnmergedFiles: (projectPath: string) => Promise<string[]>;
+  createBranch: (projectPath: string, branchName: string, startPoint?: string) => Promise<GitMutateResponse>;
+  deleteBranch: (projectPath: string, branchName: string) => Promise<GitMutateResponse>;
+  deleteRemoteBranch: (projectPath: string, remoteName: string, branchName: string) => Promise<GitMutateResponse>;
   watch: (projectPath: string) => Promise<GitWatchResponse>;
   unwatch: () => Promise<GitWatchResponse>;
   onChanged: (listener: () => void) => () => void;

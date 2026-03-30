@@ -1,10 +1,12 @@
 <template>
   <dialog ref="dialogElement" class="modal" @close="handleDialogClose" @keydown="handleDialogKeydown">
     <div class="modal-box max-w-md text-center">
-      <h3 class="text-lg font-semibold">{{ pendingState?.title }}</h3>
-      <p v-if="pendingState?.body" class="my-4 whitespace-pre-line text-sm text-base-content/70">
-        {{ pendingState.body }}
-      </p>
+      <h3 class="text-lg font-semibold" v-html="pendingState?.title" />
+      <p
+        v-if="pendingState?.body"
+        class="my-4 whitespace-pre-line text-sm text-base-content/70"
+        v-html="pendingState.body"
+      />
       <div class="modal-action justify-center">
         <button class="btn btn-ghost" tabindex="-1" @click="handleCancel">Отмена</button>
         <button class="btn btn-error" tabindex="-1" @click="handleConfirm">Подтвердить</button>

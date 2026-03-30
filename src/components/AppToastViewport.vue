@@ -4,21 +4,13 @@
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        class="pointer-events-auto alert shadow-lg"
+        class="pointer-events-auto alert cursor-pointer shadow-lg"
         :class="toneClasses(toast.tone)"
         role="status"
+        @click="dismissToast(toast.id)"
       >
         <component :is="toneIcon(toast.tone)" :size="18" class="shrink-0" />
         <span class="min-w-0 flex-1 break-words">{{ toast.message }}</span>
-        <button
-          type="button"
-          class="icon-btn text-base-content/40 hover:text-error"
-          tabindex="-1"
-          aria-label="Dismiss notification"
-          @click="dismissToast(toast.id)"
-        >
-          <X :size="14" />
-        </button>
       </div>
     </TransitionGroup>
   </div>
@@ -29,8 +21,7 @@ import {
   CheckCircle2,
   CircleAlert,
   Info,
-  TriangleAlert,
-  X
+  TriangleAlert
 } from "lucide-vue-next";
 import { useAppToastStore, type ToastTone } from "../toast/toast-store";
 

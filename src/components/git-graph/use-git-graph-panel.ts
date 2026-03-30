@@ -2,6 +2,7 @@
 import { buildGitGraphRows, type GraphRow } from "./git-graph-layout";
 import { formatRef, formatRelativeDate, formatShortHash, refClasses } from "./git-graph-format";
 import { useCommitFileDiff } from "./use-commit-file-diff";
+import { useGitGraphContextMenu } from "./use-git-graph-context-menu";
 import { toErrorMessage } from "../../utils/fail-fast";
 
 const ROW_HEIGHT = 28;
@@ -63,6 +64,10 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
   const detailsError = ref("");
   const maxLaneCount = ref(0);
   const graphSvgWidth = computed(() => LANE_OFFSET + maxLaneCount.value * LANE_WIDTH + LANE_OFFSET);
+
+  const {
+    contextMenu, contextMenuElement, openContextMenu, checkout, createBranch, deleteBranch
+  } = useGitGraphContextMenu(projectPath);
 
   const { fileDiff, selectFile, clearFileDiff } = useCommitFileDiff(projectPath, selectedCommitDetails);
 
@@ -258,6 +263,8 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     isDetailsLoading,
     detailsError,
     fileDiff,
+    contextMenu,
+    contextMenuElement,
     laneX,
     laneColor,
     formatShortHash,
@@ -267,7 +274,11 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     copyHash,
     selectCommit,
     selectFile,
-    closeDetails
+    closeDetails,
+    openContextMenu,
+    checkout,
+    createBranch,
+    deleteBranch
   };
 }
 

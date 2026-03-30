@@ -31,6 +31,11 @@ const IPC_CHANNELS = Object.freeze({
   "gitLog": "git:log",
   "gitCommitDetails": "git:commit-details",
   "gitCommitFileDiff": "git:commit-file-diff",
+  "gitCheckout": "git:checkout",
+  "gitUnmergedFiles": "git:unmerged-files",
+  "gitCreateBranch": "git:create-branch",
+  "gitDeleteBranch": "git:delete-branch",
+  "gitDeleteRemoteBranch": "git:delete-remote-branch",
   "gitChanged": "git:changed",
   "gitWatch": "git:watch",
   "gitUnwatch": "git:unwatch",
@@ -240,6 +245,16 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.invoke(IPC_CHANNELS.gitCommitDetails, projectPath, hash),
     getCommitFileDiff: (projectPath, hash, filePath) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitCommitFileDiff, projectPath, hash, filePath),
+    checkout: (projectPath, target) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitCheckout, projectPath, target),
+    getUnmergedFiles: (projectPath) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitUnmergedFiles, projectPath),
+    createBranch: (projectPath, branchName, startPoint) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitCreateBranch, projectPath, branchName, startPoint),
+    deleteBranch: (projectPath, branchName) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitDeleteBranch, projectPath, branchName),
+    deleteRemoteBranch: (projectPath, remoteName, branchName) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitDeleteRemoteBranch, projectPath, remoteName, branchName),
     watch: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitWatch, projectPath),
     unwatch: () => ipcRenderer.invoke(IPC_CHANNELS.gitUnwatch),
     onChanged: (listener) => {

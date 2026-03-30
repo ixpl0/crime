@@ -65,6 +65,10 @@ export function formatFullDate(isoDate: string) {
   });
 }
 
+export function isBranchRef(refName: string) {
+  return refName !== "HEAD" && !refName.startsWith("tag: ");
+}
+
 export function formatRef(refName: string) {
   if (refName.startsWith("HEAD -> ")) {
     return refName.slice(8);
