@@ -9,6 +9,7 @@ export interface GraphLine {
 export interface GraphRow {
   commit: GitLogEntry;
   lane: number;
+  colorLane: number;
   lines: GraphLine[];
 }
 
@@ -136,12 +137,7 @@ function appendContinuingLines(lines: GraphLine[], continuingLanes: Iterable<num
   }
 }
 
-function compactLanes(nextLanes: readonly string[], lines: readonly GraphLine[]) {
-  const hasEmptyLane = nextLanes.some((hash) => hash === "");
-  if (!hasEmptyLane) {
-    return { compactedLanes: [...nextLanes], remappedLines: [...lines] };
-  }
-
+function buildCompactionIndexMap(nextLanes: readonly string[]) {
   const indexMap = new Map<number, number>();
   let mappedIndex = 0;
   for (let index = 0; index < nextLanes.length; index += 1) {
@@ -151,6 +147,31 @@ function compactLanes(nextLanes: readonly string[], lines: readonly GraphLine[])
     }
   }
 
+  return indexMap;
+}
+
+function compactColorLanes(nextLanes: readonly string[], colorLanes: readonly number[]) {
+  const compacted: number[] = [];
+  for (let index = 0; index < nextLanes.length; index += 1) {
+    if (nextLanes[index] !== "") {
+      compacted.push(index < colorLanes.length ? colorLanes[index] : index);
+    }
+  }
+
+  return compacted;
+}
+
+function compactLanes(
+  nextLanes: readonly string[],
+  lines: readonly GraphLine[],
+  colorLanes: readonly number[]
+) {
+  const hasEmptyLane = nextLanes.some((hash) => hash === "");
+  if (!hasEmptyLane) {
+    return { compactedLanes: [...nextLanes], remappedLines: [...lines], compactedColorLanes: [...colorLanes] };
+  }
+
+  const indexMap = buildCompactionIndexMap(nextLanes);
   const remappedLines = lines.map((line) => {
     if (!line.toBottom) {
       return line;
@@ -164,8 +185,26 @@ function compactLanes(nextLanes: readonly string[], lines: readonly GraphLine[])
 
   return {
     compactedLanes: nextLanes.filter((hash) => hash !== ""),
-    remappedLines
+    remappedLines,
+    compactedColorLanes: compactColorLanes(nextLanes, colorLanes)
   };
+}
+
+function applyColorLanes(lines: readonly GraphLine[], colorLanes: readonly number[]): GraphLine[] {
+  return lines.map((line) => {
+    const mappedColor = colorLanes[line.colorLane];
+    return mappedColor !== line.colorLane ? { ...line, colorLane: mappedColor } : line;
+  });
+}
+
+function extendColorLanes(colorLanes: number[], targetLength: number, startIndex: number) {
+  let index = startIndex;
+  while (colorLanes.length < targetLength) {
+    colorLanes.push(index);
+    index += 1;
+  }
+
+  return index;
 }
 
 export function buildGitGraphRows(entries: readonly GitLogEntry[]): GraphRow[] {
@@ -175,18 +214,25 @@ export function buildGitGraphRows(entries: readonly GitLogEntry[]): GraphRow[] {
 
   const rows: GraphRow[] = [];
   let activeLanes: string[] = [];
+  let colorLanes: number[] = [];
+  let nextColorIndex = 0;
   for (const commit of entries) {
     const commitLanes = findCommitLaneIndices(activeLanes, commit.hash);
     const { commitLane, isNewLane } = ensureCommitLane(activeLanes, commit.hash, commitLanes);
+    nextColorIndex = extendColorLanes(colorLanes, activeLanes.length, nextColorIndex);
     const lines: GraphLine[] = [];
     const continuingLanes = appendTopLines(lines, activeLanes, commit.hash, commitLane, isNewLane);
     const nextLanes = [...activeLanes];
     clearConsumedLanes(nextLanes, commitLanes);
     appendParentLines(lines, nextLanes, commitLane, commit.parentHashes, commitLanes);
     appendContinuingLines(lines, continuingLanes);
-    const { compactedLanes, remappedLines } = compactLanes(nextLanes, lines);
+    nextColorIndex = extendColorLanes(colorLanes, nextLanes.length, nextColorIndex);
+    const colorMappedLines = applyColorLanes(lines, colorLanes);
+    const commitColorLane = colorLanes[commitLane];
+    const { compactedLanes, remappedLines, compactedColorLanes } = compactLanes(nextLanes, colorMappedLines, colorLanes);
     activeLanes = compactedLanes;
-    rows.push({ commit, lane: commitLane, lines: remappedLines });
+    colorLanes = compactedColorLanes;
+    rows.push({ commit, lane: commitLane, colorLane: commitColorLane, lines: remappedLines });
   }
 
   return rows;

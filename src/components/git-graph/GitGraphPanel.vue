@@ -51,8 +51,8 @@
             </template>
             <circle
               :cx="laneX(row.lane)" :cy="ROW_HEIGHT / 2" :r="COMMIT_RADIUS"
-              :fill="row.commit.parentHashes.length > 1 ? 'transparent' : laneColor(row.lane)"
-              :stroke="laneColor(row.lane)"
+              :fill="row.commit.parentHashes.length > 1 ? 'transparent' : laneColor(row.colorLane)"
+              :stroke="laneColor(row.colorLane)"
               :stroke-width="row.commit.parentHashes.length > 1 ? 2.5 : 0"
             />
           </svg>
