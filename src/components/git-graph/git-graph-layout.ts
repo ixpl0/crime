@@ -35,37 +35,42 @@ function ensureCommitLane(activeLanes: string[], hash: string, commitLanes: numb
   return { commitLane, isNewLane: true };
 }
 
-function appendTopLines(
+function appendVerticalLines(
   lines: GraphLine[],
   activeLanes: readonly string[],
-  commitHash: string,
   commitLane: number,
   isNewLane: boolean
 ) {
-  const continuingLanes = new Set<number>();
+  // Top half: vertical segment into the commit circle
+  if (!isNewLane) {
+    lines.push({ fromLane: commitLane, toLane: commitLane, fromTop: true, toBottom: false, colorLane: commitLane });
+  }
+
+  // Bottom half: vertical segment out of the commit circle (for first parent)
+  lines.push({ fromLane: commitLane, toLane: commitLane, fromTop: false, toBottom: true, colorLane: commitLane });
+}
+
+function appendContinuingLines(
+  lines: GraphLine[],
+  activeLanes: readonly string[],
+  commitHash: string,
+  commitLane: number
+) {
   for (let laneIndex = 0; laneIndex < activeLanes.length; laneIndex += 1) {
     const laneHash = activeLanes[laneIndex];
-    if (laneHash === "") {
+    if (laneHash === "" || laneIndex === commitLane) {
       continue;
     }
 
-    if (laneHash !== commitHash) {
-      lines.push({ fromLane: laneIndex, toLane: laneIndex, fromTop: true, toBottom: false, colorLane: laneIndex });
-      continuingLanes.add(laneIndex);
-      continue;
-    }
-
-    if (laneIndex !== commitLane) {
+    if (laneHash === commitHash) {
+      // Висячий конец: ветка сходится к коммиту, цвет — этой ветки
       lines.push({ fromLane: laneIndex, toLane: commitLane, fromTop: true, toBottom: false, colorLane: laneIndex });
       continue;
     }
 
-    if (!isNewLane) {
-      lines.push({ fromLane: laneIndex, toLane: laneIndex, fromTop: true, toBottom: false, colorLane: laneIndex });
-    }
+    lines.push({ fromLane: laneIndex, toLane: laneIndex, fromTop: true, toBottom: false, colorLane: laneIndex });
+    lines.push({ fromLane: laneIndex, toLane: laneIndex, fromTop: false, toBottom: true, colorLane: laneIndex });
   }
-
-  return continuingLanes;
 }
 
 function clearConsumedLanes(nextLanes: string[], commitLanes: readonly number[]) {
@@ -98,8 +103,9 @@ function resolveParentTargetLane(
   return emptyLane !== -1 ? emptyLane : nextLanes.length;
 }
 
-function appendParentLines(
+function appendParentLanes(
   lines: GraphLine[],
+  deferredLines: GraphLine[],
   nextLanes: string[],
   commitLane: number,
   parentHashes: readonly string[],
@@ -107,33 +113,22 @@ function appendParentLines(
 ) {
   for (let parentIndex = 0; parentIndex < parentHashes.length; parentIndex += 1) {
     const parentHash = parentHashes[parentIndex];
-    const targetLane = resolveParentTargetLane(
-      nextLanes,
-      parentHash,
-      parentIndex,
-      commitLane,
-      commitLanes
-    );
+    const targetLane = resolveParentTargetLane(nextLanes, parentHash, parentIndex, commitLane, commitLanes);
     nextLanes[targetLane] = parentHash;
-    lines.push({
-      fromLane: commitLane,
-      toLane: targetLane,
-      fromTop: false,
-      toBottom: true,
-      colorLane: parentIndex === 0 ? commitLane : targetLane
-    });
-  }
-}
 
-function appendContinuingLines(lines: GraphLine[], continuingLanes: Iterable<number>) {
-  for (const laneIndex of continuingLanes) {
-    lines.push({
-      fromLane: laneIndex,
-      toLane: laneIndex,
-      fromTop: false,
-      toBottom: true,
-      colorLane: laneIndex
-    });
+    if (parentIndex > 0 && targetLane > commitLane) {
+      // Мерж слева направо: от кружка к низу правой ветки
+      lines.push({
+        fromLane: commitLane, toLane: targetLane,
+        fromTop: false, toBottom: true, colorLane: targetLane
+      });
+    } else if (parentIndex > 0 && targetLane < commitLane) {
+      // Мерж справа налево: от низа отрезка под кружком — в следующем ряду
+      deferredLines.push({
+        fromLane: commitLane, toLane: targetLane,
+        fromTop: true, toBottom: false, colorLane: commitLane
+      });
+    }
   }
 }
 
@@ -207,33 +202,40 @@ function extendColorLanes(colorLanes: number[], targetLength: number, startIndex
   return index;
 }
 
+interface LayoutState {
+  activeLanes: string[];
+  colorLanes: number[];
+  nextColorIndex: number;
+  pendingDeferred: GraphLine[];
+}
+
+function buildRow(commit: GitLogEntry, state: LayoutState) {
+  const commitLanes = findCommitLaneIndices(state.activeLanes, commit.hash);
+  const { commitLane, isNewLane } = ensureCommitLane(state.activeLanes, commit.hash, commitLanes);
+  state.nextColorIndex = extendColorLanes(state.colorLanes, state.activeLanes.length, state.nextColorIndex);
+  const lines: GraphLine[] = [...state.pendingDeferred];
+  state.pendingDeferred = [];
+  appendVerticalLines(lines, state.activeLanes, commitLane, isNewLane);
+  appendContinuingLines(lines, state.activeLanes, commit.hash, commitLane);
+  const nextLanes = [...state.activeLanes];
+  clearConsumedLanes(nextLanes, commitLanes);
+  const deferredLines: GraphLine[] = [];
+  appendParentLanes(lines, deferredLines, nextLanes, commitLane, commit.parentHashes, commitLanes);
+  state.nextColorIndex = extendColorLanes(state.colorLanes, nextLanes.length, state.nextColorIndex);
+  const colorMappedLines = applyColorLanes(lines, state.colorLanes);
+  const commitColorLane = state.colorLanes[commitLane];
+  const { compactedLanes, remappedLines, compactedColorLanes } = compactLanes(nextLanes, colorMappedLines, state.colorLanes);
+  state.pendingDeferred = compactLanes(nextLanes, applyColorLanes(deferredLines, state.colorLanes), state.colorLanes).remappedLines;
+  state.activeLanes = compactedLanes;
+  state.colorLanes = compactedColorLanes;
+  return { commit, lane: commitLane, colorLane: commitColorLane, lines: remappedLines };
+}
+
 export function buildGitGraphRows(entries: readonly GitLogEntry[]): GraphRow[] {
   if (entries.length === 0) {
     return [];
   }
 
-  const rows: GraphRow[] = [];
-  let activeLanes: string[] = [];
-  let colorLanes: number[] = [];
-  let nextColorIndex = 0;
-  for (const commit of entries) {
-    const commitLanes = findCommitLaneIndices(activeLanes, commit.hash);
-    const { commitLane, isNewLane } = ensureCommitLane(activeLanes, commit.hash, commitLanes);
-    nextColorIndex = extendColorLanes(colorLanes, activeLanes.length, nextColorIndex);
-    const lines: GraphLine[] = [];
-    const continuingLanes = appendTopLines(lines, activeLanes, commit.hash, commitLane, isNewLane);
-    const nextLanes = [...activeLanes];
-    clearConsumedLanes(nextLanes, commitLanes);
-    appendParentLines(lines, nextLanes, commitLane, commit.parentHashes, commitLanes);
-    appendContinuingLines(lines, continuingLanes);
-    nextColorIndex = extendColorLanes(colorLanes, nextLanes.length, nextColorIndex);
-    const colorMappedLines = applyColorLanes(lines, colorLanes);
-    const commitColorLane = colorLanes[commitLane];
-    const { compactedLanes, remappedLines, compactedColorLanes } = compactLanes(nextLanes, colorMappedLines, colorLanes);
-    activeLanes = compactedLanes;
-    colorLanes = compactedColorLanes;
-    rows.push({ commit, lane: commitLane, colorLane: commitColorLane, lines: remappedLines });
-  }
-
-  return rows;
+  const state: LayoutState = { activeLanes: [], colorLanes: [], nextColorIndex: 0, pendingDeferred: [] };
+  return entries.map((commit) => buildRow(commit, state));
 }
