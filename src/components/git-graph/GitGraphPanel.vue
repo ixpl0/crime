@@ -71,7 +71,7 @@
             :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
             @click.stop="copyHash(row.commit.hash)"
           >{{ copiedHash === row.commit.hash ? "скопировано" : formatShortHash(row.commit.hash) }}</button>
-          <span class="whitespace-nowrap text-xs text-base-content/40">{{ formatRelativeDate(row.commit.date) }}</span>
+          <span class="whitespace-nowrap text-xs text-base-content/70">{{ formatRelativeDate(row.commit.date) }}</span>
           <span class="max-w-40 truncate pr-3 text-xs" :style="{ color: authorColor(row.commit.author) }">{{ row.commit.author }}</span>
         </div>
       </div>
