@@ -12,7 +12,7 @@
     >
       <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-4">
 
-        <MainPanelHeader :changes-count="changesCount" />
+        <MainPanelHeader :changes-count="changesCount" :terminal-session-count="terminalSessionCount" />
 
         <ToolbarConfigEditor
           :current-config="toolbarConfig"
@@ -82,6 +82,7 @@
             v-show="activeTab === 'terminal'"
             :project-path="projectPath"
             :is-active="activeTab === 'terminal'"
+            @update:session-count="terminalSessionCount = $event"
           />
 
           <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
@@ -173,6 +174,7 @@
       v-show="isAgentDetached"
       class="min-w-0"
       :changes-count="changesCount"
+      :terminal-session-count="terminalSessionCount"
     />
   </div>
 </template>
@@ -347,6 +349,7 @@ const {
 } = useGitStatus(projectPath, activeTab);
 
 const changesCount = computed(() => gitStatusResponse.value?.entries?.length ?? 0);
+const terminalSessionCount = ref(0);
 
 const toolbarConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${toolbarConfigFilename}`

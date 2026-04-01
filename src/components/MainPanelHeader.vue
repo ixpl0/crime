@@ -22,6 +22,7 @@
           @click="setActiveTab('terminal')"
         >
           Терминал
+          <span v-if="terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
         </button>
         <button
           role="tab"
@@ -235,6 +236,7 @@ import { positionFixedDropdown } from "../utils/dropdown-utils";
 
 defineProps<{
   changesCount: number;
+  terminalSessionCount: number;
 }>();
 
 const { currentTheme, toggleTheme } = useTheme();

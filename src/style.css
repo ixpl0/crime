@@ -52,6 +52,11 @@ label:focus,
   box-shadow: none;
 }
 
+[role="tab"].tab-active {
+  background-color: color-mix(in oklch, currentColor 10%, transparent);
+  border-radius: 0.375rem;
+}
+
 .manual-dropdown:not(.dropdown-open):focus-within .dropdown-content {
   visibility: hidden;
   opacity: 0;

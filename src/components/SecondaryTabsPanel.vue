@@ -11,6 +11,7 @@
             @click="setActiveTab('terminal')"
           >
             Терминал
+            <span v-if="terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
           </button>
           <button
             role="tab"
@@ -65,6 +66,7 @@ import { useAppNavigationStore } from "../navigation/navigation-store";
 
 defineProps<{
   changesCount: number;
+  terminalSessionCount: number;
 }>();
 
 const { activeTab, setActiveTab, dockAgent } = useAppNavigationStore();

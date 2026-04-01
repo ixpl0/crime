@@ -88,6 +88,7 @@ import {
   ref,
   shallowRef,
   watch,
+  watchEffect,
   type ComponentPublicInstance,
   type Ref
 } from "vue";
@@ -132,6 +133,10 @@ const props = defineProps<{
   isActive: boolean;
 }>();
 
+const emit = defineEmits<{
+  "update:sessionCount": [count: number];
+}>();
+
 const {
   projectSettings,
   terminalToolbarConfig,
@@ -144,6 +149,10 @@ const projectPathRef = computed<string | null>(() => props.projectPath);
 const terminalFontSize = computed(() =>
   normalizeTerminalFontSize(projectSettings.value.zoom.terminalFontSize)
 );
+
+watchEffect(() => {
+  emit("update:sessionCount", sessions.value.length);
+});
 
 let nextSessionNumber = 1;
 
