@@ -23,7 +23,7 @@ const { currentTip, advance } = useTipsRotation();
 <style scoped>
 .tip-fade-enter-active,
 .tip-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: opacity 0.6s ease;
 }
 
 .tip-fade-enter-from,
