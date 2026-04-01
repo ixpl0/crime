@@ -366,7 +366,7 @@ export function createGitService(runCommand) {
     try {
       const result = await runCommand(
         "git",
-        ["log", "--all", "--topo-order", `--max-count=${String(limit)}`, `--format=${format}`],
+        ["log", "--all", "--date-order", `--max-count=${String(limit)}`, `--format=${format}`],
         repositoryRoot
       );
       if (result.code !== 0) {
