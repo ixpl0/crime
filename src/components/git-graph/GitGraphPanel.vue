@@ -63,7 +63,7 @@
               :class="refClasses(ref)"
               @contextmenu.stop="isBranchRef(ref) ? openContextMenu($event, row.commit.hash, ref) : undefined"
             >{{ formatRef(ref) }}</span>
-            <span class="min-w-0 truncate text-sm">{{ row.commit.subject }}</span>
+            <span class="min-w-0 truncate text-sm" :class="row.commit.parentHashes.length > 1 ? 'text-base-content/50' : ''">{{ row.commit.subject }}</span>
           </div>
           <button
             class="-mx-1 shrink-0 cursor-pointer rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
