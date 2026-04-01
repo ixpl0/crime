@@ -124,19 +124,20 @@ export function parseGitLogEntries(rawOutput, recordSeparator, fieldSeparator) {
 
   for (const record of records) {
     const fields = record.trim().split(fieldSeparator);
-    if (fields.length < 6) {
+    if (fields.length < 7) {
       continue;
     }
 
-    const refs = fields[5].length > 0
-      ? fields[5].split(",").map((ref) => ref.trim()).filter((ref) => ref.length > 0)
+    const refs = fields[6].length > 0
+      ? fields[6].split(",").map((ref) => ref.trim()).filter((ref) => ref.length > 0)
       : [];
     entries.push({
       hash: fields[0],
       parentHashes: fields[1].length > 0 ? fields[1].split(" ") : [],
       author: fields[2],
-      date: fields[3],
-      subject: fields[4],
+      authorEmail: fields[3],
+      date: fields[4],
+      subject: fields[5],
       refs
     });
   }

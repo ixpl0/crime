@@ -1,23 +1,11 @@
-function toRelativeUnits(isoDate: string) {
-  const date = new Date(isoDate);
-  const now = new Date();
-  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  const diffWeeks = Math.floor(diffDays / 7);
-  const diffMonths = Math.floor(diffDays / 30);
-  const diffYears = Math.floor(diffDays / 365);
+const pad2 = (n: number) => String(n).padStart(2, "0");
 
-  return {
-    diffSeconds,
-    diffMinutes,
-    diffHours,
-    diffDays,
-    diffWeeks,
-    diffMonths,
-    diffYears
-  };
+const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate();
 }
 
 export function formatShortHash(hash: string) {
@@ -25,32 +13,21 @@ export function formatShortHash(hash: string) {
 }
 
 export function formatRelativeDate(isoDate: string) {
-  const units = toRelativeUnits(isoDate);
-  if (units.diffSeconds < 60) {
-    return "только что";
+  const date = new Date(isoDate);
+  const now = new Date();
+  const time = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+
+  if (isSameDay(date, now)) {
+    return time;
   }
 
-  if (units.diffMinutes < 60) {
-    return `${String(units.diffMinutes)} мин`;
+  const dayMonth = `${String(date.getDate())} ${MONTHS[date.getMonth()]}`;
+
+  if (date.getFullYear() === now.getFullYear()) {
+    return `${dayMonth} ${time}`;
   }
 
-  if (units.diffHours < 24) {
-    return `${String(units.diffHours)} ч`;
-  }
-
-  if (units.diffDays < 7) {
-    return `${String(units.diffDays)} дн`;
-  }
-
-  if (units.diffWeeks < 5) {
-    return `${String(units.diffWeeks)} нед`;
-  }
-
-  if (units.diffMonths < 12) {
-    return `${String(units.diffMonths)} мес`;
-  }
-
-  return `${String(units.diffYears)} г`;
+  return `${dayMonth} ${String(date.getFullYear())} ${time}`;
 }
 
 export function formatFullDate(isoDate: string) {
@@ -79,6 +56,33 @@ export function formatRef(refName: string) {
   }
 
   return refName;
+}
+
+const AUTHOR_PALETTE = [
+  "hsl(210 70% 65%)",  // синий
+  "hsl(340 65% 60%)",  // розовый
+  "hsl(160 55% 55%)",  // бирюзовый
+  "hsl(30 75% 60%)",   // оранжевый
+  "hsl(270 55% 65%)",  // фиолетовый
+  "hsl(50 70% 55%)",   // жёлтый
+  "hsl(190 60% 55%)",  // голубой
+  "hsl(0 60% 60%)",    // красный
+  "hsl(120 45% 55%)",  // зелёный
+  "hsl(300 50% 60%)",  // пурпурный
+  "hsl(80 50% 55%)",   // лайм
+  "hsl(230 55% 65%)",  // индиго
+];
+
+function hashString(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = Math.imul(31, hash) + value.charCodeAt(i) | 0;
+  }
+  return Math.abs(hash);
+}
+
+export function authorColor(name: string) {
+  return AUTHOR_PALETTE[hashString(name) % AUTHOR_PALETTE.length];
 }
 
 export function refClasses(refName: string) {

@@ -1,6 +1,6 @@
 ﻿import { computed, onBeforeUnmount, onMounted, ref, type Ref, watch } from "vue";
 import { buildGitGraphRows, type GraphRow } from "./git-graph-layout";
-import { formatRef, formatRelativeDate, formatShortHash, refClasses } from "./git-graph-format";
+import { authorColor, formatRef, formatRelativeDate, formatShortHash, refClasses } from "./git-graph-format";
 import { useCommitFileDiff } from "./use-commit-file-diff";
 import { useGitGraphContextMenu } from "./use-git-graph-context-menu";
 import { toErrorMessage } from "../../utils/fail-fast";
@@ -271,6 +271,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     formatRelativeDate,
     formatRef,
     refClasses,
+    authorColor,
     copyHash,
     selectCommit,
     selectFile,

@@ -32,11 +32,11 @@
         Коммиты не найдены
       </div>
 
-      <div v-else class="relative">
+      <div v-else class="grid" style="grid-template-columns: auto 1fr auto auto auto">
         <div
           v-for="(row, rowIndex) in graphRows"
           :key="row.commit.hash"
-          class="group flex cursor-pointer items-stretch hover:bg-base-300/50"
+          class="group col-span-5 grid cursor-pointer grid-cols-subgrid items-center gap-3 hover:bg-base-300/50"
           :class="rowIndex === selectedRowIndex ? 'bg-base-300' : ''"
           @click="selectCommit(rowIndex)"
           @contextmenu="openContextMenu($event, row.commit.hash)"
@@ -56,7 +56,7 @@
               :stroke-width="row.commit.parentHashes.length > 1 ? 2.5 : 0"
             />
           </svg>
-          <div class="flex min-w-0 flex-1 items-center gap-2 pr-3">
+          <div class="flex min-w-0 items-center gap-1">
             <span
               v-for="ref in row.commit.refs" :key="ref"
               class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-xs font-medium"
@@ -64,15 +64,15 @@
               @contextmenu.stop="isBranchRef(ref) ? openContextMenu($event, row.commit.hash, ref) : undefined"
             >{{ formatRef(ref) }}</span>
             <span class="min-w-0 truncate text-sm">{{ row.commit.subject }}</span>
-            <button
-              class="ml-auto shrink-0 cursor-pointer rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
-              tabindex="-1"
-              :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
-              @click.stop="copyHash(row.commit.hash)"
-            >{{ copiedHash === row.commit.hash ? "скопировано" : formatShortHash(row.commit.hash) }}</button>
-            <span class="shrink-0 text-xs text-base-content/40">{{ formatRelativeDate(row.commit.date) }}</span>
-            <span class="shrink-0 text-xs text-base-content/50">{{ row.commit.author }}</span>
           </div>
+          <button
+            class="-mx-1 shrink-0 cursor-pointer rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
+            tabindex="-1"
+            :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
+            @click.stop="copyHash(row.commit.hash)"
+          >{{ copiedHash === row.commit.hash ? "скопировано" : formatShortHash(row.commit.hash) }}</button>
+          <span class="whitespace-nowrap text-xs text-base-content/40">{{ formatRelativeDate(row.commit.date) }}</span>
+          <span class="max-w-40 truncate pr-3 text-xs" :style="{ color: authorColor(row.commit.author) }">{{ row.commit.author }}</span>
         </div>
       </div>
     </div>
@@ -179,7 +179,7 @@ const {
   isDetailsLoading, detailsError, fileDiff,
   contextMenu, contextMenuElement,
   laneX, laneColor,
-  formatShortHash, formatRelativeDate, formatRef, refClasses,
+  formatShortHash, formatRelativeDate, formatRef, refClasses, authorColor,
   copyHash, selectCommit, selectFile, closeDetails,
   openContextMenu, checkout, createBranch, deleteBranch
 } = useGitGraphPanel(toRef(props, "projectPath"), toRef(props, "gitRefreshToken"));

@@ -166,6 +166,7 @@ interface GitLogEntry {
   hash: string;
   parentHashes: string[];
   author: string;
+  authorEmail: string;
   date: string;
   subject: string;
   refs: string[];

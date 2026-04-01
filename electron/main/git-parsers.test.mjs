@@ -209,6 +209,7 @@ describe("parseGitLogEntries", () => {
       "abc1234",
       "parent1 parent2",
       "Author Name",
+      "author@example.com",
       "2024-01-15",
       "Initial commit",
       "HEAD -> main, origin/main"
@@ -219,6 +220,7 @@ describe("parseGitLogEntries", () => {
         hash: "abc1234",
         parentHashes: ["parent1", "parent2"],
         author: "Author Name",
+        authorEmail: "author@example.com",
         date: "2024-01-15",
         subject: "Initial commit",
         refs: ["HEAD -> main", "origin/main"]
@@ -227,20 +229,20 @@ describe("parseGitLogEntries", () => {
   });
 
   it("handles commit with no parents (root commit)", () => {
-    const raw = ["abc", "", "Author", "2024-01-01", "root", ""].join(fieldSep);
+    const raw = ["abc", "", "Author", "a@b.com", "2024-01-01", "root", ""].join(fieldSep);
     const result = parseGitLogEntries(recordSep + raw, recordSep, fieldSep);
     expect(result[0].parentHashes).toEqual([]);
   });
 
   it("handles commit with no refs", () => {
-    const raw = ["abc", "parent", "Author", "2024-01-01", "msg", ""].join(fieldSep);
+    const raw = ["abc", "parent", "Author", "a@b.com", "2024-01-01", "msg", ""].join(fieldSep);
     const result = parseGitLogEntries(recordSep + raw, recordSep, fieldSep);
     expect(result[0].refs).toEqual([]);
   });
 
-  it("skips records with fewer than 6 fields", () => {
+  it("skips records with fewer than 7 fields", () => {
     const malformed = ["abc", "parent", "Author"].join(fieldSep);
-    const valid = ["def", "p", "A", "2024-01-01", "msg", ""].join(fieldSep);
+    const valid = ["def", "p", "A", "a@b.com", "2024-01-01", "msg", ""].join(fieldSep);
     const output = recordSep + malformed + recordSep + valid;
     const result = parseGitLogEntries(output, recordSep, fieldSep);
     expect(result).toHaveLength(1);
@@ -248,8 +250,8 @@ describe("parseGitLogEntries", () => {
   });
 
   it("parses multiple entries", () => {
-    const entry1 = ["aaa", "", "A1", "2024-01-01", "first", ""].join(fieldSep);
-    const entry2 = ["bbb", "aaa", "A2", "2024-01-02", "second", ""].join(fieldSep);
+    const entry1 = ["aaa", "", "A1", "a1@b.com", "2024-01-01", "first", ""].join(fieldSep);
+    const entry2 = ["bbb", "aaa", "A2", "a2@b.com", "2024-01-02", "second", ""].join(fieldSep);
     const output = recordSep + entry1 + recordSep + entry2;
     const result = parseGitLogEntries(output, recordSep, fieldSep);
     expect(result).toHaveLength(2);

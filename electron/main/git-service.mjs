@@ -360,7 +360,7 @@ export function createGitService(runCommand) {
     const limit = typeof maxCount === "number" && maxCount > 0 ? maxCount : 200;
     const fieldSeparator = "\x1f";
     const recordSeparator = "\x1e";
-    const formatFields = ["%H", "%P", "%an", "%aI", "%s", "%D"].join(fieldSeparator);
+    const formatFields = ["%H", "%P", "%an", "%ae", "%aI", "%s", "%D"].join(fieldSeparator);
     const format = `${formatFields}${recordSeparator}`;
 
     try {
