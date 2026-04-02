@@ -2,7 +2,7 @@
   <div class="flex items-center gap-2">
     <div role="tablist" class="tabs tabs-bordered">
       <template v-if="isAgentDetached">
-        <span class="tab tab-active">Агент</span>
+        <span role="tab" class="tab tab-active">Агент</span>
       </template>
       <template v-else>
         <button
