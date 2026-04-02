@@ -130,7 +130,7 @@ defineExpose({ scrollToLine: scrollToLineWithHighlight });
 
 watch(
   () => [props.displayLines, props.filePath] as const,
-  () => { void createEditor(); },
+  () => { void createEditor().then(focusTargetLine); },
 );
 
 watch(
@@ -139,7 +139,7 @@ watch(
 );
 
 onMounted(() => {
-  void createEditor();
+  void createEditor().then(focusTargetLine);
 });
 
 onBeforeUnmount(() => {

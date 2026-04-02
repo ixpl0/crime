@@ -46,6 +46,8 @@ export interface AppNavigationStore {
   resetSelectedFile: () => void;
   resetChangesSelectedFile: () => void;
   handleChangesPathOpen: (path: string) => void;
+  navigateToFile: (path: string, targetLine?: number | null) => void;
+  navigateToDirectory: (path: string) => void;
 }
 
 const appNavigationStoreKey: InjectionKey<AppNavigationStore> = Symbol(

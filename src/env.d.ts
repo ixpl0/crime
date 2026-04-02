@@ -113,6 +113,30 @@ interface FilesystemCreatePathResponse {
   error?: string;
 }
 
+interface FileSearchResult {
+  relativePath: string;
+  name: string;
+  isDirectory: boolean;
+}
+
+interface FileSearchResponse {
+  ok: boolean;
+  results?: FileSearchResult[];
+  error?: string;
+}
+
+interface ContentSearchResult {
+  relativePath: string;
+  line: number;
+  text: string;
+}
+
+interface ContentSearchResponse {
+  ok: boolean;
+  results?: ContentSearchResult[];
+  error?: string;
+}
+
 interface FilesystemApi {
   readDirectory: (path: string) => Promise<FilesystemReadResponse>;
   readFile: (projectPath: string, filePath: string) => Promise<FilesystemReadFileResponse>;
@@ -122,6 +146,8 @@ interface FilesystemApi {
   copyPaths: (projectPath: string, sourcePaths: readonly string[], destinationDirectory: string) => Promise<FilesystemCopyResponse>;
   createPath: (projectPath: string, parentDirectory: string, name: string, isDirectory: boolean) => Promise<FilesystemCreatePathResponse>;
   getPathForFile: (file: File) => string;
+  search: (projectPath: string, query: string, maxResults?: number, includeIgnored?: boolean) => Promise<FileSearchResponse>;
+  searchContent: (projectPath: string, query: string, maxResults?: number, includeIgnored?: boolean) => Promise<ContentSearchResponse>;
 }
 
 type GitFileStatus = "added" | "modified" | "deleted";

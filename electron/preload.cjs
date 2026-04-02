@@ -44,7 +44,9 @@ const IPC_CHANNELS = Object.freeze({
   "shellOpenPath": "shell:open-path",
   "windowFlashFrame": "window:flash-frame",
   "projectOpenInNewWindow": "project:open-in-new-window",
-  "projectCreateFolder": "project:create-folder"
+  "projectCreateFolder": "project:create-folder",
+  "filesystemSearch": "filesystem:search",
+  "filesystemSearchContent": "filesystem:search-content"
 });
 
 const SETTINGS_DIRNAME = ".crime";
@@ -230,7 +232,11 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.invoke(IPC_CHANNELS.filesystemCopyPaths, projectPath, sourcePaths, destinationDirectory),
     createPath: (projectPath, parentDirectory, name, isDirectory) =>
       ipcRenderer.invoke(IPC_CHANNELS.filesystemCreatePath, projectPath, parentDirectory, name, isDirectory),
-    getPathForFile: (file) => webUtils.getPathForFile(file)
+    getPathForFile: (file) => webUtils.getPathForFile(file),
+    search: (projectPath, query, maxResults, includeIgnored) =>
+      ipcRenderer.invoke(IPC_CHANNELS.filesystemSearch, projectPath, query, maxResults, includeIgnored),
+    searchContent: (projectPath, query, maxResults, includeIgnored) =>
+      ipcRenderer.invoke(IPC_CHANNELS.filesystemSearchContent, projectPath, query, maxResults, includeIgnored)
   },
   git: {
     getStatus: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, projectPath),

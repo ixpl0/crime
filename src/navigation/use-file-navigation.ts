@@ -184,6 +184,27 @@ function openChangesPathInFiles(
   showFilePath(path, null, state);
 }
 
+function navigateToFile(
+  path: string,
+  targetLine: number | null,
+  options: UseFileNavigationOptions,
+  state: FileNavigationState
+) {
+  options.activateFilesTab();
+  requestFileTreeReveal(path, state);
+  showFilePath(path, targetLine, state);
+}
+
+function navigateToDirectory(
+  path: string,
+  options: UseFileNavigationOptions,
+  state: FileNavigationState
+) {
+  options.activateFilesTab();
+  requestFileTreeReveal(path, state);
+  showDirectoryPath(path, state);
+}
+
 function resetFileNavigationState(state: FileNavigationState) {
   state.selectedFilePath.value = null;
   state.filesDisplayPath.value = null;
@@ -221,6 +242,12 @@ export function useFileNavigation(options: UseFileNavigationOptions) {
     resetChangesSelectedFile: () => { resetChangesSelectedFile(state); },
     handleChangesPathOpen: (path: string) => {
       openChangesPathInFiles(path, options, state);
+    },
+    navigateToFile: (path: string, targetLine?: number | null) => {
+      navigateToFile(path, targetLine ?? null, options, state);
+    },
+    navigateToDirectory: (path: string) => {
+      navigateToDirectory(path, options, state);
     },
     resetFileNavigationState: () => {
       resetFileNavigationState(state);

@@ -207,6 +207,15 @@
     </button>
 
     <button
+      class="icon-btn text-base-content/40 hover:text-accent"
+      tabindex="-1"
+      title="Поиск файлов"
+      @click="openSearchDialog()"
+    >
+      <Search :size="16" />
+    </button>
+
+    <button
       class="icon-btn text-base-content/40 hover:text-warning"
       tabindex="-1"
       :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
@@ -228,7 +237,8 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, ExternalLink, Eye, FolderPlus, Moon, PanelRightOpen, Settings, Sun, X } from "lucide-vue-next";
+import { ChevronDown, ExternalLink, Eye, FolderPlus, Moon, PanelRightOpen, Search, Settings, Sun, X } from "lucide-vue-next";
+import { useSearchDialogStore } from "../search/search-dialog-store";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
@@ -240,6 +250,7 @@ defineProps<{
 }>();
 
 const { currentTheme, toggleTheme } = useTheme();
+const { openSearchDialog } = useSearchDialogStore();
 
 const {
   activeTab,

@@ -45,6 +45,7 @@ import { provideDebugTodoStore } from "../todo/debug-todo-store";
 import { provideAppTodoStore } from "../todo/todo-store";
 import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
+import { provideSearchDialogStore } from "../search/search-dialog-store";
 import { provideAppToastStore } from "../toast/toast-store";
 
 // eslint-disable-next-line max-lines-per-function
@@ -317,6 +318,8 @@ export function useAppShell() {
     resetSelectedFile,
     resetChangesSelectedFile,
     handleChangesPathOpen,
+    navigateToFile,
+    navigateToDirectory,
     resetFileNavigationState
   } = useFileNavigation({
     projectPath,
@@ -477,6 +480,7 @@ export function useAppShell() {
 
   provideConfirmDialog();
   providePromptDialog();
+  provideSearchDialogStore();
   watch(errorMessage, (message) => {
     if (!message) {
       return;
@@ -529,7 +533,9 @@ export function useAppShell() {
     handleChangesFileSelect,
     resetSelectedFile,
     resetChangesSelectedFile,
-    handleChangesPathOpen
+    handleChangesPathOpen,
+    navigateToFile,
+    navigateToDirectory
   });
   provideAppConfigStore({
     settingsDirectoryName,

@@ -16,6 +16,7 @@ import { registerProjectIpcHandlers } from "./main/ipc/register-project-ipc.mjs"
 import { registerSettingsIpcHandlers } from "./main/ipc/register-settings-ipc.mjs";
 import { registerTerminalIpcHandlers } from "./main/ipc/register-terminal-ipc.mjs";
 import { registerGitWatcherIpcHandlers } from "./main/ipc/register-git-watcher-ipc.mjs";
+import { registerSearchIpcHandlers } from "./main/ipc/register-search-ipc.mjs";
 import { toErrorMessage, toIpcErrorResponse } from "./main/error-utils.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -251,6 +252,7 @@ function registerIpcHandlers() {
     gitWatchers,
     stopGitWatcher
   });
+  registerSearchIpcHandlers({ IPC_CHANNELS, runCommand });
 
   ipcMain.handle(IPC_CHANNELS.windowFlashFrame, (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);

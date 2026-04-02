@@ -60,6 +60,7 @@
 
         <ConfirmDialog />
         <PromptDialog />
+        <SearchDialog :project-path="projectPath" />
 
         <SecretsEditor
           title="Секреты проекта"
@@ -194,6 +195,7 @@ import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
 import ConfirmDialog from "./ConfirmDialog.vue";
 import PromptDialog from "./PromptDialog.vue";
+import SearchDialog from "../search/SearchDialog.vue";
 import FileContentViewer from "./FileContentViewer.vue";
 import FileManagerPanel from "./file-manager/FileManagerPanel.vue";
 import GitGraphPanel from "./git-graph/GitGraphPanel.vue";
