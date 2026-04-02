@@ -60,16 +60,6 @@
       />
     </fieldset>
 
-    <fieldset class="rounded-lg border border-base-300 p-3 space-y-2">
-      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Терминал</legend>
-      <FieldNumber
-        label="Высота панели (px)"
-        :model-value="settings.terminal.panelHeight"
-        :min="160"
-        :max="10000"
-        @update:model-value="updateTerminal('panelHeight', $event)"
-      />
-    </fieldset>
   </div>
 </template>
 
@@ -78,8 +68,7 @@ import { computed } from "vue";
 import {
   type ProjectSettings,
   type SlashCommandSettings,
-  type ZoomSettings,
-  type TerminalSettings
+  type ZoomSettings
 } from "../../types/project-settings";
 import FieldNumber from "./FieldNumber.vue";
 
@@ -107,10 +96,4 @@ const updateZoom = (field: keyof ZoomSettings, value: number) => {
   });
 };
 
-const updateTerminal = (field: keyof TerminalSettings, value: number) => {
-  emit("update:modelValue", {
-    ...settings.value,
-    terminal: { ...settings.value.terminal, [field]: value }
-  });
-};
 </script>

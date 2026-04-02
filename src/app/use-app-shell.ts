@@ -365,10 +365,7 @@ export function useAppShell() {
   terminalSelectionCopier.copy = copyTerminalSelectionIfAny;
 
   const {
-    terminalPanelHeight,
-    isTerminalPanelResizeActive,
     applyProjectSettings,
-    handleTerminalPanelResizePointerDown,
     startProjectLayoutListeners,
     stopProjectLayout
   } = useProjectLayout({
@@ -584,8 +581,6 @@ export function useAppShell() {
   });
   provideAppTerminalStore({
     isTerminalReady,
-    terminalPanelHeight,
-    isTerminalPanelResizeActive,
     terminalInputText,
     quickKeyGridSlots,
     lastPrompt,
@@ -594,7 +589,6 @@ export function useAppShell() {
     executeToolbarAction,
     focusTerminal,
     handleTerminalCopyEvent,
-    handleTerminalPanelResizePointerDown,
     setTerminalInputText,
     handleTextareaKeydown,
     handleTextareaInput,

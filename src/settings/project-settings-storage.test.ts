@@ -5,8 +5,7 @@ import {
   IDE_ZOOM_FACTOR_MIN,
   IDE_ZOOM_FACTOR_MAX,
   TERMINAL_FONT_SIZE_MIN,
-  TERMINAL_FONT_SIZE_MAX,
-  TERMINAL_PANEL_MIN_HEIGHT
+  TERMINAL_FONT_SIZE_MAX
 } from "./project-settings-storage";
 
 const omit = <T extends Record<string, unknown>, K extends keyof T>(
@@ -33,15 +32,10 @@ const validZoom = {
   terminalFontSize: 14
 };
 
-const validTerminal = {
-  panelHeight: 384
-};
-
 const validSettings = {
   version: 1,
   slashCommand: validSlashCommand,
-  zoom: validZoom,
-  terminal: validTerminal
+  zoom: validZoom
 };
 
 describe("parseProjectSettings", () => {
@@ -50,8 +44,7 @@ describe("parseProjectSettings", () => {
       const result = parseProjectSettings(validSettings);
       expect(result).toEqual({
         slashCommand: validSlashCommand,
-        zoom: validZoom,
-        terminal: validTerminal
+        zoom: validZoom
       });
     });
 
@@ -71,11 +64,6 @@ describe("parseProjectSettings", () => {
       expect(result?.zoom).toEqual(defaultProjectSettings.zoom);
     });
 
-    it("uses default terminal when terminal is absent", () => {
-      const result = parseProjectSettings(omit(validSettings, "terminal"));
-      expect(result).not.toBeNull();
-      expect(result?.terminal).toEqual(defaultProjectSettings.terminal);
-    });
   });
 
   describe("invalid top-level input", () => {
@@ -219,42 +207,4 @@ describe("parseProjectSettings", () => {
     });
   });
 
-  describe("terminal validation", () => {
-    it("returns null for panel height below minimum", () => {
-      expect(parseProjectSettings({
-        ...validSettings,
-        terminal: { panelHeight: TERMINAL_PANEL_MIN_HEIGHT - 1 }
-      })).toBeNull();
-    });
-
-    it("returns null for panel height above 10000", () => {
-      expect(parseProjectSettings({
-        ...validSettings,
-        terminal: { panelHeight: 10001 }
-      })).toBeNull();
-    });
-
-    it("accepts panel height at minimum", () => {
-      const result = parseProjectSettings({
-        ...validSettings,
-        terminal: { panelHeight: TERMINAL_PANEL_MIN_HEIGHT }
-      });
-      expect(result?.terminal.panelHeight).toBe(TERMINAL_PANEL_MIN_HEIGHT);
-    });
-
-    it("accepts panel height at maximum", () => {
-      const result = parseProjectSettings({
-        ...validSettings,
-        terminal: { panelHeight: 10000 }
-      });
-      expect(result?.terminal.panelHeight).toBe(10000);
-    });
-
-    it("returns null when terminal is present but invalid", () => {
-      expect(parseProjectSettings({
-        ...validSettings,
-        terminal: "invalid"
-      })).toBeNull();
-    });
-  });
 });

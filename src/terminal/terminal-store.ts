@@ -9,8 +9,6 @@ import { type MaybePromise, type ReadableRef } from "../types/utils";
 
 export interface AppTerminalStore {
   isTerminalReady: ReadableRef<boolean>;
-  terminalPanelHeight: ReadableRef<number>;
-  isTerminalPanelResizeActive: ReadableRef<boolean>;
   terminalInputText: ReadableRef<string>;
   quickKeyGridSlots: Array<QuickKeyBinding | null>;
   lastPrompt: ReadableRef<string | undefined>;
@@ -23,7 +21,6 @@ export interface AppTerminalStore {
   executeToolbarAction: (action: ToolbarAction) => void;
   focusTerminal: () => void;
   handleTerminalCopyEvent: (event: MouseEvent) => void;
-  handleTerminalPanelResizePointerDown: (event: PointerEvent) => void;
   setTerminalInputText: (value: string) => void;
   handleTextareaKeydown: (event: KeyboardEvent) => void;
   handleTextareaInput: (event: Event) => void;

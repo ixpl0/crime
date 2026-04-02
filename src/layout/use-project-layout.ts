@@ -1,7 +1,7 @@
-import { ref, type Ref } from "vue";
-import { DEFAULT_IDE_ZOOM_FACTOR, DEFAULT_TERMINAL_FONT_SIZE, DEFAULT_TERMINAL_PANEL_HEIGHT, IDE_ZOOM_FACTOR_STEP, TERMINAL_FONT_SIZE_STEP } from "../settings/project-settings-storage";
+import { type Ref } from "vue";
+import { DEFAULT_IDE_ZOOM_FACTOR, DEFAULT_TERMINAL_FONT_SIZE, IDE_ZOOM_FACTOR_STEP, TERMINAL_FONT_SIZE_STEP } from "../settings/project-settings-storage";
 import { type ProjectSettings } from "../types/project-settings";
-import { isTerminalZoomResetShortcut, normalizeIdeZoomFactor, normalizeProjectZoomSettings, normalizeTerminalPanelHeight } from "./project-layout-utils";
+import { isTerminalZoomResetShortcut, normalizeIdeZoomFactor, normalizeProjectZoomSettings } from "./project-layout-utils";
 type UseProjectLayoutOptions = {
   projectPath: Ref<string | null>;
   projectSettings: Ref<ProjectSettings>;
@@ -15,110 +15,19 @@ type UseProjectLayoutOptions = {
 };
 type ProjectLayoutState = {
   options: UseProjectLayoutOptions;
-  terminalPanelHeight: Ref<number>;
-  isTerminalPanelResizeActive: Ref<boolean>;
   removeWindowResizeListener: (() => void) | null;
   removeWindowWheelListener: (() => void) | null;
   removeWindowKeydownListener: (() => void) | null;
-  removeWindowTerminalPanelResizeListeners: (() => void) | null;
   pendingZoomResizeAnimationFrame: number | null;
-  pendingTerminalPanelResizeAnimationFrame: number | null;
-  terminalPanelResizeStartY: number;
-  terminalPanelResizeStartHeight: number;
 };
 function createProjectLayoutState(options: UseProjectLayoutOptions): ProjectLayoutState {
   return {
     options,
-    terminalPanelHeight: ref(normalizeTerminalPanelHeight(DEFAULT_TERMINAL_PANEL_HEIGHT)),
-    isTerminalPanelResizeActive: ref(false),
     removeWindowResizeListener: null,
     removeWindowWheelListener: null,
     removeWindowKeydownListener: null,
-    removeWindowTerminalPanelResizeListeners: null,
-    pendingZoomResizeAnimationFrame: null,
-    pendingTerminalPanelResizeAnimationFrame: null,
-    terminalPanelResizeStartY: 0,
-    terminalPanelResizeStartHeight: 0
+    pendingZoomResizeAnimationFrame: null
   };
-}
-function persistTerminalPanelHeight(state: ProjectLayoutState, value: number) {
-  if (!state.options.projectPath.value) {
-    return;
-  }
-  const updatedSettings: ProjectSettings = {
-    ...state.options.projectSettings.value,
-    terminal: {
-      ...state.options.projectSettings.value.terminal,
-      panelHeight: normalizeTerminalPanelHeight(value)
-    }
-  };
-  state.options.projectSettings.value = updatedSettings;
-  state.options.persistProjectSettings(updatedSettings);
-}
-function scheduleTerminalResizeForPanelHeight(state: ProjectLayoutState) {
-  if (state.pendingTerminalPanelResizeAnimationFrame !== null) {
-    return;
-  }
-  state.pendingTerminalPanelResizeAnimationFrame = window.requestAnimationFrame(() => {
-    state.pendingTerminalPanelResizeAnimationFrame = null;
-    void state.options.resizeTerminalBackend();
-  });
-}
-function clearTerminalPanelResizeListeners(state: ProjectLayoutState) {
-  state.removeWindowTerminalPanelResizeListeners?.();
-  state.removeWindowTerminalPanelResizeListeners = null;
-}
-function stopTerminalPanelResize(state: ProjectLayoutState) {
-  clearTerminalPanelResizeListeners(state);
-  if (!state.isTerminalPanelResizeActive.value) {
-    return;
-  }
-  state.isTerminalPanelResizeActive.value = false;
-  document.body.style.removeProperty("cursor");
-  document.body.style.removeProperty("user-select");
-  persistTerminalPanelHeight(state, state.terminalPanelHeight.value);
-}
-function handleTerminalPanelResizePointerMove(state: ProjectLayoutState, event: PointerEvent) {
-  if (!state.isTerminalPanelResizeActive.value) {
-    return;
-  }
-  event.preventDefault();
-  const deltaY = event.clientY - state.terminalPanelResizeStartY;
-  const nextHeight = normalizeTerminalPanelHeight(state.terminalPanelResizeStartHeight + deltaY);
-  if (nextHeight === state.terminalPanelHeight.value) {
-    return;
-  }
-  state.terminalPanelHeight.value = nextHeight;
-  scheduleTerminalResizeForPanelHeight(state);
-}
-function bindTerminalPanelResizeListeners(state: ProjectLayoutState) {
-  const handlePointerMove = (event: PointerEvent) => {
-    handleTerminalPanelResizePointerMove(state, event);
-  };
-  const handlePointerUp = () => {
-    stopTerminalPanelResize(state);
-  };
-  window.addEventListener("pointermove", handlePointerMove, { passive: false });
-  window.addEventListener("pointerup", handlePointerUp, true);
-  window.addEventListener("pointercancel", handlePointerUp, true);
-  state.removeWindowTerminalPanelResizeListeners = () => {
-    window.removeEventListener("pointermove", handlePointerMove);
-    window.removeEventListener("pointerup", handlePointerUp, true);
-    window.removeEventListener("pointercancel", handlePointerUp, true);
-  };
-}
-function handleTerminalPanelResizePointerDown(state: ProjectLayoutState, event: PointerEvent) {
-  if (event.button !== 0) {
-    return;
-  }
-  event.preventDefault();
-  stopTerminalPanelResize(state);
-  state.terminalPanelResizeStartY = event.clientY;
-  state.terminalPanelResizeStartHeight = state.terminalPanelHeight.value;
-  state.isTerminalPanelResizeActive.value = true;
-  document.body.style.cursor = "ns-resize";
-  document.body.style.userSelect = "none";
-  bindTerminalPanelResizeListeners(state);
 }
 function scheduleTerminalResizeAfterZoom(state: ProjectLayoutState) {
   if (state.pendingZoomResizeAnimationFrame !== null) {
@@ -164,17 +73,8 @@ function applyProjectZoomSettings(state: ProjectLayoutState, settings: ProjectSe
     scheduleTerminalResizeAfterZoom(state);
   }
 }
-function applyProjectTerminalSettings(state: ProjectLayoutState, settings: ProjectSettings) {
-  const nextHeight = normalizeTerminalPanelHeight(settings.terminal.panelHeight);
-  if (nextHeight === state.terminalPanelHeight.value) {
-    return;
-  }
-  state.terminalPanelHeight.value = nextHeight;
-  scheduleTerminalResizeForPanelHeight(state);
-}
 function applyProjectSettings(state: ProjectLayoutState, settings: ProjectSettings) {
   applyProjectZoomSettings(state, settings);
-  applyProjectTerminalSettings(state, settings);
 }
 function updateProjectZoomSettings(
   state: ProjectLayoutState,
@@ -226,10 +126,6 @@ function handleBrowserZoomCtrlWheel(state: ProjectLayoutState, event: WheelEvent
 function handleWindowResize(state: ProjectLayoutState) {
   state.options.resizeTodoTextareas();
   state.options.resizeTerminalInputTextareaElement();
-  const nextHeight = normalizeTerminalPanelHeight(state.terminalPanelHeight.value);
-  if (nextHeight !== state.terminalPanelHeight.value) {
-    state.terminalPanelHeight.value = nextHeight;
-  }
   void state.options.resizeTerminalBackend();
 }
 function startProjectLayoutListeners(state: ProjectLayoutState) {
@@ -263,26 +159,16 @@ function stopProjectLayout(state: ProjectLayoutState) {
   state.removeWindowResizeListener = null;
   state.removeWindowWheelListener = null;
   state.removeWindowKeydownListener = null;
-  stopTerminalPanelResize(state);
   if (state.pendingZoomResizeAnimationFrame !== null) {
     window.cancelAnimationFrame(state.pendingZoomResizeAnimationFrame);
     state.pendingZoomResizeAnimationFrame = null;
-  }
-  if (state.pendingTerminalPanelResizeAnimationFrame !== null) {
-    window.cancelAnimationFrame(state.pendingTerminalPanelResizeAnimationFrame);
-    state.pendingTerminalPanelResizeAnimationFrame = null;
   }
 }
 export function useProjectLayout(options: UseProjectLayoutOptions) {
   const state = createProjectLayoutState(options);
   return {
-    terminalPanelHeight: state.terminalPanelHeight,
-    isTerminalPanelResizeActive: state.isTerminalPanelResizeActive,
     applyProjectSettings: (settings: ProjectSettings) => {
       applyProjectSettings(state, settings);
-    },
-    handleTerminalPanelResizePointerDown: (event: PointerEvent) => {
-      handleTerminalPanelResizePointerDown(state, event);
     },
     startProjectLayoutListeners: () => {
       startProjectLayoutListeners(state);

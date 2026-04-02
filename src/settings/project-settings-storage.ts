@@ -1,7 +1,6 @@
 import {
   type ProjectSettings,
   type SlashCommandSettings,
-  type TerminalSettings,
   type ZoomSettings
 } from "../types/project-settings";
 import {
@@ -19,9 +18,6 @@ export const TERMINAL_FONT_SIZE_MIN = 8;
 export const TERMINAL_FONT_SIZE_MAX = 32;
 export const DEFAULT_TERMINAL_FONT_SIZE = 14;
 export const TERMINAL_FONT_SIZE_STEP = 1;
-export const TERMINAL_PANEL_MIN_HEIGHT = 160;
-export const DEFAULT_TERMINAL_PANEL_HEIGHT = 384;
-
 export const defaultProjectSettings: ProjectSettings = {
   slashCommand: {
     charDelayMs: 20,
@@ -34,9 +30,6 @@ export const defaultProjectSettings: ProjectSettings = {
   zoom: {
     ideZoomFactor: DEFAULT_IDE_ZOOM_FACTOR,
     terminalFontSize: DEFAULT_TERMINAL_FONT_SIZE
-  },
-  terminal: {
-    panelHeight: DEFAULT_TERMINAL_PANEL_HEIGHT
   }
 };
 
@@ -96,20 +89,6 @@ const parseZoomSettings = (value: unknown): ZoomSettings | null => {
   };
 };
 
-const parseTerminalSettings = (value: unknown): TerminalSettings | null => {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  if (!isNumberInRange(value.panelHeight, TERMINAL_PANEL_MIN_HEIGHT, 10000)) {
-    return null;
-  }
-
-  return {
-    panelHeight: value.panelHeight
-  };
-};
-
 function parseOptionalZoomSettings(value: Record<string, unknown>): ZoomSettings | null {
   if (!("zoom" in value)) {
     return defaultProjectSettings.zoom;
@@ -118,27 +97,15 @@ function parseOptionalZoomSettings(value: Record<string, unknown>): ZoomSettings
   return parseZoomSettings(value.zoom);
 }
 
-function parseOptionalTerminalSettings(value: Record<string, unknown>): TerminalSettings | null {
-  if (!("terminal" in value)) {
-    return defaultProjectSettings.terminal;
-  }
-
-  return parseTerminalSettings(value.terminal);
-}
-
 function toProjectSettings(
   slashCommand: SlashCommandSettings,
-  zoom: ZoomSettings,
-  terminal: TerminalSettings
+  zoom: ZoomSettings
 ): ProjectSettings {
   return {
     slashCommand,
     zoom: {
       ideZoomFactor: zoom.ideZoomFactor,
       terminalFontSize: zoom.terminalFontSize
-    },
-    terminal: {
-      panelHeight: terminal.panelHeight
     }
   };
 }
@@ -162,12 +129,7 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
     return null;
   }
 
-  const parsedTerminal = parseOptionalTerminalSettings(value);
-  if (parsedTerminal === null) {
-    return null;
-  }
-
-  return toProjectSettings(slashCommand, parsedZoom, parsedTerminal);
+  return toProjectSettings(slashCommand, parsedZoom);
 };
 
 export const loadProjectSettings = async (projectPath: string): Promise<ProjectSettings> => {

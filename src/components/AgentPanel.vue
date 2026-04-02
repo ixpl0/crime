@@ -1,37 +1,22 @@
 <template>
-  <div class="min-h-0 flex-1 space-y-4 overflow-y-auto">
+  <div class="flex min-h-0 flex-1 flex-col gap-4">
     <ToolbarPanel
+      class="shrink-0"
       :toolbar-config="toolbarConfig"
       :is-terminal-ready="isTerminalReady"
       @execute-action="executeToolbarAction"
       @open-config-editor="openToolbarConfigEditor"
     />
 
-    <div>
-      <div
-        :ref="setTerminalContainer"
-        class="terminal-host w-full overflow-hidden rounded-box border border-[var(--terminal-bg)] bg-[var(--terminal-bg)]"
-        :style="{ height: `${terminalPanelHeight}px` }"
-        @click="focusTerminal"
-        @contextmenu="handleTerminalCopyEvent"
-        @auxclick="handleTerminalCopyEvent"
-      />
-      <button
-        type="button"
-        tabindex="-1"
-        class="terminal-resize-handle group -mt-2 flex h-4 w-full touch-none cursor-ns-resize items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-none"
-        title="Потяните, чтобы изменить высоту терминала"
-        aria-label="Изменить высоту терминала"
-        @pointerdown="handleTerminalPanelResizePointerDown"
-      >
-        <span
-          class="h-0.5 w-[60%] rounded-full transition-colors duration-150"
-          :class="isTerminalPanelResizeActive ? 'bg-primary' : 'bg-transparent group-hover:bg-base-300'"
-        />
-      </button>
-    </div>
+    <div
+      :ref="setTerminalContainer"
+      class="terminal-host min-h-0 flex-1 overflow-hidden rounded-box border border-[var(--terminal-bg)] bg-[var(--terminal-bg)]"
+      @click="focusTerminal"
+      @contextmenu="handleTerminalCopyEvent"
+      @auxclick="handleTerminalCopyEvent"
+    />
 
-    <form class="flex min-w-0 gap-3" @submit.prevent="sendTextareaToTerminal">
+    <form class="flex shrink-0 min-w-0 gap-3" @submit.prevent="sendTextareaToTerminal">
       <div class="flex min-w-0 flex-1 flex-col gap-2">
         <textarea
           :ref="setTerminalInputTextarea"
@@ -111,8 +96,6 @@ const {
 } = useAppConfigStore();
 const {
   isTerminalReady,
-  terminalPanelHeight,
-  isTerminalPanelResizeActive,
   terminalInputText,
   quickKeyGridSlots,
   lastPrompt,
@@ -121,7 +104,6 @@ const {
   executeToolbarAction,
   focusTerminal,
   handleTerminalCopyEvent,
-  handleTerminalPanelResizePointerDown,
   setTerminalInputText,
   handleTextareaKeydown,
   handleTextareaInput,
