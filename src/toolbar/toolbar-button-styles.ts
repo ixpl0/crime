@@ -57,8 +57,7 @@ export const getToolbarButtonCustomStyle = (
   }
 
   return {
-    backgroundColor: color,
-    color: getContrastingTextColor(color),
-    borderColor: color
+    "--btn-color": color,
+    "--btn-fg": getContrastingTextColor(color)
   };
 };
