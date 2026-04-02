@@ -29,6 +29,7 @@
       :project-path="projectPath"
       :file-path="filePath"
       :is-active="isActive"
+      :search-request-token="isActive ? searchRequestToken : undefined"
       class="min-h-0 flex-1"
       @saved="handleEditorSaved"
     />
@@ -52,6 +53,7 @@
         :display-lines="visibleLines"
         :target-line="targetLine"
         :target-request-token="targetRequestToken"
+        :search-request-token="isActive ? searchRequestToken : undefined"
       />
     </div>
     <div v-if="isTruncated && !isEditing" class="flex items-center gap-2 border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
@@ -82,6 +84,7 @@ const props = defineProps<{
   targetRequestToken?: number;
   refreshToken?: number;
   isActive: boolean;
+  searchRequestToken?: number;
 }>();
 
 const emit = defineEmits<{ "file-not-found": [filePath: string]; "file-saved": [] }>();

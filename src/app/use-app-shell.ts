@@ -320,6 +320,8 @@ export function useAppShell() {
     handleChangesPathOpen,
     navigateToFile,
     navigateToDirectory,
+    inFileSearchRequestToken,
+    requestInFileSearch,
     resetFileNavigationState
   } = useFileNavigation({
     projectPath,
@@ -535,7 +537,9 @@ export function useAppShell() {
     resetChangesSelectedFile,
     handleChangesPathOpen,
     navigateToFile,
-    navigateToDirectory
+    navigateToDirectory,
+    inFileSearchRequestToken,
+    requestInFileSearch
   });
   provideAppConfigStore({
     settingsDirectoryName,

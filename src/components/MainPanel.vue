@@ -114,6 +114,7 @@
                 :target-request-token="selectedFileTargetRequestToken"
                 :refresh-token="gitStatusRefreshToken"
                 :is-active="activeTab === 'files'"
+                :search-request-token="inFileSearchRequestToken"
                 @file-not-found="resetSelectedFile"
               />
             </div>
@@ -259,7 +260,8 @@ const {
   handleChangesFileSelect,
   resetChangesSelectedFile,
   handleChangesPathOpen,
-  resetSelectedFile
+  resetSelectedFile,
+  inFileSearchRequestToken
 } = navigationStore;
 
 const { isTerminalReady, executeToolbarAction } = useAppTerminalStore();

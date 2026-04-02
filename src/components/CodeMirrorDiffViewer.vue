@@ -8,6 +8,7 @@ import { EditorView, lineNumbers } from "@codemirror/view";
 import { EditorState, type Extension } from "@codemirror/state";
 import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { search, openSearchPanel } from "@codemirror/search";
 import { loadLanguageExtension, LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
 import {
   createDiffLineDecorations,
@@ -17,12 +18,14 @@ import {
   targetLineHighlightField,
   diffViewerTheme,
 } from "../codemirror/diff-decorations";
+import { searchMatchCounter } from "../codemirror/search-match-counter";
 
 const props = defineProps<{
   filePath: string;
   displayLines: readonly GitDiffLine[];
   targetLine?: number | null;
   targetRequestToken?: number;
+  searchRequestToken?: number;
 }>();
 
 const container = ref<HTMLElement | null>(null);
@@ -81,6 +84,8 @@ const createEditor = async () => {
       ...languageExtensions,
       ...diffExtensions,
       targetLineHighlightField,
+      search({ top: true }),
+      searchMatchCounter,
       diffViewerTheme,
     ],
   });
@@ -126,6 +131,12 @@ const focusTargetLine = () => {
   scrollToLineWithHighlight(clampedLine);
 };
 
+const openSearch = () => {
+  if (editorView) {
+    openSearchPanel(editorView);
+  }
+};
+
 defineExpose({ scrollToLine: scrollToLineWithHighlight });
 
 watch(
@@ -136,6 +147,11 @@ watch(
 watch(
   () => [props.targetLine ?? null, props.targetRequestToken ?? 0] as const,
   () => { focusTargetLine(); },
+);
+
+watch(
+  () => props.searchRequestToken ?? 0,
+  () => { openSearch(); },
 );
 
 onMounted(() => {

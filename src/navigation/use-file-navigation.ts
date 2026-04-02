@@ -25,6 +25,7 @@ interface FileNavigationState {
   selectedFileTargetRequestToken: Ref<number>;
   fileTreeRevealPath: Ref<string | null>;
   fileTreeRevealRequestToken: Ref<number>;
+  inFileSearchRequestToken: Ref<number>;
 }
 
 function createFileNavigationState(): FileNavigationState {
@@ -35,7 +36,8 @@ function createFileNavigationState(): FileNavigationState {
     selectedFileTargetLine: ref<number | null>(null),
     selectedFileTargetRequestToken: ref(0),
     fileTreeRevealPath: ref<string | null>(null),
-    fileTreeRevealRequestToken: ref(0)
+    fileTreeRevealRequestToken: ref(0),
+    inFileSearchRequestToken: ref(0)
   };
 }
 
@@ -248,6 +250,10 @@ export function useFileNavigation(options: UseFileNavigationOptions) {
     },
     navigateToDirectory: (path: string) => {
       navigateToDirectory(path, options, state);
+    },
+    inFileSearchRequestToken: state.inFileSearchRequestToken,
+    requestInFileSearch: () => {
+      state.inFileSearchRequestToken.value += 1;
     },
     resetFileNavigationState: () => {
       resetFileNavigationState(state);

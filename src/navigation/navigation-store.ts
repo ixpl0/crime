@@ -48,6 +48,8 @@ export interface AppNavigationStore {
   handleChangesPathOpen: (path: string) => void;
   navigateToFile: (path: string, targetLine?: number | null) => void;
   navigateToDirectory: (path: string) => void;
+  inFileSearchRequestToken: ReadableRef<number>;
+  requestInFileSearch: () => void;
 }
 
 const appNavigationStoreKey: InjectionKey<AppNavigationStore> = Symbol(

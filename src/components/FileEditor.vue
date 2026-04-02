@@ -15,9 +15,11 @@ import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { oneDark } from "@codemirror/theme-one-dark";
+import { search, openSearchPanel } from "@codemirror/search";
 import { toErrorMessage } from "../utils/fail-fast";
 import { useAppToastStore } from "../toast/toast-store";
 import { loadLanguageExtension, LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
+import { searchMatchCounter } from "../codemirror/search-match-counter";
 
 type SaveStatus = "idle" | "saving" | "error";
 
@@ -25,6 +27,7 @@ const props = defineProps<{
   projectPath: string;
   filePath: string;
   isActive: boolean;
+  searchRequestToken?: number;
 }>();
 
 const emit = defineEmits<{ saved: [] }>();
@@ -122,6 +125,8 @@ const createEditor = async (container: HTMLElement, content: string) => {
       keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
       saveKeymap,
       autoSaveListener,
+      search({ top: true }),
+      searchMatchCounter,
       ...languageExtensions,
       editorTheme,
     ],
@@ -162,6 +167,15 @@ watch(saveError, (message) => {
     pushError(message);
   }
 });
+
+watch(
+  () => props.searchRequestToken ?? 0,
+  () => {
+    if (editorView) {
+      openSearchPanel(editorView);
+    }
+  },
+);
 
 watch(() => [props.projectPath, props.filePath], () => {
   void loadAndCreateEditor();

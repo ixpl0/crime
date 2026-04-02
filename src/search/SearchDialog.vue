@@ -127,7 +127,7 @@ const props = defineProps<{
 }>();
 
 const { isOpen, pendingMode, closeSearchDialog, openSearchDialog } = useSearchDialogStore();
-const { navigateToFile, navigateToDirectory } = useAppNavigationStore();
+const { navigateToFile, navigateToDirectory, requestInFileSearch } = useAppNavigationStore();
 
 const dialogElement = ref<HTMLDialogElement | null>(null);
 const inputElement = ref<HTMLInputElement | null>(null);
@@ -220,10 +220,22 @@ const toggleIncludeIgnored = () => {
 
 const handleGlobalKeydown = (event: KeyboardEvent) => {
   const isModifierActive = event.ctrlKey || event.metaKey;
-  if (event.code === "KeyF" && isModifierActive && !event.altKey) {
+  if (!isModifierActive || event.altKey) {
+    return;
+  }
+
+  if (event.code === "KeyF" && event.shiftKey) {
     event.preventDefault();
     event.stopPropagation();
-    openSearchDialog(event.shiftKey ? "content" : "names");
+    openSearchDialog("content");
+  } else if (event.code === "KeyN" && event.shiftKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    openSearchDialog("names");
+  } else if (event.code === "KeyF" && !event.shiftKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    requestInFileSearch();
   }
 };
 
