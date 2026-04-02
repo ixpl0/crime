@@ -19,7 +19,7 @@
         <div
           v-for="todoDraftView in todoDraftViewItems"
           :key="`debug-todo-draft-${todoDraftView.index}`"
-          class="space-y-1 rounded-lg border border-transparent p-1 transition-colors"
+          class="space-y-1 rounded-lg border border-transparent transition-colors"
           :data-debug-todo-textarea-drop="todoDraftView.index"
           :class="{ 'border-primary/40 bg-primary/10': isActiveDropTarget(todoDraftView.index) }"
         >
