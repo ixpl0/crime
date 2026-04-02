@@ -10,7 +10,7 @@
       :class="agentCardClass"
       :style="agentCardStyle"
     >
-      <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-4">
+      <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-4 p-3">
 
         <MainPanelHeader :changes-count="changesCount" :terminal-session-count="terminalSessionCount" />
 
@@ -86,7 +86,7 @@
             @update:session-count="terminalSessionCount = $event"
           />
 
-          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
+          <div v-show="activeTab === 'files'" class="min-h-0 flex-1 overflow-hidden">
             <div ref="filesContainer" class="flex h-full min-h-0 flex-row">
               <FileManagerPanel
                 class="panel-w-resizable h-full min-h-0 flex-none"
@@ -120,7 +120,7 @@
             </div>
           </div>
 
-          <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden px-1 pb-1">
+          <div v-show="activeTab === 'changes'" class="min-h-0 flex-1 overflow-hidden">
             <div ref="changesContainer" class="flex h-full min-h-0 flex-row">
               <ChangesPanel
                 class="panel-w-resizable h-full min-h-0 flex-none"
@@ -151,7 +151,7 @@
             </div>
           </div>
 
-          <div v-show="activeTab === 'git'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-1">
+          <div v-show="activeTab === 'git'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             <ToolbarPanel
               :toolbar-config="gitToolbarConfig"
               :is-terminal-ready="isTerminalReady"

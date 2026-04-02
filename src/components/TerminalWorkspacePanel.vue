@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-1">
+  <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
 
     <div class="flex flex-wrap items-center gap-2">
       <ToolbarPanel

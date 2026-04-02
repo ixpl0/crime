@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-1">
+  <div class="min-h-0 flex-1 space-y-4 overflow-y-auto">
     <ToolbarPanel
       :toolbar-config="toolbarConfig"
       :is-terminal-ready="isTerminalReady"
@@ -36,8 +36,8 @@
         <textarea
           :ref="setTerminalInputTextarea"
           :value="terminalInputText"
-          class="textarea textarea-autosize-native textarea-bordered h-auto max-h-38 min-h-0 w-full resize-none overflow-y-auto"
-          rows="1"
+          class="textarea textarea-bordered w-full resize-none overflow-y-auto"
+          rows="4"
           :disabled="!isTerminalReady"
           placeholder="Введите текст для отправки в терминал"
           @keydown="handleTextareaKeydown"

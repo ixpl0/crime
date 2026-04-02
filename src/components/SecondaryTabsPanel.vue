@@ -1,6 +1,6 @@
 <template>
   <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-xl">
-    <div class="card-body flex min-h-0 flex-col gap-4">
+    <div class="card-body flex min-h-0 flex-col gap-4 p-3">
       <div class="flex shrink-0 items-center gap-2">
         <div role="tablist" class="tabs tabs-bordered">
           <button
