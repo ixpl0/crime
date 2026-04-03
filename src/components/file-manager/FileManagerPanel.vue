@@ -11,7 +11,7 @@
       </div>
 
       <div
-        class="min-h-0 flex-1 overflow-y-auto px-2 py-2 transition-colors duration-150"
+        class="min-h-0 flex-1 overflow-y-auto p-1 transition-colors duration-150"
         :class="{ 'bg-primary/5': fileDragContext.dragOverDirectoryPath.value === props.projectPath }"
         @dragover="handlePanelDragOver"
         @drop="handlePanelDrop"
@@ -30,7 +30,7 @@
           Пустая папка
         </div>
 
-        <div v-else class="space-y-0.5">
+        <div v-else>
           <FileTreeNode
             v-for="entry in entries"
             :key="entry.path"

@@ -10,7 +10,7 @@
       :class="agentCardClass"
       :style="agentCardStyle"
     >
-      <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-4 p-3">
+      <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-2 p-3">
 
         <MainPanelHeader :changes-count="changesCount" :terminal-session-count="terminalSessionCount" />
 
@@ -151,7 +151,7 @@
             </div>
           </div>
 
-          <div v-show="activeTab === 'git'" class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+          <div v-show="activeTab === 'git'" class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
             <ToolbarPanel
               :toolbar-config="gitToolbarConfig"
               :is-terminal-ready="isTerminalReady"

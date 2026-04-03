@@ -1,9 +1,17 @@
 <template>
   <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-xl">
-    <div class="card-body flex min-h-0 flex-col gap-4 p-3">
-      <div class="flex shrink-0 items-center gap-2">
-        <div role="tablist" class="tabs tabs-bordered">
-          <button
+    <div class="card-body flex min-h-0 flex-col gap-2 p-3">
+      <div role="tablist" class="tabs tabs-bordered shrink-0 flex-wrap">
+        <button
+          type="button"
+          class="icon-btn mr-2 text-base-content/40 hover:text-primary"
+          tabindex="-1"
+          title="Вернуть во вкладку"
+          @click="dockAgent"
+        >
+          <PanelLeftClose :size="16" />
+        </button>
+        <button
             role="tab"
             class="tab"
             tabindex="-1"
@@ -41,21 +49,10 @@
           >
             Гит
           </button>
-        </div>
-
-        <button
-          type="button"
-          class="icon-btn text-base-content/40 hover:text-primary"
-          tabindex="-1"
-          title="Вернуть во вкладку"
-          @click="dockAgent"
-        >
-          <PanelLeftClose :size="16" />
-        </button>
       </div>
 
       <!-- Teleport target: non-agent tab content is teleported here when detached -->
-      <div id="secondary-tabs-content" class="flex min-h-0 flex-1 flex-col gap-4" />
+      <div id="secondary-tabs-content" class="flex min-h-0 flex-1 flex-col gap-2" />
     </div>
   </div>
 </template>

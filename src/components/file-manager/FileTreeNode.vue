@@ -4,7 +4,7 @@
     @drop="handleNodeDrop"
   >
     <button
-      class="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm transition-colors duration-150 hover:border-base-300 hover:bg-base-300/65"
+      class="list-item-hover flex w-full cursor-pointer items-center gap-2 px-2 py-1 text-left text-sm"
       tabindex="-1"
       :draggable="isDraggable"
       :class="buttonClasses"

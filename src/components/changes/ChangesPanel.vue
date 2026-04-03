@@ -30,7 +30,7 @@
         </span>
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+      <div class="min-h-0 flex-1 overflow-y-auto p-1">
         <div v-if="isLoading" class="flex items-center justify-center py-8">
           <span class="loading loading-spinner loading-md" />
         </div>
@@ -43,12 +43,12 @@
           Изменений не найдено
         </div>
 
-        <div v-else class="space-y-1">
+        <div v-else>
           <button
             v-for="entry in changeEntries"
             :key="entry.path"
             tabindex="-1"
-            class="flex w-full cursor-pointer items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 text-left text-sm hover:border-base-300 hover:bg-base-300/65"
+            class="list-item-hover flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left text-sm"
             :class="{
               'border-primary/40 bg-primary/10': entry.path === selectedPath,
               'opacity-70': isRevertingAll || isPathReverting(entry.path)

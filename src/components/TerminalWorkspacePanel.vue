@@ -1,5 +1,5 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+  <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
 
     <div class="flex flex-wrap items-center gap-2">
       <ToolbarPanel
@@ -33,7 +33,7 @@
 
     <div
       v-else
-      class="grid min-h-0 flex-1 gap-4 overflow-y-auto pr-1"
+      class="grid min-h-0 flex-1 gap-2 overflow-y-auto pr-1"
       :class="
         sessions.length > 1
           ? 'grid-cols-2 auto-rows-[minmax(18rem,1fr)]'

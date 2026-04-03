@@ -1,6 +1,5 @@
 <template>
-  <div class="flex items-center gap-2">
-    <div role="tablist" class="tabs tabs-bordered">
+  <div role="tablist" class="tabs tabs-bordered flex-wrap gap-y-1">
       <template v-if="isAgentDetached">
         <span role="tab" class="tab tab-active">Агент</span>
       </template>
@@ -161,11 +160,10 @@
           </template>
         </ul>
       </div>
-    </div>
 
     <div
       v-if="hiddenPanelOptions.length > 0"
-      class="dropdown dropdown-end manual-dropdown"
+      class="dropdown dropdown-end manual-dropdown ml-4"
       :class="{ 'dropdown-open': isHiddenPanelsDropdownOpen }"
     >
       <button
@@ -198,16 +196,16 @@
 
     <button
       v-if="!isAgentDetached"
-      class="icon-btn text-base-content/40 hover:text-primary"
+      class="icon-btn ml-2 text-base-content/40 hover:text-primary"
       tabindex="-1"
       title="Открепить вкладки в отдельную панель"
       @click="detachAgent"
     >
-      <PanelRightOpen :size="16" />
+      <PanelRightOpen :size="16" class="rotate-180" />
     </button>
 
     <button
-      class="icon-btn text-base-content/40 hover:text-accent"
+      class="icon-btn ml-2 text-base-content/40 hover:text-accent"
       tabindex="-1"
       title="Поиск файлов"
       @click="openSearchDialog()"
@@ -216,7 +214,7 @@
     </button>
 
     <button
-      class="icon-btn text-base-content/40 hover:text-warning"
+      class="icon-btn ml-2 text-base-content/40 hover:text-warning"
       tabindex="-1"
       :title="currentTheme === 'light' ? 'Тёмная тема' : 'Светлая тема'"
       @click="toggleTheme"
@@ -226,7 +224,7 @@
     </button>
 
     <button
-      class="icon-btn text-base-content/40 hover:text-info"
+      class="icon-btn ml-2 text-base-content/40 hover:text-info"
       tabindex="-1"
       title="Настройки проекта"
       @click="openProjectSettings"

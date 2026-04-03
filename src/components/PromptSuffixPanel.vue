@@ -1,10 +1,10 @@
 <template>
-  <div class="ripple-container flex flex-wrap items-stretch gap-x-2 gap-y-0">
+  <div class="ripple-container flex flex-wrap items-stretch gap-x-4 gap-y-0">
     <label
       v-for="(item, index) in suffixConfig.items"
       :key="`suffix-${index}`"
       tabindex="-1"
-      class="label inline-flex h-6 cursor-pointer select-none items-center gap-2 rounded-btn px-2 py-0 whitespace-nowrap hover:bg-base-100/60"
+      class="label inline-flex h-6 cursor-pointer select-none items-center gap-1.5 rounded-btn py-0 whitespace-nowrap hover:bg-base-100/60"
       :title="item.value"
       @click.prevent="$emit('toggle-suffix', index)"
       @keydown.enter.prevent="$emit('toggle-suffix', index)"
