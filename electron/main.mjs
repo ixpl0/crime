@@ -161,9 +161,9 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     y: initialWindowState.bounds.y + offset,
     width: initialWindowState.bounds.width,
     height: initialWindowState.bounds.height,
-    show: !initialWindowState.isMaximized,
+    show: false,
     icon: getIconPath(),
-    autoHideMenuBar: true,
+    titleBarStyle: "hidden",
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -178,6 +178,14 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     lastFocusedWindow = mainWindow;
   });
 
+  const sendMaximizedState = () => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(IPC_CHANNELS.windowMaximizedChanged, mainWindow.isMaximized());
+    }
+  };
+  mainWindow.on("maximize", sendMaximizedState);
+  mainWindow.on("unmaximize", sendMaximizedState);
+
   mainWindow.on("closed", () => {
     if (lastFocusedWindow === mainWindow) {
       lastFocusedWindow = null;
@@ -187,12 +195,18 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     stopGitWatcher(webContentsId);
   });
 
-  if (initialWindowState.isMaximized) {
-    // Create hidden, maximize, then show — ensures Windows maximizes
-    // on the correct monitor instead of defaulting to the primary one.
-    mainWindow.maximize();
-    mainWindow.show();
-  }
+  // Re-apply bounds once the window is fully initialized on the target display.
+  // Fixes wrong size when restoring on a monitor with different DPI scale.
+  mainWindow.once("ready-to-show", () => {
+    if (initialWindowState.isMaximized) {
+      mainWindow.maximize();
+    } else {
+      mainWindow.setBounds(initialWindowState.bounds);
+    }
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  });
 
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) {
@@ -260,6 +274,28 @@ function registerIpcHandlers() {
     if (win && !win.isDestroyed()) {
       win.flashFrame(true);
     }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.windowMinimize, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) { win.minimize(); }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.windowMaximizeToggle, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) {
+      win.isMaximized() ? win.unmaximize() : win.maximize();
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.windowClose, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) { win.close(); }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.windowIsMaximized, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return win ? win.isMaximized() : false;
   });
 }
 

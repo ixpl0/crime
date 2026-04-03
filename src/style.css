@@ -11,6 +11,38 @@ body,
   height: 100%;
 }
 
+.window-control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 100%;
+  color: var(--color-base-content);
+  opacity: 0.6;
+  transition: background-color 0.15s, opacity 0.15s;
+  -webkit-app-region: no-drag;
+}
+
+.window-control-btn:hover {
+  opacity: 1;
+}
+
+/* Draggable title bar region for frameless window */
+.app-drag-region {
+  -webkit-app-region: drag;
+}
+
+.app-drag-region .card,
+.app-drag-region button,
+.app-drag-region input,
+.app-drag-region textarea,
+.app-drag-region select,
+.app-drag-region label,
+.app-drag-region a,
+.app-drag-region [role="tablist"] {
+  -webkit-app-region: no-drag;
+}
+
 html,
 body {
   overflow: hidden;

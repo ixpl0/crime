@@ -143,6 +143,7 @@ export function getInitialWindowState() {
     height: savedState.height
   };
   const display = resolveWindowDisplay(savedState, requestedBounds);
+
   return {
     bounds: clampWindowBoundsToWorkArea(requestedBounds, display.workArea),
     isMaximized: savedState.isMaximized

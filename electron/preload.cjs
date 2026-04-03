@@ -46,7 +46,12 @@ const IPC_CHANNELS = Object.freeze({
   "projectOpenInNewWindow": "project:open-in-new-window",
   "projectCreateFolder": "project:create-folder",
   "filesystemSearch": "filesystem:search",
-  "filesystemSearchContent": "filesystem:search-content"
+  "filesystemSearchContent": "filesystem:search-content",
+  "windowMinimize": "window:minimize",
+  "windowMaximizeToggle": "window:maximize-toggle",
+  "windowClose": "window:close",
+  "windowIsMaximized": "window:is-maximized",
+  "windowMaximizedChanged": "window:maximized-changed"
 });
 
 const SETTINGS_DIRNAME = ".crime";
@@ -282,7 +287,16 @@ contextBridge.exposeInMainWorld("projectApi", {
     }
   },
   window: {
-    flashFrame: () => ipcRenderer.invoke(IPC_CHANNELS.windowFlashFrame)
+    flashFrame: () => ipcRenderer.invoke(IPC_CHANNELS.windowFlashFrame),
+    minimize: () => ipcRenderer.invoke(IPC_CHANNELS.windowMinimize),
+    maximizeToggle: () => ipcRenderer.invoke(IPC_CHANNELS.windowMaximizeToggle),
+    close: () => ipcRenderer.invoke(IPC_CHANNELS.windowClose),
+    isMaximized: () => ipcRenderer.invoke(IPC_CHANNELS.windowIsMaximized),
+    onMaximizedChanged: (callback) => {
+      const handler = (_event, value) => callback(value);
+      ipcRenderer.on(IPC_CHANNELS.windowMaximizedChanged, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.windowMaximizedChanged, handler);
+    }
   },
   onGlobalQuickKey: (listener) => {
     const handler = (_event, input) => listener(input);
