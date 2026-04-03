@@ -1,12 +1,12 @@
 <template>
   <div
     ref="mainContainer"
-    class="min-h-0 flex-1 overflow-hidden"
+    class="min-h-0 flex-1"
     :class="isAgentDetached ? 'flex flex-row' : 'flex'"
   >
     <!-- Left card (agent + header), or the only card when not detached -->
     <div
-      class="card min-h-0 min-w-0 overflow-hidden bg-base-100 shadow-xl"
+      class="card min-h-0 min-w-0 overflow-hidden bg-base-100 shadow-sm"
       :class="agentCardClass"
       :style="agentCardStyle"
     >

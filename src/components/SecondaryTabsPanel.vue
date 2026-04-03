@@ -1,5 +1,5 @@
 <template>
-  <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-xl">
+  <div class="card min-h-0 flex-1 overflow-hidden bg-base-100 shadow-sm">
     <div class="card-body flex min-h-0 flex-col gap-2 p-3">
       <div role="tablist" class="tabs tabs-bordered tabs-sm shrink-0 flex-wrap">
         <button

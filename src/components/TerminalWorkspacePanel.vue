@@ -10,7 +10,7 @@
       />
 
       <button class="btn btn-sm btn-outline" type="button" tabindex="-1" @click="createBlankTerminal">
-        New terminal
+        Новый терминал
       </button>
 
       <button
@@ -20,7 +20,7 @@
         tabindex="-1"
         @click="closeAllSessions"
       >
-        Clear
+        Закрыть все
       </button>
     </div>
 

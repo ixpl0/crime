@@ -163,6 +163,7 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     height: initialWindowState.bounds.height,
     show: !initialWindowState.isMaximized,
     icon: getIconPath(),
+    autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,

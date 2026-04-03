@@ -1,5 +1,5 @@
 <template>
-  <aside class="card min-h-0 bg-base-100 shadow-xl">
+  <aside class="card min-h-0 bg-base-100 shadow-sm">
     <div class="card-body min-h-0 p-3">
       <div class="flex items-center justify-between gap-2">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-base-content/70">
