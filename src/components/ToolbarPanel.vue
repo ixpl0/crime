@@ -17,7 +17,7 @@
           @keydown="handleDropdownTriggerKeydown($event, elementIndex)"
         >
           {{ element.label }}
-          <ChevronDown :size="14" />
+          <ChevronDown :size="14" class="-mr-px translate-y-px" />
         </button>
         <ul
           class="dropdown-content menu bg-base-100 rounded-box z-10 min-w-52 p-0 shadow"

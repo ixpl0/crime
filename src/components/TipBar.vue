@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex shrink-0 cursor-pointer items-center justify-center gap-2 py-1 text-sm select-none"
+    class="flex shrink-0 cursor-pointer items-center justify-center gap-2 text-sm select-none"
     title="Следующий совет"
     @click="advance"
   >

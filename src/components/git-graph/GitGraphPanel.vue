@@ -105,7 +105,7 @@
     <div
       v-if="contextMenu"
       ref="contextMenuRef"
-      class="fixed z-50 min-w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
+      class="fixed z-50 flex flex-col rounded-box border border-base-300 bg-base-100 p-1 shadow-xl"
       :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
       @contextmenu.prevent
     >

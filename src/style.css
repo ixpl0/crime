@@ -28,7 +28,12 @@ body {
   background: oklch(0.5 0 0 / 0.6);
 }
 
+.btn {
+  gap: 0.25rem;
+}
+
 .btn-sm {
+  --btn-p: 0.55rem;
   min-height: 1.8rem;
   height: 1.8rem;
 }

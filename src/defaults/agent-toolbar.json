@@ -2,7 +2,7 @@
   "elements": [
     {
       "label": "Агенты",
-      "color": "oklch(0.78 0.18 18)",
+      "color": "",
       "items": [
         {
           "label": "Claude Code",
@@ -38,7 +38,7 @@
     },
     {
       "label": "В начале",
-      "color": "oklch(0.80 0.16 52)",
+      "color": "",
       "items": [
         {
           "label": "Настроить тесты",
@@ -80,7 +80,7 @@
     },
     {
       "label": "Периодически",
-      "color": "oklch(0.78 0.16 190)",
+      "color": "",
       "items": [
         {
           "label": "Дописать тесты",
@@ -110,7 +110,7 @@
     },
     {
       "label": "Ревью",
-      "color": "oklch(0.86 0.17 88)",
+      "color": "",
       "items": [
         {
           "label": "Найти баги",
@@ -176,7 +176,7 @@
     },
     {
       "label": "Второе мнение",
-      "color": "oklch(0.75 0.18 330)",
+      "color": "",
       "items": [
         {
           "label": "Claude Code ревью",
@@ -197,7 +197,7 @@
     },
     {
       "label": "/команды",
-      "color": "oklch(0.80 0.18 150)",
+      "color": "",
       "items": [
         {
           "label": "/new",
@@ -238,7 +238,7 @@
     },
     {
       "label": "Сценарии",
-      "color": "oklch(0.78 0.16 270)",
+      "color": "",
       "items": [
         {
           "label": "Claude → /resume → 1",
@@ -255,7 +255,7 @@
     },
     {
       "label": "Git",
-      "color": "oklch(0.77 0.13 228)",
+      "color": "",
       "items": [
         {
           "label": "Коммит пуш",
@@ -296,7 +296,7 @@
     },
     {
       "label": "Reset",
-      "color": "oklch(0.78 0.19 292)",
+      "color": "",
       "resetTerminal": true
     }
   ]

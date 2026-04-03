@@ -2,7 +2,7 @@
   <button
     type="button"
     tabindex="-1"
-    class="group flex w-4 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent p-0"
+    class="group flex w-2 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent p-0"
     title="Потяните, чтобы изменить ширину панели"
     aria-label="Изменить ширину панели"
     @pointerdown="$emit('pointerdown', $event)"

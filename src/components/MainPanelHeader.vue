@@ -1,5 +1,5 @@
 <template>
-  <div role="tablist" class="tabs tabs-bordered flex-wrap gap-y-1">
+  <div role="tablist" class="tabs tabs-bordered tabs-sm flex-wrap gap-y-1">
       <template v-if="isAgentDetached">
         <span role="tab" class="tab tab-active">Агент</span>
       </template>
