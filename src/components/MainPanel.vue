@@ -162,7 +162,7 @@
               @open-config-editor="openGitToolbarConfigEditor"
             />
             <div class="min-h-0 flex-1 overflow-y-auto">
-              <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" @open-file="handleChangesPathOpen" />
+              <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" :branch-highlight-request-token="gitBranchHighlightRequestToken" @open-file="handleChangesPathOpen" />
             </div>
           </div>
         </div>
@@ -265,7 +265,8 @@ const {
   resetChangesSelectedFile,
   handleChangesPathOpen,
   resetSelectedFile,
-  inFileSearchRequestToken
+  inFileSearchRequestToken,
+  gitBranchHighlightRequestToken
 } = navigationStore;
 
 const { isTerminalReady, executeToolbarAction } = useAppTerminalStore();

@@ -13,40 +13,44 @@
         </button>
         <button
             role="tab"
-            class="tab"
+            class="tab gap-1"
             tabindex="-1"
             :class="{ 'tab-active': activeTab === 'terminal' }"
             @click="setActiveTab('terminal')"
           >
+            <Terminal :size="14" class="text-base-content/40" />
             Терминал
             <span v-if="terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1"
             tabindex="-1"
             :class="{ 'tab-active': activeTab === 'files' }"
             @click="setActiveTab('files')"
           >
+            <FolderOpen :size="14" class="text-base-content/40" />
             Файлы
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1"
             tabindex="-1"
             :class="{ 'tab-active': activeTab === 'changes' }"
             @click="setActiveTab('changes')"
           >
+            <GitCompareArrows :size="14" class="text-base-content/40" />
             Изменения
             <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1"
             tabindex="-1"
             :class="{ 'tab-active': activeTab === 'git' }"
             @click="setActiveTab('git')"
           >
+            <GitGraph :size="14" class="text-base-content/40" />
             Гит
           </button>
       </div>
@@ -58,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { PanelLeftClose } from "lucide-vue-next";
+import { FolderOpen, GitCompareArrows, GitGraph, PanelLeftClose, Terminal } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 
 defineProps<{

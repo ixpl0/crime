@@ -495,6 +495,12 @@ export function useAppShell() {
     });
   });
 
+  const gitBranchHighlightRequestToken = ref(0);
+  const navigateToBranch = () => {
+    setActiveTab("git");
+    gitBranchHighlightRequestToken.value += 1;
+  };
+
   provideAppNavigationStore({
     projectPath,
     activeTab,
@@ -538,7 +544,9 @@ export function useAppShell() {
     navigateToFile,
     navigateToDirectory,
     inFileSearchRequestToken,
-    requestInFileSearch
+    requestInFileSearch,
+    gitBranchHighlightRequestToken,
+    navigateToBranch
   });
   provideAppConfigStore({
     settingsDirectoryName,

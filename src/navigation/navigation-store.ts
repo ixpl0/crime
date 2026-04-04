@@ -50,6 +50,8 @@ export interface AppNavigationStore {
   navigateToDirectory: (path: string) => void;
   inFileSearchRequestToken: ReadableRef<number>;
   requestInFileSearch: () => void;
+  gitBranchHighlightRequestToken: ReadableRef<number>;
+  navigateToBranch: () => void;
 }
 
 const appNavigationStoreKey: InjectionKey<AppNavigationStore> = Symbol(

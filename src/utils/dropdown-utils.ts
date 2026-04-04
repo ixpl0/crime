@@ -1,4 +1,4 @@
-import { nextTick, onBeforeUnmount, watch, type Ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, watch, type Ref } from "vue";
 
 export const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
 
@@ -56,6 +56,42 @@ export const focusFirstDropdownItem = (triggerTarget: EventTarget | null): void 
 
 const DROPDOWN_OPEN_SELECTOR = ".manual-dropdown.dropdown-open";
 
+/**
+ * Creates a transparent full-window backdrop with `-webkit-app-region: no-drag`
+ * so that click-outside works even when the click lands on a drag-region area.
+ * The backdrop sits below dropdown-content (z-10) and context-menus (z-50).
+ */
+export const useDragRegionBackdrop = (
+  isVisible: Ref<boolean>,
+  onBackdropClick: () => void
+): void => {
+  let backdrop: HTMLElement | null = null;
+
+  const createBackdrop = () => {
+    backdrop = document.createElement("div");
+    backdrop.style.cssText = "position:fixed;inset:0;z-index:8;-webkit-app-region:no-drag;";
+    backdrop.addEventListener("mousedown", onBackdropClick);
+    document.body.appendChild(backdrop);
+  };
+
+  const removeBackdrop = () => {
+    if (backdrop) {
+      backdrop.remove();
+      backdrop = null;
+    }
+  };
+
+  watch(isVisible, (visible) => {
+    if (visible) {
+      createBackdrop();
+    } else {
+      removeBackdrop();
+    }
+  });
+
+  onBeforeUnmount(removeBackdrop);
+};
+
 export const useDropdownClickOutside = (
   isOpen: Ref<boolean>,
   close: () => void
@@ -68,6 +104,8 @@ export const useDropdownClickOutside = (
     close();
   };
 
+  useDragRegionBackdrop(isOpen, close);
+
   watch(isOpen, (open) => {
     if (open) {
       document.addEventListener("mousedown", handleDocumentMousedown);
@@ -79,4 +117,16 @@ export const useDropdownClickOutside = (
   onBeforeUnmount(() => {
     document.removeEventListener("mousedown", handleDocumentMousedown);
   });
+};
+
+/**
+ * Creates a computed boolean from a nullable ref and wires up a drag-region backdrop.
+ * Use this for context menus where the state is `Ref<T | null>`.
+ */
+export const useContextMenuDragRegionBackdrop = <T>(
+  contextMenu: Ref<T | null>,
+  close: () => void
+): void => {
+  const isOpen = computed(() => contextMenu.value !== null);
+  useDragRegionBackdrop(isOpen, close);
 };

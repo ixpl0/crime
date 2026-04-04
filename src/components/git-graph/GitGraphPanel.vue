@@ -37,7 +37,10 @@
           v-for="(row, rowIndex) in graphRows"
           :key="row.commit.hash"
           class="group col-span-5 grid cursor-pointer grid-cols-subgrid items-center gap-3 hover:bg-base-300/50"
-          :class="rowIndex === selectedRowIndex ? 'bg-base-300' : ''"
+          :class="[
+            rowIndex === selectedRowIndex ? 'bg-base-300' : '',
+            rowIndex === highlightedRowIndex ? 'git-row-highlight' : ''
+          ]"
           @click="selectCommit(rowIndex)"
           @contextmenu="openContextMenu($event, row.commit.hash)"
         >
@@ -144,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef, watch } from "vue";
+import { computed, nextTick, ref, toRef, watch } from "vue";
 import { ArrowRightLeft, GitBranch, Trash2 } from "lucide-vue-next";
 import { isBranchRef } from "./git-graph-format";
 import { useAppToastStore } from "../../toast/toast-store";
@@ -164,6 +167,7 @@ const { requestPrompt } = usePromptDialog();
 const props = defineProps<{
   projectPath: string;
   gitRefreshToken: number;
+  branchHighlightRequestToken: number;
 }>();
 
 const emit = defineEmits<{
@@ -171,7 +175,9 @@ const emit = defineEmits<{
 }>();
 
 const panelContainer = ref<HTMLElement | null>(null);
+const scrollContainer = ref<HTMLElement | null>(null);
 const conflictFiles = ref<string[]>([]);
+const highlightedRowIndex = ref<number | null>(null);
 
 const {
   ROW_HEIGHT, COMMIT_RADIUS,
@@ -278,4 +284,42 @@ watch(() => props.gitRefreshToken, async () => {
   const unmerged = await window.projectApi.git.getUnmergedFiles(props.projectPath);
   conflictFiles.value = unmerged;
 });
+
+let highlightTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(() => props.branchHighlightRequestToken, () => {
+  const headRowIndex = graphRows.value.findIndex((row) =>
+    row.commit.refs.some((r) => r.startsWith("HEAD -> "))
+  );
+  if (headRowIndex < 0) {
+    return;
+  }
+
+  highlightedRowIndex.value = headRowIndex;
+
+  void nextTick(() => {
+    const container = scrollContainer.value;
+    if (container) {
+      const rowTop = headRowIndex * ROW_HEIGHT;
+      const containerHeight = container.clientHeight;
+      container.scrollTop = rowTop - containerHeight / 2 + ROW_HEIGHT / 2;
+    }
+  });
+
+  if (highlightTimer !== null) {
+    clearTimeout(highlightTimer);
+  }
+  highlightTimer = setTimeout(() => {
+    highlightedRowIndex.value = null;
+    highlightTimer = null;
+  }, 1500);
+});
 </script>
+
+<style scoped>
+.git-row-highlight {
+  background-color: rgba(250, 204, 21, 0.25);
+  outline: 1px solid rgba(250, 204, 21, 0.4);
+}
+</style>
+

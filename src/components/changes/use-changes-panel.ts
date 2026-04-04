@@ -1,6 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch, type ComputedRef } from "vue";
 import { toErrorMessage } from "../../utils/fail-fast";
 import { clampContextMenuX, clampContextMenuY, getGitUnavailableMessage } from "../../utils/context-menu-utils";
+import { useContextMenuDragRegionBackdrop } from "../../utils/dropdown-utils";
 import {
   buildSnapshot,
   entryDisplayName,
@@ -64,6 +65,8 @@ export function useChangesPanel({
   function closeContextMenu() {
     contextMenu.value = null;
   }
+
+  useContextMenuDragRegionBackdrop(contextMenu, closeContextMenu);
 
   function entryPathDisplay(path: string) {
     return entryPathDisplayForProject(projectPath.value, path);

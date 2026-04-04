@@ -1,6 +1,7 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, type Ref } from "vue";
 import { toErrorMessage } from "../../utils/fail-fast";
 import { clampContextMenuX, clampContextMenuY } from "../../utils/context-menu-utils";
+import { useContextMenuDragRegionBackdrop } from "../../utils/dropdown-utils";
 
 export interface ContextMenuTargetBranch {
   displayName: string;
@@ -45,6 +46,8 @@ export function useGitGraphContextMenu(projectPath: Ref<string>) {
   function closeContextMenu() {
     contextMenu.value = null;
   }
+
+  useContextMenuDragRegionBackdrop(contextMenu, closeContextMenu);
 
   function openContextMenu(event: MouseEvent, hash: string, targetRef?: string) {
     event.preventDefault();

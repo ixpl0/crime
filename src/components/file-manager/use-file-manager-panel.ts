@@ -2,6 +2,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, type Ref, watch } 
 import { type DeletedChildrenByParent } from "./file-tree-status-utils";
 import { toErrorMessage } from "../../utils/fail-fast";
 import { clampContextMenuX, clampContextMenuY } from "../../utils/context-menu-utils";
+import { useContextMenuDragRegionBackdrop } from "../../utils/dropdown-utils";
 import { buildNextTreeState, type NextTreeState } from "./file-manager-panel-utils";
 import type { FileManagerContextMenuPayload, FileManagerContextMenuState } from "./file-manager-context-menu-types";
 import { useFileDrag } from "./use-file-drag";
@@ -56,6 +57,8 @@ export function useFileManagerPanel({
   function closeContextMenu() {
     contextMenu.value = null;
   }
+
+  useContextMenuDragRegionBackdrop(contextMenu, closeContextMenu);
 
   function openContextMenu(payload: FileManagerContextMenuPayload) {
     if (isActionInProgress.value) {
