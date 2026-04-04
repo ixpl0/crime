@@ -147,6 +147,7 @@
                 :file-path="changesSelectedFilePath"
                 :refresh-token="gitStatusRefreshToken"
                 :is-active="activeTab === 'changes'"
+                :search-request-token="inFileSearchRequestToken"
                 @file-not-found="resetChangesSelectedFile"
                 @close="resetChangesSelectedFile"
               />

@@ -201,6 +201,140 @@ select:focus,
   }
 }
 
+/* CodeMirror search/replace panel */
+.cm-panel.cm-search {
+  display: block !important;
+  position: relative;
+  background: var(--color-base-200) !important;
+  border-bottom: 1px solid var(--color-base-300);
+  padding: 6px 28px 6px 8px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--color-base-content);
+  line-height: 1.8rem;
+}
+
+.cm-panel.cm-search > * {
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.cm-panel.cm-search input[type="text"],
+.cm-panel.cm-search .cm-textfield {
+  background: var(--color-base-100) !important;
+  color: var(--color-base-content);
+  border: 1px solid color-mix(in oklch, var(--color-base-content) 20%, transparent) !important;
+  border-radius: var(--radius-field);
+  padding: 0 0.5rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.cm-panel.cm-search input[type="text"]:focus,
+.cm-panel.cm-search .cm-textfield:focus {
+  border-color: var(--color-primary) !important;
+}
+
+.cm-panel.cm-search button,
+.cm-panel.cm-search .cm-button {
+  --_bg: color-mix(in oklch, currentColor 10%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--_bg) !important;
+  background-image: none !important;
+  color: var(--color-base-content);
+  border: var(--border) solid color-mix(in oklab, var(--_bg), #000 calc(var(--depth) * 5%)) !important;
+  border-radius: var(--radius-field);
+  padding: 0 0.6rem;
+  height: 1.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  text-shadow: 0 0.5px oklch(100% 0 0 / calc(var(--depth) * 0.15));
+  box-shadow:
+    0 0.5px 0 0.5px oklch(100% 0 0 / calc(var(--depth) * 6%)) inset,
+    0 3px 2px -2px color-mix(in oklab, var(--_bg) calc(var(--depth) * 30%), #0000),
+    0 4px 3px -2px color-mix(in oklab, var(--_bg) calc(var(--depth) * 30%), #0000) !important;
+}
+
+.cm-panel.cm-search button:hover,
+.cm-panel.cm-search .cm-button:hover {
+  --_bg: color-mix(in oklch, currentColor 17%, transparent);
+  background-color: var(--_bg) !important;
+  background-image: none !important;
+}
+
+.cm-panel.cm-search button[name="close"] {
+  position: absolute !important;
+  top: 6px;
+  right: 4px;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--color-base-content);
+  opacity: 0.4;
+  padding: 0 4px;
+  height: auto;
+  font-size: 1rem;
+  text-shadow: none;
+}
+
+.cm-panel.cm-search button[name="close"]:hover {
+  background: none !important;
+  opacity: 1;
+}
+
+.cm-panel.cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--color-base-content);
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.cm-panel.cm-search input[type="checkbox"] {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+  vertical-align: middle;
+  border: 1.5px solid color-mix(in oklch, var(--color-base-content) 30%, transparent);
+  border-radius: 0.25rem;
+  background-color: transparent;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.cm-panel.cm-search input[type="checkbox"]::before {
+  content: "✓";
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-success);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.cm-panel.cm-search input[type="checkbox"]:checked {
+  border-color: var(--color-success);
+  background-color: color-mix(in oklch, var(--color-success) 25%, transparent);
+}
+
+.cm-panel.cm-search input[type="checkbox"]:checked::before {
+  opacity: 1;
+}
+
 .xterm-bell {
   animation: xterm-bell-flash 150ms ease-in-out;
 }
