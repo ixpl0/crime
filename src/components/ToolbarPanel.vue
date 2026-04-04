@@ -23,24 +23,71 @@
           class="dropdown-content menu bg-base-100 rounded-box z-10 min-w-52 p-0 shadow"
           @keydown.esc.stop.prevent="openDropdownIndex = null"
         >
-          <li v-for="(item, itemIndex) in element.items" :key="`item-${elementIndex}-${itemIndex}`">
-            <button
-              :disabled="isActionDisabled(item, isTerminalReady)"
-              tabindex="-1"
-              :title="getActionTitle(item)"
-              class="flex justify-between whitespace-nowrap"
-              @click="handleDropdownActionClick(item)"
-            >
-              <span class="flex min-w-0 items-center gap-1.5">
-                <CircleAlert v-if="isTrackingAlert(item)" :size="14" class="shrink-0 text-error" />
-                <CircleCheck v-else-if="isTrackingSuccess(item)" :size="14" class="shrink-0 text-success" />
-                <span v-else-if="getTrackingDaysLabel(item)" class="shrink-0 text-xs font-semibold text-warning">
-                  {{ getTrackingDaysLabel(item) }}
-                </span>
+          <li
+            v-for="(item, itemIndex) in element.items"
+            :key="`item-${elementIndex}-${itemIndex}`"
+            :class="{ 'relative': 'items' in item }"
+          >
+            <!-- Sub-dropdown -->
+            <template v-if="'items' in item">
+              <button
+                tabindex="-1"
+                class="flex w-full justify-between whitespace-nowrap"
+                @click="toggleSubmenu(elementIndex, itemIndex)"
+              >
                 <span class="truncate">{{ item.label }}</span>
-              </span>
-              <kbd v-if="item.shortcut" class="kbd kbd-xs">{{ formatShortcut(item.shortcut) }}</kbd>
-            </button>
+                <ChevronRight
+                  :size="14"
+                  class="shrink-0 opacity-50 transition-transform"
+                  :class="{ 'rotate-90': openSubmenuKey === submenuKey(elementIndex, itemIndex) }"
+                />
+              </button>
+              <ul
+                v-show="openSubmenuKey === submenuKey(elementIndex, itemIndex)"
+                class="submenu-panel menu bg-base-100 rounded-box absolute top-0 left-full z-20 ms-0 min-w-52 p-0 shadow"
+              >
+                <li v-for="(subItem, subIndex) in item.items" :key="`sub-${elementIndex}-${itemIndex}-${subIndex}`">
+                  <button
+                    v-if="!('items' in subItem)"
+                    :disabled="isActionDisabled(subItem, isTerminalReady)"
+                    tabindex="-1"
+                    :title="getActionTitle(subItem)"
+                    class="flex justify-between whitespace-nowrap"
+                    @click="handleDropdownActionClick(subItem)"
+                  >
+                    <span class="flex min-w-0 items-center gap-1.5">
+                      <CircleAlert v-if="isTrackingAlert(subItem)" :size="14" class="shrink-0 text-error" />
+                      <CircleCheck v-else-if="isTrackingSuccess(subItem)" :size="14" class="shrink-0 text-success" />
+                      <span v-else-if="getTrackingDaysLabel(subItem)" class="shrink-0 text-xs font-semibold text-warning">
+                        {{ getTrackingDaysLabel(subItem) }}
+                      </span>
+                      <span class="truncate">{{ subItem.label }}</span>
+                    </span>
+                    <kbd v-if="subItem.shortcut" class="kbd kbd-xs">{{ formatShortcut(subItem.shortcut) }}</kbd>
+                  </button>
+                </li>
+              </ul>
+            </template>
+            <!-- Action -->
+            <template v-else>
+              <button
+                :disabled="isActionDisabled(item, isTerminalReady)"
+                tabindex="-1"
+                :title="getActionTitle(item)"
+                class="flex justify-between whitespace-nowrap"
+                @click="handleDropdownActionClick(item)"
+              >
+                <span class="flex min-w-0 items-center gap-1.5">
+                  <CircleAlert v-if="isTrackingAlert(item)" :size="14" class="shrink-0 text-error" />
+                  <CircleCheck v-else-if="isTrackingSuccess(item)" :size="14" class="shrink-0 text-success" />
+                  <span v-else-if="getTrackingDaysLabel(item)" class="shrink-0 text-xs font-semibold text-warning">
+                    {{ getTrackingDaysLabel(item) }}
+                  </span>
+                  <span class="truncate">{{ item.label }}</span>
+                </span>
+                <kbd v-if="item.shortcut" class="kbd kbd-xs">{{ formatShortcut(item.shortcut) }}</kbd>
+              </button>
+            </template>
           </li>
         </ul>
       </div>
@@ -85,7 +132,7 @@ import {
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
 import { computeDaysSinceLastUsed, isLastUsedWithinOneDay } from "../toolbar/toolbar-tracking";
 import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, positionFixedDropdown, useDropdownClickOutside } from "../utils/dropdown-utils";
-import { ChevronDown, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";
+import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";
 
 defineProps<{
   toolbarConfig: ToolbarConfig;
@@ -98,8 +145,20 @@ const emit = defineEmits<{
 }>();
 
 const openDropdownIndex = ref<number | null>(null);
+const openSubmenuKey = ref<string | null>(null);
 const isAnyDropdownOpen = computed(() => openDropdownIndex.value !== null);
-useDropdownClickOutside(isAnyDropdownOpen, () => { openDropdownIndex.value = null; });
+useDropdownClickOutside(isAnyDropdownOpen, () => {
+  openDropdownIndex.value = null;
+  openSubmenuKey.value = null;
+});
+
+const submenuKey = (elementIndex: number, itemIndex: number) =>
+  `${String(elementIndex)}-${String(itemIndex)}`;
+
+function toggleSubmenu(elementIndex: number, itemIndex: number) {
+  const key = submenuKey(elementIndex, itemIndex);
+  openSubmenuKey.value = openSubmenuKey.value === key ? null : key;
+}
 
 function isTrackingAlert(action: ToolbarAction): boolean {
   if (action.done === false) {
@@ -133,6 +192,7 @@ function getTrackingDaysLabel(action: ToolbarAction): string | null {
 }
 
 function handleDropdownToggleClick(event: MouseEvent, index: number) {
+  openSubmenuKey.value = null;
   openDropdownIndex.value = openDropdownIndex.value === index ? null : index;
   if (openDropdownIndex.value !== null) {
     positionFixedDropdown(event.currentTarget);
@@ -159,6 +219,7 @@ function handleDropdownTriggerKeydown(event: KeyboardEvent, index: number) {
 
 function handleDropdownActionClick(action: ToolbarAction) {
   openDropdownIndex.value = null;
+  openSubmenuKey.value = null;
   emit("execute-action", action);
 }
 

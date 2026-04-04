@@ -46,19 +46,17 @@ interface TrackingUpdateResult<T> {
 }
 
 const updateDropdownItemsTracking = (
-  items: readonly ToolbarAction[],
+  items: readonly ToolbarElement[],
   executedAction: ToolbarAction,
   now: Date
-): TrackingUpdateResult<ToolbarAction> =>
-  items.reduce<TrackingUpdateResult<ToolbarAction>>(
+): TrackingUpdateResult<ToolbarElement> =>
+  items.reduce<TrackingUpdateResult<ToolbarElement>>(
     (accumulator, item) => {
-      if (item !== executedAction) {
-        return { ...accumulator, items: [...accumulator.items, item] };
-      }
-      const updated = updateTrackedAction(item, now);
-      return updated
-        ? { items: [...accumulator.items, updated], changed: true }
-        : { ...accumulator, items: [...accumulator.items, item] };
+      const result = updateElementTracking(item, executedAction, now);
+      return {
+        items: [...accumulator.items, result.element],
+        changed: accumulator.changed || result.changed
+      };
     },
     { items: [], changed: false }
   );

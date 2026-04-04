@@ -248,7 +248,7 @@ export interface ShortcutMapping {
 }
 
 const toElementActions = (element: ToolbarConfig["elements"][number]): readonly ToolbarAction[] =>
-  "items" in element ? element.items : [element];
+  "items" in element ? element.items.flatMap(toElementActions) : [element];
 
 function toActionShortcutMapping(action: ToolbarAction): ShortcutMapping | null {
   if (!action.shortcut) {

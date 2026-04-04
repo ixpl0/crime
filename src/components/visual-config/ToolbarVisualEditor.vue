@@ -63,7 +63,12 @@
                   class="shrink-0 transition-transform"
                   :class="{ 'rotate-90': isExpandedItem(elementIndex, itemIndex) }"
                 />
-                <span class="badge badge-xs">{{ item.type }}</span>
+                <span
+                  class="badge badge-xs"
+                  :class="isDropdown(item) ? 'badge-info' : 'badge-ghost'"
+                >
+                  {{ isDropdown(item) ? "group" : (item as ToolbarAction).type }}
+                </span>
                 <span class="flex-1 truncate text-sm">{{ item.label }}</span>
                 <div class="flex gap-1" @click.stop>
                   <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="itemIndex === 0" @click="handleMoveItem(elementIndex, itemIndex, -1)">
@@ -78,8 +83,57 @@
                 </div>
               </div>
 
-              <!-- Item fields (expanded) -->
-              <div v-if="isExpandedItem(elementIndex, itemIndex)" class="mt-2 ml-4">
+              <!-- Sub-dropdown items (expanded) -->
+              <div v-if="isExpandedItem(elementIndex, itemIndex) && isDropdown(item)" class="mt-2 ml-4 space-y-2">
+                <FieldText label="Название" :model-value="item.label" @update:model-value="updateItemLabel(elementIndex, itemIndex, $event)" />
+                <div class="mt-2">
+                  <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
+                    Подэлементы ({{ (item as ToolbarDropdown).items.length }})
+                  </div>
+                  <div
+                    v-for="(subItem, subIndex) in (item as ToolbarDropdown).items"
+                    :key="subIndex"
+                    class="mb-2 ml-2 border-l-2 border-base-300 pl-3"
+                  >
+                    <div
+                      class="flex cursor-pointer items-center gap-2"
+                      @click="toggleExpandSubItem(elementIndex, itemIndex, subIndex)"
+                    >
+                      <ChevronRight
+                        :size="12"
+                        class="shrink-0 transition-transform"
+                        :class="{ 'rotate-90': isExpandedSubItem(elementIndex, itemIndex, subIndex) }"
+                      />
+                      <span class="badge badge-xs badge-ghost">{{ (subItem as ToolbarAction).type }}</span>
+                      <span class="flex-1 truncate text-sm">{{ subItem.label }}</span>
+                      <div class="flex gap-1" @click.stop>
+                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === 0" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, -1)">
+                          <ArrowUp :size="10" />
+                        </button>
+                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === (item as ToolbarDropdown).items.length - 1" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, 1)">
+                          <ArrowDown :size="10" />
+                        </button>
+                        <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" @click="handleRemoveSubItem(elementIndex, itemIndex, subIndex)">
+                          <X :size="10" />
+                        </button>
+                      </div>
+                    </div>
+                    <div v-if="isExpandedSubItem(elementIndex, itemIndex, subIndex)" class="mt-2 ml-4">
+                      <ToolbarActionEditor
+                        :model-value="subItem"
+                        @update:model-value="updateSubItem(elementIndex, itemIndex, subIndex, $event)"
+                      />
+                    </div>
+                  </div>
+                  <button class="btn btn-ghost btn-xs ml-2 mt-1" tabindex="-1" @click="handleAddSubItem(elementIndex, itemIndex)">
+                    <Plus :size="12" />
+                    Добавить
+                  </button>
+                </div>
+              </div>
+
+              <!-- Action item fields (expanded) -->
+              <div v-else-if="isExpandedItem(elementIndex, itemIndex)" class="mt-2 ml-4">
                 <ToolbarActionEditor
                   :model-value="item"
                   @update:model-value="updateItem(elementIndex, itemIndex, $event)"
@@ -87,10 +141,16 @@
               </div>
             </div>
 
-            <button class="btn btn-ghost btn-xs ml-2 mt-1" tabindex="-1" @click="handleAddItem(elementIndex)">
-              <Plus :size="12" />
-              Добавить
-            </button>
+            <div class="ml-2 mt-1 flex gap-2">
+              <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddItem(elementIndex)">
+                <Plus :size="12" />
+                Добавить
+              </button>
+              <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddSubDropdown(elementIndex)">
+                <Plus :size="12" />
+                Добавить подгруппу
+              </button>
+            </div>
           </div>
         </template>
 
@@ -119,154 +179,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { ArrowDown, ArrowUp, ChevronRight, Plus, X } from "lucide-vue-next";
-import {
-  type ToolbarAction,
-  type ToolbarButtonColor,
-  type ToolbarConfig,
-  type ToolbarDropdown,
-  type ToolbarElement
-} from "../../types/toolbar";
-import { moveItemUp, moveItemDown, removeItem } from "./list-utils";
+import { type ToolbarAction, type ToolbarConfig, type ToolbarDropdown } from "../../types/toolbar";
 import FieldText from "./FieldText.vue";
 import FieldColor from "./FieldColor.vue";
 import ToolbarActionEditor from "./ToolbarActionEditor.vue";
+import { isDropdown, useExpandState, useElementMutations, useItemMutations, useSubItemMutations } from "./use-toolbar-editor";
 
-const props = defineProps<{
-  modelValue: unknown;
-}>();
-
-const emit = defineEmits<{
-  "update:modelValue": [value: ToolbarConfig];
-}>();
-
+const props = defineProps<{ modelValue: unknown }>();
+const emit = defineEmits<{ "update:modelValue": [value: ToolbarConfig] }>();
 const config = computed(() => props.modelValue as ToolbarConfig);
 
-const isDropdown = (element: ToolbarElement): element is ToolbarDropdown =>
-  "items" in element;
-
-// --- Expand/collapse state ---
-
-const expandedKeys = ref<Set<string>>(new Set());
-
-const keyForElement = (index: number) => `e-${String(index)}`;
-const keyForItem = (elementIndex: number, itemIndex: number) => `i-${String(elementIndex)}-${String(itemIndex)}`;
-
-const isExpanded = (index: number) => expandedKeys.value.has(keyForElement(index));
-const isExpandedItem = (elementIndex: number, itemIndex: number) =>
-  expandedKeys.value.has(keyForItem(elementIndex, itemIndex));
-
-const toggleExpand = (index: number) => {
-  const key = keyForElement(index);
-  const next = new Set(expandedKeys.value);
-  if (next.has(key)) {
-    next.delete(key);
-  } else {
-    next.add(key);
-  }
-  expandedKeys.value = next;
-};
-
-const toggleExpandItem = (elementIndex: number, itemIndex: number) => {
-  const key = keyForItem(elementIndex, itemIndex);
-  const next = new Set(expandedKeys.value);
-  if (next.has(key)) {
-    next.delete(key);
-  } else {
-    next.add(key);
-  }
-  expandedKeys.value = next;
-};
-
-// --- Element mutations ---
-
-const emitElements = (elements: readonly ToolbarElement[]) => {
-  emit("update:modelValue", { elements });
-};
-
-const updateElement = (index: number, updater: (el: ToolbarElement) => ToolbarElement) => {
-  emitElements(config.value.elements.map((el, i) => (i === index ? updater(el) : el)));
-};
-
-const updateElementLabel = (index: number, label: string) => {
-  updateElement(index, (el) => ({ ...el, label }));
-};
-
-const updateElementColor = (index: number, color: string | undefined) => {
-  const buttonColor = color as ToolbarButtonColor | undefined;
-  updateElement(index, (el): ToolbarElement => {
-    if (isDropdown(el)) {
-      return { ...el, color: buttonColor };
-    }
-    return { ...el, color: buttonColor };
-  });
-};
-
-const updateStandaloneAction = (index: number, action: ToolbarAction) => {
-  emitElements(config.value.elements.map((el, i) => (i === index ? action : el)));
-};
-
-const handleMoveElementUp = (index: number) => {
-  emitElements(moveItemUp(config.value.elements, index));
-};
-
-const handleMoveElementDown = (index: number) => {
-  emitElements(moveItemDown(config.value.elements, index));
-};
-
-const handleRemoveElement = (index: number) => {
-  emitElements(removeItem(config.value.elements, index));
-};
-
-const handleAddDropdown = () => {
-  const newDropdown: ToolbarDropdown = { label: "Новая группа", items: [] };
-  emitElements([...config.value.elements, newDropdown]);
-};
-
-const handleAddAction = () => {
-  const newAction: ToolbarAction = { label: "Новая кнопка", value: "", type: "command" };
-  emitElements([...config.value.elements, newAction]);
-};
-
-// --- Dropdown item mutations ---
-
-const updateItem = (elementIndex: number, itemIndex: number, action: ToolbarAction) => {
-  updateElement(elementIndex, (el) => {
-    if (!isDropdown(el)) {
-      return el;
-    }
-    const newItems = el.items.map((item, i) => (i === itemIndex ? action : item));
-    return { ...el, items: newItems };
-  });
-};
-
-const handleMoveItem = (elementIndex: number, itemIndex: number, direction: -1 | 1) => {
-  updateElement(elementIndex, (el) => {
-    if (!isDropdown(el)) {
-      return el;
-    }
-    const moveFn = direction === -1 ? moveItemUp : moveItemDown;
-    return { ...el, items: moveFn(el.items, itemIndex) };
-  });
-};
-
-const handleRemoveItem = (elementIndex: number, itemIndex: number) => {
-  updateElement(elementIndex, (el) => {
-    if (!isDropdown(el)) {
-      return el;
-    }
-    return { ...el, items: removeItem(el.items, itemIndex) };
-  });
-};
-
-const handleAddItem = (elementIndex: number) => {
-  updateElement(elementIndex, (el) => {
-    if (!isDropdown(el)) {
-      return el;
-    }
-    const newAction: ToolbarAction = { label: "Новое действие", value: "", type: "command" };
-    return { ...el, items: [...el.items, newAction] };
-  });
-};
+const { isExpanded, isExpandedItem, isExpandedSubItem,
+  toggleExpand, toggleExpandItem, toggleExpandSubItem } = useExpandState();
+const { updateElement, updateElementLabel, updateElementColor, updateStandaloneAction,
+  handleMoveElementUp, handleMoveElementDown, handleRemoveElement,
+  handleAddDropdown, handleAddAction } = useElementMutations(() => config.value, (c) => { emit("update:modelValue", c); });
+const { updateItem, updateItemLabel, handleMoveItem, handleRemoveItem,
+  handleAddItem, handleAddSubDropdown } = useItemMutations(updateElement);
+const { updateSubItem, handleMoveSubItem, handleRemoveSubItem, handleAddSubItem } = useSubItemMutations(updateElement);
 </script>

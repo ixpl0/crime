@@ -39,7 +39,7 @@ export interface ToolbarAction {
 
 export interface ToolbarDropdown {
   readonly label: string;
-  readonly items: readonly ToolbarAction[];
+  readonly items: readonly ToolbarElement[];
   readonly color?: ToolbarButtonColor;
 }
 

@@ -212,9 +212,9 @@ const parseToolbarElement = (value: unknown): ToolbarElement | null => {
       return null;
     }
 
-    const items: ToolbarAction[] = [];
+    const items: ToolbarElement[] = [];
     for (const item of value.items) {
-      const parsedItem = parseToolbarAction(item);
+      const parsedItem = parseToolbarElement(item);
       if (!parsedItem) {
         return null;
       }
@@ -302,7 +302,7 @@ function serializeToolbarElement(element: ToolbarElement) {
 
   const serializedElement: Record<string, unknown> = {
     label: element.label,
-    items: element.items.map(serializeToolbarAction)
+    items: element.items.map(serializeToolbarElement)
   };
   if (element.color) {
     serializedElement.color = element.color;

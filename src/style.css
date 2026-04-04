@@ -62,6 +62,7 @@ body {
 
 .btn {
   gap: 0.25rem;
+  --color-base-200: color-mix(in oklch, currentColor 10%, transparent);
 }
 
 .btn-sm {
@@ -121,6 +122,12 @@ select:focus,
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
+}
+
+
+/* Remove daisyUI nested menu pseudo-element line */
+.submenu-panel::before {
+  display: none;
 }
 
 /* daisyUI sets pointer-events:none on the trigger when dropdown is open,

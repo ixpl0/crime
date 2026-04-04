@@ -92,6 +92,37 @@ describe("parseToolbarConfig", () => {
       }
     });
 
+    it("parses nested dropdown (dropdown inside dropdown)", () => {
+      const result = parseToolbarConfig({
+        elements: [{
+          label: "Code",
+          items: [
+            {
+              label: "Setup",
+              items: [
+                { label: "Tests", value: "setup tests", type: "prompt" },
+                { label: "Lint", value: "setup lint", type: "prompt" }
+              ]
+            },
+            { label: "Run", value: "npm start", type: "command" }
+          ]
+        }]
+      });
+      expect(result).not.toBeNull();
+      const outer = result?.elements[0];
+      expect(outer).toBeDefined();
+      expect("items" in (outer ?? {})).toBe(true);
+      if (outer && "items" in outer) {
+        expect(outer.items).toHaveLength(2);
+        const nested = outer.items[0];
+        expect("items" in nested).toBe(true);
+        if ("items" in nested) {
+          expect(nested.items).toHaveLength(2);
+          expect(nested.items[0]).toMatchObject({ label: "Tests", type: "prompt" });
+        }
+      }
+    });
+
     it("parses dropdown with color", () => {
       const result = parseToolbarConfig({
         elements: [{
@@ -311,6 +342,27 @@ describe("serializeToolbarConfig", () => {
         items: [
           { label: "Pull", value: "git pull", type: "command" },
           { label: "Push", value: "git push", type: "command" }
+        ]
+      }]
+    };
+    const serialized = serializeToolbarConfig(config);
+    const parsed = parseToolbarConfig(serialized);
+    expect(parsed).toEqual(config);
+  });
+
+  it("round-trips config with nested dropdown", () => {
+    const config: ToolbarConfig = {
+      elements: [{
+        label: "Code",
+        items: [
+          {
+            label: "Review",
+            items: [
+              { label: "Bugs", value: "find bugs", type: "prompt", lastUsed: null },
+              { label: "Perf", value: "check perf", type: "prompt" }
+            ]
+          },
+          { label: "Run", value: "npm start", type: "command" }
         ]
       }]
     };
