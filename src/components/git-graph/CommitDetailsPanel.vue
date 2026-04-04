@@ -136,6 +136,9 @@
               </button>
             </div>
           </template>
+          <button class="icon-btn text-base-content/40 hover:text-error" :class="{ 'ml-auto': changeCount === 0 || fileDiff.isLoading }" tabindex="-1" title="Закрыть просмотр" @click="$emit('close-file-diff')">
+            <X :size="14" />
+          </button>
         </div>
         <div v-if="fileDiff.isLoading" class="flex flex-1 items-center justify-center">
           <span class="loading loading-spinner loading-sm" />
@@ -178,6 +181,7 @@ defineEmits<{
   close: [];
   "copy-hash": [hash: string];
   "select-file": [filePath: string];
+  "close-file-diff": [];
 }>();
 
 const diffViewerRef = ref<InstanceType<typeof CodeMirrorDiffViewer> | null>(null);

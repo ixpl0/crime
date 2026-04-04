@@ -275,6 +275,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     copyHash,
     selectCommit,
     selectFile,
+    clearFileDiff,
     closeDetails,
     openContextMenu,
     checkout,

@@ -116,6 +116,7 @@
                 :is-active="activeTab === 'files'"
                 :search-request-token="inFileSearchRequestToken"
                 @file-not-found="resetSelectedFile"
+                @close="resetSelectedFile"
               />
             </div>
           </div>
@@ -147,6 +148,7 @@
                 :refresh-token="gitStatusRefreshToken"
                 :is-active="activeTab === 'changes'"
                 @file-not-found="resetChangesSelectedFile"
+                @close="resetChangesSelectedFile"
               />
             </div>
           </div>

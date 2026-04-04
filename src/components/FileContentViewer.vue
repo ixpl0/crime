@@ -8,17 +8,20 @@
             <span v-if="isTruncated" class="text-warning/70">{{ `первые ${String(LARGE_FILE_LINE_THRESHOLD)} из ${String(displayLines.length)} строк` }}</span>
             <span v-else>{{ `${String(displayLines.length)} строк` }}</span>
           </span>
-          <template v-if="changeCount > 0 && !isEditing && !isLoading">
+          <div v-if="changeCount > 0 && !isEditing && !isLoading" class="flex items-center">
             <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Предыдущее изменение" @click="goToPrevChange">
               <ChevronUp :size="14" />
             </button>
-            <span class="min-w-6 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
+            <span class="min-w-5 text-center text-[11px] text-base-content/55">{{ positionLabel }}</span>
             <button class="icon-btn text-base-content/40 hover:text-primary" tabindex="-1" title="Следующее изменение" @click="goToNextChange">
               <ChevronDown :size="14" />
             </button>
-          </template>
+          </div>
           <button v-if="filePath && canEdit" class="icon-btn text-base-content/40 hover:text-warning" tabindex="-1" :title="isEditing ? 'Режим просмотра' : 'Редактировать'" @click="toggleEditMode">
             <component :is="isEditing ? Eye : Pencil" :size="14" />
+          </button>
+          <button v-if="filePath" class="icon-btn text-base-content/40 hover:text-error" tabindex="-1" title="Закрыть просмотр" @click="emit('close')">
+            <X :size="14" />
           </button>
         </div>
       </div>
@@ -68,7 +71,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { ChevronDown, ChevronUp, Eye, Pencil } from "lucide-vue-next";
+import { ChevronDown, ChevronUp, Eye, Pencil, X } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
 import { useAppToastStore } from "../toast/toast-store";
 import { LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
@@ -87,7 +90,7 @@ const props = defineProps<{
   searchRequestToken?: number;
 }>();
 
-const emit = defineEmits<{ "file-not-found": [filePath: string]; "file-saved": [] }>();
+const emit = defineEmits<{ "file-not-found": [filePath: string]; "file-saved": []; close: [] }>();
 
 const isEditing = ref(false);
 const { pushError } = useAppToastStore();

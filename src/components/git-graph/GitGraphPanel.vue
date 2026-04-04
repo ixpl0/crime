@@ -93,6 +93,7 @@
       @close="closeDetails"
       @copy-hash="copyHash"
       @select-file="selectFile"
+      @close-file-diff="clearFileDiff"
     />
 
     <div
@@ -180,7 +181,7 @@ const {
   contextMenu, contextMenuElement,
   laneX, laneColor,
   formatShortHash, formatRelativeDate, formatRef, refClasses, authorColor,
-  copyHash, selectCommit, selectFile, closeDetails,
+  copyHash, selectCommit, selectFile, clearFileDiff, closeDetails,
   openContextMenu, checkout, createBranch, deleteBranch
 } = useGitGraphPanel(toRef(props, "projectPath"), toRef(props, "gitRefreshToken"));
 
