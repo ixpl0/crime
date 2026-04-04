@@ -65,7 +65,7 @@
         <button
           v-if="contextMenu.status !== 'deleted'"
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start"
+          class="context-menu-item"
           tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuNewFileClick"
@@ -76,7 +76,7 @@
         <button
           v-if="contextMenu.status !== 'deleted'"
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start"
+          class="context-menu-item"
           tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuNewFolderClick"
@@ -87,7 +87,7 @@
         <button
           v-if="contextMenu.status !== null"
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start"
+          class="context-menu-item"
           tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuRevertClick"
@@ -98,7 +98,7 @@
         <button
           v-if="contextMenu.status !== 'deleted'"
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start"
+          class="context-menu-item"
           tabindex="-1"
           @click="handleContextMenuShowInFolder"
         >
@@ -108,7 +108,7 @@
         <button
           v-if="contextMenu.status !== 'deleted' && contextMenu.path !== props.projectPath"
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start text-error"
+          class="context-menu-item text-error"
           tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuDeleteClick"

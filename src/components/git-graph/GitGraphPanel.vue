@@ -112,7 +112,7 @@
     >
       <button
         type="button"
-        class="btn btn-ghost btn-sm w-full justify-start"
+        class="context-menu-item"
         tabindex="-1"
         @click="handleCheckout"
       >
@@ -122,7 +122,7 @@
       <button
         v-if="contextMenu.targetBranch"
         type="button"
-        class="btn btn-ghost btn-sm w-full justify-start"
+        class="context-menu-item"
         :class="contextMenu.targetBranch.remote ? 'text-warning' : 'text-error'"
         tabindex="-1"
         @click="handleDeleteBranch"
@@ -132,7 +132,7 @@
       </button>
       <button
         type="button"
-        class="btn btn-ghost btn-sm w-full justify-start"
+        class="context-menu-item"
         tabindex="-1"
         @click="handleCreateBranch"
       >

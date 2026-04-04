@@ -31,15 +31,15 @@ const buildButtonClasses = (options: FileTreeNodeClassesOptions) =>
   });
 
 const STATUS_TO_NAME_CLASS: Record<string, string> = {
-  added: "text-green-600",
-  modified: "text-blue-600",
-  deleted: "text-red-600"
+  added: "text-emerald-400",
+  modified: "text-sky-400",
+  deleted: "text-rose-400"
 };
 
 const STATUS_TO_FILE_ICON_CLASS: Record<string, string> = {
-  added: "text-green-500",
-  modified: "text-blue-500",
-  deleted: "text-red-500"
+  added: "text-emerald-400/80",
+  modified: "text-sky-400/80",
+  deleted: "text-rose-400/80"
 };
 
 export function useFileTreeNodeClasses(options: FileTreeNodeClassesOptions) {
@@ -47,7 +47,7 @@ export function useFileTreeNodeClasses(options: FileTreeNodeClassesOptions) {
     buttonClasses: buildButtonClasses(options),
     nameClasses: computed(() => STATUS_TO_NAME_CLASS[options.entryStatus.value ?? ""] ?? ""),
     folderIconClasses: computed(() =>
-      options.entryStatus.value === "deleted" ? "text-red-500" : "text-warning"
+      options.entryStatus.value === "deleted" ? "text-rose-400/80" : "text-warning"
     ),
     fileIconClasses: computed(() =>
       STATUS_TO_FILE_ICON_CLASS[options.entryStatus.value ?? ""] ?? "text-base-content/50"

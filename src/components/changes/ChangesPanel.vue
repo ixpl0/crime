@@ -8,19 +8,19 @@
         <div v-if="hasChanges" class="ml-auto flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold tracking-wide">
           <span
             v-if="statusCounts.modified > 0"
-            class="rounded-full bg-blue-500/15 px-2 py-0.5 text-blue-600"
+            class="rounded-full bg-sky-400/10 px-2 py-0.5 text-sky-400"
           >
             M {{ statusCounts.modified }}
           </span>
           <span
             v-if="statusCounts.added > 0"
-            class="rounded-full bg-green-500/15 px-2 py-0.5 text-green-600"
+            class="rounded-full bg-emerald-400/10 px-2 py-0.5 text-emerald-400"
           >
             A {{ statusCounts.added }}
           </span>
           <span
             v-if="statusCounts.deleted > 0"
-            class="rounded-full bg-red-500/15 px-2 py-0.5 text-red-600"
+            class="rounded-full bg-rose-400/10 px-2 py-0.5 text-rose-400"
           >
             D {{ statusCounts.deleted }}
           </span>
@@ -100,7 +100,7 @@
       >
         <button
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start"
+          class="context-menu-item"
           tabindex="-1"
           :disabled="isActionInProgress"
           @click="handleContextMenuRevertClick"
@@ -111,7 +111,7 @@
         <button
           v-if="contextMenu.status !== 'deleted'"
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start"
+          class="context-menu-item"
           tabindex="-1"
           @click="handleContextMenuShowInFolder"
         >

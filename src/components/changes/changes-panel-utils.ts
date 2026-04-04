@@ -35,14 +35,14 @@ export function entryPathDisplayForProject(projectPath: string, path: string) {
 
 export function nameClasses(status: GitFileStatus) {
   if (status === "added") {
-    return "text-green-600";
+    return "text-emerald-400";
   }
 
   if (status === "modified") {
-    return "text-blue-600";
+    return "text-sky-400";
   }
 
-  return "text-red-600";
+  return "text-rose-400";
 }
 
 export function statusLabel(status: GitFileStatus) {
@@ -59,14 +59,14 @@ export function statusLabel(status: GitFileStatus) {
 
 export function statusBadgeClasses(status: GitFileStatus) {
   if (status === "added") {
-    return "bg-green-500/15 text-green-600";
+    return "bg-emerald-400/10 text-emerald-400";
   }
 
   if (status === "modified") {
-    return "bg-blue-500/15 text-blue-600";
+    return "bg-sky-400/10 text-sky-400";
   }
 
-  return "bg-red-500/15 text-red-600";
+  return "bg-rose-400/10 text-rose-400";
 }
 
 export function entryDisplayName(path: string) {
