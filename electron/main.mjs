@@ -164,6 +164,11 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     show: false,
     icon: getIconPath(),
     titleBarStyle: "hidden",
+    titleBarOverlay: {
+      color: "#1d232a",
+      symbolColor: "#a6adbb",
+      height: 32
+    },
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -177,14 +182,6 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
   mainWindow.on("focus", () => {
     lastFocusedWindow = mainWindow;
   });
-
-  const sendMaximizedState = () => {
-    if (!mainWindow.isDestroyed()) {
-      mainWindow.webContents.send(IPC_CHANNELS.windowMaximizedChanged, mainWindow.isMaximized());
-    }
-  };
-  mainWindow.on("maximize", sendMaximizedState);
-  mainWindow.on("unmaximize", sendMaximizedState);
 
   mainWindow.on("closed", () => {
     if (lastFocusedWindow === mainWindow) {
@@ -276,27 +273,6 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle(IPC_CHANNELS.windowMinimize, (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (win && !win.isDestroyed()) { win.minimize(); }
-  });
-
-  ipcMain.handle(IPC_CHANNELS.windowMaximizeToggle, (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (win && !win.isDestroyed()) {
-      win.isMaximized() ? win.unmaximize() : win.maximize();
-    }
-  });
-
-  ipcMain.handle(IPC_CHANNELS.windowClose, (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (win && !win.isDestroyed()) { win.close(); }
-  });
-
-  ipcMain.handle(IPC_CHANNELS.windowIsMaximized, (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    return win ? win.isMaximized() : false;
-  });
 }
 
 function registerGlobalQuickKeys() {

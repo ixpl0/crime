@@ -266,11 +266,6 @@ interface ZoomApi {
 
 interface WindowApi {
   flashFrame: () => Promise<void>;
-  minimize: () => Promise<void>;
-  maximizeToggle: () => Promise<void>;
-  close: () => Promise<void>;
-  isMaximized: () => Promise<boolean>;
-  onMaximizedChanged: (callback: (isMaximized: boolean) => void) => () => void;
 }
 
 interface ProjectApi {

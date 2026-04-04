@@ -640,6 +640,7 @@ export function useAppShell() {
     isStartupReady,
     isTodoPanelCollapsed,
     isDebugTodoPanelVisible,
+    projectSettings,
     recentProjects,
     getProjectNameFromPath,
     removeRecentProject,

@@ -1,35 +1,9 @@
 <template>
   <AppToastViewport />
   <main class="app-drag-region flex h-screen flex-col overflow-hidden bg-base-200 text-base-content" @mousedown="handleGlobalMousedown">
-    <div class="flex h-8 shrink-0 items-center bg-base-100">
-      <TitleBar />
-      <div class="flex-1" />
-      <div class="flex h-full items-stretch">
-        <button
-          class="window-control-btn hover:bg-base-300/60"
-          tabindex="-1"
-          title="Свернуть"
-          @click="windowMinimize()"
-        >
-          <Minus :size="14" />
-        </button>
-        <button
-          class="window-control-btn hover:bg-base-300/60"
-          tabindex="-1"
-          :title="isMaximized ? 'Восстановить' : 'Развернуть'"
-          @click="windowMaximizeToggle()"
-        >
-          <Copy v-if="isMaximized" :size="11" />
-          <Square v-else :size="11" />
-        </button>
-        <button
-          class="window-control-btn hover:bg-red-500/80 hover:text-white"
-          tabindex="-1"
-          title="Закрыть"
-          @click="windowClose()"
-        >
-          <X :size="14" />
-        </button>
+    <div class="shrink-0 overflow-hidden bg-base-100" :style="titleBarStyle">
+      <div class="flex h-8 items-center" :style="titleBarInnerStyle">
+        <TitleBar />
       </div>
     </div>
     <section
@@ -88,23 +62,8 @@
 
 <script setup lang="ts">
 import "@xterm/xterm/css/xterm.css";
-import { onMounted, onUnmounted, ref } from "vue";
-import { Copy, Minus, Square, X } from "lucide-vue-next";
+import { computed, ref } from "vue";
 import { useAppShell } from "./app/use-app-shell";
-
-const isMaximized = ref(false);
-const windowMinimize = () => globalThis.window.projectApi.window.minimize();
-const windowMaximizeToggle = () => globalThis.window.projectApi.window.maximizeToggle();
-const windowClose = () => globalThis.window.projectApi.window.close();
-
-let removeMaximizedListener: (() => void) | null = null;
-onMounted(async () => {
-  isMaximized.value = await globalThis.window.projectApi.window.isMaximized();
-  removeMaximizedListener = globalThis.window.projectApi.window.onMaximizedChanged((value) => {
-    isMaximized.value = value;
-  });
-});
-onUnmounted(() => { removeMaximizedListener?.(); });
 import AppToastViewport from "./components/AppToastViewport.vue";
 import { usePanelHeightResize } from "./composables/use-panel-height-resize";
 import { usePanelWidthResize } from "./composables/use-panel-width-resize";
@@ -125,6 +84,7 @@ const {
   isStartupReady,
   isTodoPanelCollapsed,
   isDebugTodoPanelVisible,
+  projectSettings,
   recentProjects,
   getProjectNameFromPath,
   removeRecentProject,
@@ -133,6 +93,33 @@ const {
   createProjectFolder,
   projectPath
 } = useAppShell();
+
+const TITLE_BAR_HEIGHT_PX = 32;
+
+const titleBarStyle = computed(() => {
+  const zoom = projectSettings.value.zoom.ideZoomFactor;
+  if (zoom === 1) {
+    return {};
+  }
+  const inverseZoom = 1 / zoom;
+  return {
+    height: String(TITLE_BAR_HEIGHT_PX * inverseZoom) + "px",
+  };
+});
+
+const titleBarInnerStyle = computed(() => {
+  const zoom = projectSettings.value.zoom.ideZoomFactor;
+  if (zoom === 1) {
+    return {};
+  }
+  const inverseZoom = 1 / zoom;
+  return {
+    transform: "scale(" + String(inverseZoom) + ")",
+    transformOrigin: "top left",
+    width: String(zoom * 100) + "%",
+    height: String(TITLE_BAR_HEIGHT_PX) + "px",
+  };
+});
 
 const outerContainer = ref<HTMLElement | null>(null);
 const tasksColumnContainer = ref<HTMLElement | null>(null);

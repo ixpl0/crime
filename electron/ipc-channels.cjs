@@ -41,12 +41,7 @@ const IPC_CHANNELS = Object.freeze({
   projectOpenInNewWindow: "project:open-in-new-window",
   projectCreateFolder: "project:create-folder",
   filesystemSearch: "filesystem:search",
-  filesystemSearchContent: "filesystem:search-content",
-  windowMinimize: "window:minimize",
-  windowMaximizeToggle: "window:maximize-toggle",
-  windowClose: "window:close",
-  windowIsMaximized: "window:is-maximized",
-  windowMaximizedChanged: "window:maximized-changed"
+  filesystemSearchContent: "filesystem:search-content"
 });
 
 module.exports = {
