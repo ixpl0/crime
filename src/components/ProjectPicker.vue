@@ -38,7 +38,7 @@
             :class="{ 'border-t border-base-300': index > 0 }"
           >
             <button
-              class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 pr-10 text-left transition-colors hover:bg-primary/10"
+              class="flex w-full cursor-pointer items-center gap-3 px-4 py-3 pr-10 text-left transition-colors hover:bg-base-300"
               tabindex="-1"
               :disabled="isOpening"
               @click="$emit('openProject', projectPath)"

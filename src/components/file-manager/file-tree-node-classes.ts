@@ -16,9 +16,9 @@ const buildButtonClasses = (options: FileTreeNodeClassesOptions) =>
       classes.push("opacity-50");
     }
     if (options.isDropTarget.value) {
-      classes.push("border-primary/50 bg-primary/10");
+      classes.push("border-base-content/25 bg-base-content/10");
     } else if (options.isSelectedEntry.value) {
-      classes.push("border-primary/40 bg-primary/10");
+      classes.push("border-base-content/15 bg-base-300");
     }
     if (options.isIgnoredEntry.value) {
       classes.push("opacity-[0.55]");

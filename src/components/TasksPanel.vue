@@ -32,7 +32,7 @@
           :key="`todo-draft-${todoDraftView.index}`"
           class="space-y-1 rounded-lg border border-transparent transition-colors"
           :data-todo-textarea-drop="todoDraftView.index"
-          :class="{ 'border-primary/40 bg-primary/10': isActiveDropTarget(todoDraftView.index) }"
+          :class="{ 'border-base-content/25 bg-base-content/10': isActiveDropTarget(todoDraftView.index) }"
         >
           <textarea
             :value="todoDraftView.value"

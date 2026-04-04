@@ -50,7 +50,7 @@
             tabindex="-1"
             class="list-item-hover flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left text-sm"
             :class="{
-              'border-primary/40 bg-primary/10': entry.path === selectedPath,
+              'border-base-content/15 bg-base-300': entry.path === selectedPath,
               'opacity-70': isRevertingAll || isPathReverting(entry.path)
             }"
             :disabled="isRevertingAll || isPathReverting(entry.path)"

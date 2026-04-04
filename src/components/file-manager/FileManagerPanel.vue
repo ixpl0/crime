@@ -12,7 +12,7 @@
 
       <div
         class="min-h-0 flex-1 overflow-y-auto p-1 transition-colors duration-150"
-        :class="{ 'bg-primary/5': fileDragContext.dragOverDirectoryPath.value === props.projectPath }"
+        :class="{ 'bg-base-content/5': fileDragContext.dragOverDirectoryPath.value === props.projectPath }"
         @dragover="handlePanelDragOver"
         @drop="handlePanelDrop"
         @dragleave="handlePanelDragLeave"

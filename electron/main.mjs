@@ -19,6 +19,10 @@ import { registerGitWatcherIpcHandlers } from "./main/ipc/register-git-watcher-i
 import { registerSearchIpcHandlers } from "./main/ipc/register-search-ipc.mjs";
 import { toErrorMessage, toIpcErrorResponse } from "./main/error-utils.mjs";
 
+if (!app.isPackaged) {
+  app.name = "crime-dev";
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const IDE_ROOT_PATH = resolve(__dirname, "..");
@@ -31,7 +35,7 @@ const { SETTINGS_DIRNAME } = settingsConstantsModule;
 const { quickKeyBindings } = quickKeyBindingsModule;
 
 const WINDOW_STATE_SAVE_DEBOUNCE_MS = 250;
-const IS_FAIL_FAST = process.env.NODE_ENV !== "production";
+const IS_FAIL_FAST = !app.isPackaged;
 const DEFAULT_TERMINAL_SESSION_ID = "primary";
 
 const runCommand = createCommandRunner(IDE_NODE_MODULES_BIN_PATH);
