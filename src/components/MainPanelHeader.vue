@@ -163,7 +163,7 @@
 
     <div
       v-if="hiddenPanelOptions.length > 0"
-      class="dropdown dropdown-end manual-dropdown ml-4"
+      class="dropdown dropdown-end manual-dropdown ml-4 self-center"
       :class="{ 'dropdown-open': isHiddenPanelsDropdownOpen }"
     >
       <button
