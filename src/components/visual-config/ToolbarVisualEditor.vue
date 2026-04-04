@@ -40,6 +40,7 @@
       <!-- Expanded content -->
       <div v-if="isExpanded(elementIndex)" class="space-y-3 border-t border-base-300 p-3">
         <FieldText label="Название" :model-value="element.label" @update:model-value="updateElementLabel(elementIndex, $event)" />
+        <FieldIcon label="Иконка" :model-value="element.icon" @update:model-value="updateElementIcon(elementIndex, $event)" />
         <FieldColor label="Цвет" :model-value="element.color" @update:model-value="updateElementColor(elementIndex, $event)" />
 
         <!-- Dropdown: nested items -->
@@ -184,6 +185,7 @@ import { ArrowDown, ArrowUp, ChevronRight, Plus, X } from "lucide-vue-next";
 import { type ToolbarAction, type ToolbarConfig, type ToolbarDropdown } from "../../types/toolbar";
 import FieldText from "./FieldText.vue";
 import FieldColor from "./FieldColor.vue";
+import FieldIcon from "./FieldIcon.vue";
 import ToolbarActionEditor from "./ToolbarActionEditor.vue";
 import { isDropdown, useExpandState, useElementMutations, useItemMutations, useSubItemMutations } from "./use-toolbar-editor";
 
@@ -193,7 +195,7 @@ const config = computed(() => props.modelValue as ToolbarConfig);
 
 const { isExpanded, isExpandedItem, isExpandedSubItem,
   toggleExpand, toggleExpandItem, toggleExpandSubItem } = useExpandState();
-const { updateElement, updateElementLabel, updateElementColor, updateStandaloneAction,
+const { updateElement, updateElementLabel, updateElementIcon, updateElementColor, updateStandaloneAction,
   handleMoveElementUp, handleMoveElementDown, handleRemoveElement,
   handleAddDropdown, handleAddAction } = useElementMutations(() => config.value, (c) => { emit("update:modelValue", c); });
 const { updateItem, updateItemLabel, handleMoveItem, handleRemoveItem,

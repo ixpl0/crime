@@ -55,6 +55,9 @@ export const useElementMutations = (
     updateElementColor: (i: number, color: string | undefined) => {
       updateElement(i, (el) => ({ ...el, color: color as ToolbarButtonColor | undefined }));
     },
+    updateElementIcon: (i: number, icon: string | undefined) => {
+      updateElement(i, (el) => ({ ...el, icon }));
+    },
     updateStandaloneAction: (i: number, action: ToolbarAction) => {
       emitElements(getConfig().elements.map((el, idx) => (idx === i ? action : el)));
     },

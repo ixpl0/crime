@@ -16,6 +16,7 @@
           @click="handleDropdownToggleClick($event, elementIndex)"
           @keydown="handleDropdownTriggerKeydown($event, elementIndex)"
         >
+          <component v-if="resolveLucideIcon(element.icon)" :is="resolveLucideIcon(element.icon)" :size="14" class="shrink-0" />
           {{ element.label }}
           <ChevronDown :size="14" class="-mr-px translate-y-px" />
         </button>
@@ -35,7 +36,10 @@
                 class="flex w-full justify-between whitespace-nowrap"
                 @click="toggleSubmenu(elementIndex, itemIndex)"
               >
-                <span class="truncate">{{ item.label }}</span>
+                <span class="flex items-center gap-1.5">
+                  <component v-if="resolveLucideIcon(item.icon)" :is="resolveLucideIcon(item.icon)" :size="14" class="shrink-0 opacity-50" />
+                  <span class="truncate">{{ item.label }}</span>
+                </span>
                 <ChevronRight
                   :size="14"
                   class="shrink-0 opacity-50 transition-transform"
@@ -61,6 +65,7 @@
                       <span v-else-if="getTrackingDaysLabel(subItem)" class="shrink-0 text-xs font-semibold text-warning">
                         {{ getTrackingDaysLabel(subItem) }}
                       </span>
+                      <component v-else-if="resolveLucideIcon(subItem.icon)" :is="resolveLucideIcon(subItem.icon)" :size="14" class="shrink-0 opacity-50" />
                       <span class="truncate">{{ subItem.label }}</span>
                     </span>
                     <kbd v-if="subItem.shortcut" class="kbd kbd-xs">{{ formatShortcut(subItem.shortcut) }}</kbd>
@@ -83,6 +88,7 @@
                   <span v-else-if="getTrackingDaysLabel(item)" class="shrink-0 text-xs font-semibold text-warning">
                     {{ getTrackingDaysLabel(item) }}
                   </span>
+                  <component v-else-if="resolveLucideIcon(item.icon)" :is="resolveLucideIcon(item.icon)" :size="14" class="shrink-0 opacity-50" />
                   <span class="truncate">{{ item.label }}</span>
                 </span>
                 <kbd v-if="item.shortcut" class="kbd kbd-xs">{{ formatShortcut(item.shortcut) }}</kbd>
@@ -102,6 +108,7 @@
         :title="getActionTitle(element)"
         @click="$emit('execute-action', element)"
       >
+        <component v-if="resolveLucideIcon(element.icon)" :is="resolveLucideIcon(element.icon)" :size="14" class="shrink-0" />
         {{ element.label }}
         <kbd v-if="element.shortcut" class="kbd kbd-xs ml-1">{{ formatShortcut(element.shortcut) }}</kbd>
       </button>
@@ -130,6 +137,7 @@ import {
   getToolbarButtonCustomStyle
 } from "../toolbar/toolbar-button-styles";
 import { formatShortcut } from "../toolbar/toolbar-shortcuts";
+import { resolveLucideIcon } from "../toolbar/toolbar-icons";
 import { computeDaysSinceLastUsed, isLastUsedWithinOneDay } from "../toolbar/toolbar-tracking";
 import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, positionFixedDropdown, useDropdownClickOutside } from "../utils/dropdown-utils";
 import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";

@@ -1,65 +1,33 @@
 <template>
   <div role="tablist" class="tabs tabs-bordered tabs-sm flex-wrap gap-y-1">
       <template v-if="isAgentDetached">
-        <span role="tab" class="tab tab-active">Агент</span>
+        <span role="tab" class="tab tab-active gap-1"><Bot :size="14" class="text-base-content/40" /> Агент</span>
       </template>
       <template v-else>
         <button
+          v-for="tab in MAIN_TABS"
+          :key="tab.id"
           role="tab"
-          class="tab"
+          class="tab gap-1"
           tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'agent' }"
-          @click="setActiveTab('agent')"
+          :class="{ 'tab-active': activeTab === tab.id }"
+          @click="setActiveTab(tab.id)"
         >
-          Агент
-        </button>
-        <button
-          role="tab"
-          class="tab"
-          tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'terminal' }"
-          @click="setActiveTab('terminal')"
-        >
-          Терминал
-          <span v-if="terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
-        </button>
-        <button
-          role="tab"
-          class="tab"
-          tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'files' }"
-          @click="setActiveTab('files')"
-        >
-          Файлы
-        </button>
-        <button
-          role="tab"
-          class="tab"
-          tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'changes' }"
-          @click="setActiveTab('changes')"
-        >
-          Изменения
-          <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
-        </button>
-        <button
-          role="tab"
-          class="tab"
-          tabindex="-1"
-          :class="{ 'tab-active': activeTab === 'git' }"
-          @click="setActiveTab('git')"
-        >
-          Гит
+          <component :is="tab.icon" :size="14" class="text-base-content/40" />
+          {{ tab.label }}
+          <span v-if="tab.id === 'terminal' && terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
+          <span v-if="tab.id === 'changes' && changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
         </button>
       </template>
       <button
         type="button"
         role="tab"
-        class="tab"
+        class="tab gap-1"
         tabindex="-1"
         title="Секреты проекта (.env)"
         @click="openSecretsEditor"
       >
+        <KeyRound :size="14" class="text-base-content/40" />
         Секреты
       </button>
 
@@ -70,12 +38,13 @@
         <button
           type="button"
           role="tab"
-          class="tab"
+          class="tab gap-1"
           tabindex="-1"
           :aria-expanded="isProjectDropdownOpen"
           @click="handleProjectDropdownClick"
           @keydown="handleProjectDropdownKeydown"
         >
+          <FolderCog :size="14" class="text-base-content/40" />
           Проект
           <ChevronDown :size="14" class="ml-1" />
         </button>
@@ -235,12 +204,20 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronDown, ExternalLink, Eye, FolderPlus, Moon, PanelRightOpen, Search, Settings, Sun, X } from "lucide-vue-next";
+import { Bot, ChevronDown, ExternalLink, Eye, FolderCog, FolderOpen, FolderPlus, GitCompareArrows, GitGraph, KeyRound, Moon, PanelRightOpen, Search, Settings, Sun, Terminal, X } from "lucide-vue-next";
 import { useSearchDialogStore } from "../search/search-dialog-store";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
 import { positionFixedDropdown } from "../utils/dropdown-utils";
+
+const MAIN_TABS = [
+  { id: "agent" as const, label: "Агент", icon: Bot },
+  { id: "terminal" as const, label: "Терминал", icon: Terminal },
+  { id: "files" as const, label: "Файлы", icon: FolderOpen },
+  { id: "changes" as const, label: "Изменения", icon: GitCompareArrows },
+  { id: "git" as const, label: "Гит", icon: GitGraph },
+];
 
 defineProps<{
   changesCount: number;

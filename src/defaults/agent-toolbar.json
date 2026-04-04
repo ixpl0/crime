@@ -3,33 +3,39 @@
     {
       "label": "Агенты",
       "color": "",
+      "icon": "Bot",
       "items": [
         {
           "label": "Claude Code",
+          "icon": "Sparkles",
           "value": "claude",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "Codex CLI",
+          "icon": "Zap",
           "value": "codex",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "Gemini CLI",
+          "icon": "Star",
           "value": "gemini",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "GLM-5",
+          "icon": "Brain",
           "value": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$f='.crime\\.env'; if(-not(Test-Path $f)){Write-Host '>>> Ошибка: Секреты не настроены. Нажмите кнопку [Секреты] в верхней панели.' -ForegroundColor Red; exit 1}; $k=(Get-Content $f | ConvertFrom-StringData).GLM_API_KEY; if(-not $k){Write-Host '>>> Ошибка: GLM_API_KEY не найден в .crime\\.env. Настройте его через меню [Секреты].' -ForegroundColor Red; exit 1}; $env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=$k; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5'; claude /resume\"",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "GLM-4.7",
+          "icon": "Cpu",
           "value": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$f='.crime\\.env'; if(-not(Test-Path $f)){Write-Host '>>> Ошибка: Секреты не настроены. Нажмите кнопку [Секреты] в верхней панели.' -ForegroundColor Red; exit 1}; $k=(Get-Content $f | ConvertFrom-StringData).GLM_API_KEY; if(-not $k){Write-Host '>>> Ошибка: GLM_API_KEY не найден в .crime\\.env. Настройте его через меню [Секреты].' -ForegroundColor Red; exit 1}; $env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=$k; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-4.7'; claude /resume\"",
           "type": "command",
           "resetTerminal": true
@@ -39,42 +45,50 @@
     {
       "label": "Код",
       "color": "",
+      "icon": "Code",
       "items": [
         {
           "label": "В начале",
+          "icon": "Play",
           "items": [
             {
               "label": "Настроить тесты",
+              "icon": "TestTube",
               "value": "Определи язык и стек проекта. Выбери оптимальный на сегодня тестовый фреймворк: тест-раннер, библиотеку ассертов, инструменты для моков. Обоснуй выбор каждого инструмента. Установи зависимости, создай конфигурацию, добавь скрипты в манифест и напиши первые тесты для самых критичных модулей.",
               "type": "prompt",
               "done": false
             },
             {
               "label": "Настроить линтинг",
+              "icon": "Paintbrush",
               "value": "Определи стек проекта и настрой линтер и форматтер. Выбери оптимальные инструменты для данного языка (ESLint, Prettier, Biome, Ruff и т.п.), установи зависимости, создай конфиги, добавь скрипты в манифест. Настрой правила, соответствующие текущему стилю проекта.",
               "type": "prompt",
               "done": false
             },
             {
               "label": "Настроить pre-commit",
+              "icon": "ShieldCheck",
               "value": "Настрой pre-commit хуки для проекта. Хуки должны покрывать проверку типов, линтинг и форматирование. При ошибке хук должен возвращать ненулевой exit code и блокировать коммит. Если хуки уже настроены — проверь, что они корректно работают и ничего не пропускают.",
               "type": "prompt",
               "done": false
             },
             {
               "label": "Проверить .gitignore",
+              "icon": "FileSearch",
               "value": "Проверь .gitignore на полноту. Убедись, что исключены артефакты сборки, зависимости, локальные конфиги, .env-файлы и другие чувствительные или генерируемые файлы. Если чего-то не хватает — добавь с кратким объяснением.",
               "type": "prompt",
               "done": false
             },
             {
               "label": "Настроить терминал",
+              "icon": "SquareTerminal",
               "value": "Изучи проект: определи пакетный менеджер, скрипты из манифеста (package.json, Makefile, Cargo.toml и т.п.), команды для сборки, тестов, линтинга и другие часто используемые операции. На основе этого настрой терминальный тулбар — обнови файл .crime/terminal-toolbar.json, добавив кнопки и дропдауны для ключевых команд проекта. Формат: { \"elements\": [...] }, элемент — кнопка { \"label\", \"value\", \"type\": \"command\", \"color\" } или дропдаун { \"label\", \"color\", \"items\": [...] }. Цвета: primary, secondary, accent, info, success, warning, error, neutral, ghost, или HEX (#fff), или oklch(0.8 0.15 200).",
               "type": "prompt",
               "done": false
             },
             {
               "label": "Инициализировать git-репо",
+              "icon": "GitBranch",
               "value": "Инициализируй git-репозиторий в текущей директории. Выполни git init. Определи стек проекта и создай подходящий .gitignore (исключи артефакты сборки, зависимости, .env, IDE-файлы и другие генерируемые файлы). Сделай initial commit со всеми файлами.",
               "type": "prompt",
               "done": false
@@ -83,27 +97,32 @@
         },
         {
           "label": "Периодически",
+          "icon": "RefreshCw",
           "items": [
             {
               "label": "Дописать тесты",
+              "icon": "FlaskConical",
               "value": "Запусти тесты проекта и проанализируй результаты. Исправь сломанные тесты, если есть. Найди непокрытые критические модули и допиши для них тесты. Убедись, что все тесты проходят.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Обновить документацию",
+              "icon": "BookOpen",
               "value": "Изучи проект и обнови всю документацию: README, инструкции для разработчиков, комментарии в конфигах. Убедись, что описание архитектуры, структуры каталогов, доступных скриптов и зависимостей соответствует реальному состоянию кодбейса. Удали устаревшее, добавь недостающее, исправь неточности.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Обновить инструкции ИИ",
+              "icon": "ScrollText",
               "value": "Внимательно изучи текущее состояние проекта: архитектуру, стек, скрипты, соглашения по коду. Сравни с тем, что написано в CLAUDE.md (или аналогичном файле инструкций для агента). Если что-то устарело, неточно или отсутствует — обнови файл. Не добавляй ничего лишнего: только то, что реально нужно агенту для работы с этим проектом.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Проверить зависимости",
+              "icon": "PackageSearch",
               "value": "Проверь зависимости проекта на наличие устаревших версий и известных уязвимостей. Для каждого кандидата на обновление укажи: текущая версия, целевая версия, есть ли breaking changes, безопасно ли обновить прямо сейчас. Предложи порядок обновления батчами по уровню риска.",
               "type": "prompt",
               "lastUsed": null
@@ -112,63 +131,74 @@
         },
         {
           "label": "Ревью",
+          "icon": "Eye",
           "items": [
             {
               "label": "Найти баги",
+              "icon": "Bug",
               "value": "Проведи ревью кодбейса с фокусом на баги и логические ошибки. Ищи: ошибки в условиях и ветвлениях, off-by-one, null/undefined dereferences, race conditions, некорректные предположения о данных, тихие проглатывания ошибок, неверный порядок операций. Для каждой находки укажи: severity (Critical/High/Medium), файл и строку, что именно сломано, конкретный фикс.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Проверить edge cases",
+              "icon": "TriangleAlert",
               "value": "Проведи ревью обработки граничных случаев. Для каждого публичного API, обработчика и критического пути проверь: что происходит при null, undefined, пустом массиве, пустой строке, отрицательных числах, граничных значениях? Что если внешний вызов вернёт ошибку, таймаут или неожиданный формат? Где отсутствует валидация на границах системы? Для каждой находки укажи сценарий и предложи защиту.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Найти дублирование",
+              "icon": "Copy",
               "value": "Проведи ревью кодбейса со строгим фокусом на DRY. Найди дублированную логику, повторяющиеся ветвления, скопированные типы и места, где поведение можно централизовать без ущерба для читаемости. Верни замечания по критичности с указанием файлов. Предложи конкретные рефакторинги с минимальным риском регрессий.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Найти мертвый код",
+              "icon": "Skull",
               "value": "Проведи ревью гигиены кода. Найди мертвый код, неиспользуемые импорты и переменные, устаревшие TODO/FIXME, закомментированные фрагменты, переусложненные обертки, вводящие в заблуждение имена и временные хаки. Для каждого замечания объясни, безопасно ли удалить это сейчас, и предложи минимальный патч.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Найти раздутые модули",
+              "icon": "Layers",
               "value": "Проведи ревью декомпозиции кода. Найди крупные файлы и перегруженные функции, где смешаны ответственности, глубокая вложенность и длинные ветвления. Для каждого замечания укажи риск для поддерживаемости и предложи конкретный план разбиения с минимальным риском регрессий.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Проверить производительность",
+              "icon": "Gauge",
               "value": "Проведи ревью производительности с фокусом на реальных узких местах. Проверь алгоритмическую сложность, лишние перерисовки или перерасчеты, выделения памяти на горячих путях, блокирующий I/O и дорогие обращения к сети или БД. Приоритизируй проблемы по влиянию и предложи измеримые исправления.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Секьюрити-ревью",
+              "icon": "Lock",
               "value": "Проведи ревью безопасности с мышлением атакующего. Проверь валидацию входных данных, command/code injection, path traversal, XSS/CSRF, утечки секретов, небезопасные настройки по умолчанию и раскрытие данных в логах. Перечисли уязвимости по критичности со сценариями эксплуатации и мерами устранения.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Оценить покрытие тестами",
+              "icon": "ListChecks",
               "value": "Проведи ревью качества и покрытия тестов. Оцени, какие модули протестированы, где пробелы, какие критические пути не покрыты. Проверь качество самих тестов: не тестируют ли они имплементацию вместо поведения, нет ли хрупких или бессмысленных тестов. Предложи конкретные тесты для непокрытых участков.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Ревью архитектуры",
+              "icon": "Landmark",
               "value": "Проведи ревью архитектуры. Оцени границы модулей, coupling и cohesion, соблюдение Single Responsibility, корректность абстракций и соответствие соглашениям фреймворка. Найди leaky abstractions, циклические зависимости и нарушения слоёв. Предложи улучшения, ранжированные по влиянию.",
               "type": "prompt",
               "lastUsed": null
             },
             {
               "label": "Проверить логирование",
+              "icon": "ClipboardList",
               "value": "Проведи ревью наблюдаемости кода. Проверь: достаточно ли логирования на критических путях и в точках принятия решений? Логируются ли ошибки с нужным контекстом для диагностики? Нет ли утечки чувствительных данных в логах? Можно ли по логам восстановить цепочку событий при инциденте? Предложи конкретные точки, где нужно добавить или улучшить логирование.",
               "type": "prompt",
               "lastUsed": null
@@ -180,19 +210,23 @@
     {
       "label": "Второе мнение",
       "color": "",
+      "icon": "MessageSquare",
       "items": [
         {
           "label": "Claude Code ревью",
+          "icon": "Sparkles",
           "type": "prompt",
           "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Claude Code CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: claude -p 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
         },
         {
           "label": "Codex ревью",
+          "icon": "Zap",
           "type": "prompt",
           "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Codex CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: codex exec -c hide_agent_reasoning=true 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
         },
         {
           "label": "Gemini ревью",
+          "icon": "Star",
           "type": "prompt",
           "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Gemini CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: gemini -p 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
         }
@@ -201,6 +235,7 @@
     {
       "label": "/команды",
       "color": "",
+      "icon": "Hash",
       "items": [
         {
           "label": "/new",
@@ -242,9 +277,11 @@
     {
       "label": "Сценарии",
       "color": "",
+      "icon": "Clapperboard",
       "items": [
         {
           "label": "Claude → /resume → 1",
+          "icon": "Repeat",
           "type": "scenario",
           "steps": [
             { "type": "command", "value": "claude", "resetTerminal": true },
@@ -259,39 +296,47 @@
     {
       "label": "Git",
       "color": "",
+      "icon": "GitBranch",
       "items": [
         {
           "label": "Коммит пуш",
+          "icon": "GitCommitHorizontal",
           "value": "коммит пуш",
           "type": "prompt"
         },
         {
           "label": "Ревью перед коммитом",
+          "icon": "Search",
           "value": "Посмотри на текущий git diff (staged и unstaged). Убедись, что нет отладочных артефактов, незаконченных изменений, случайных файлов или нарушений code style. Если всё в порядке — предложи лаконичное сообщение коммита в стиле проекта.",
           "type": "prompt"
         },
         {
           "label": "Описание PR",
+          "icon": "GitPullRequest",
           "value": "На основе текущих изменений и последних коммитов составь описание Pull Request: краткий заголовок, что изменилось и почему, что нужно проверить при ревью.",
           "type": "prompt"
         },
         {
           "label": "Changelog",
+          "icon": "FileText",
           "value": "По последним коммитам сгенерируй раздел changelog в формате Keep a Changelog. Сгруппируй по категориям: Added, Changed, Fixed, Removed.",
           "type": "prompt"
         },
         {
           "label": "Обнови ветку",
+          "icon": "RotateCw",
           "value": "git pull",
           "type": "command"
         },
         {
           "label": "Обнови из main",
+          "icon": "Merge",
           "value": "git fetch origin main && git merge origin/main",
           "type": "command"
         },
         {
           "label": "Обнови из develop",
+          "icon": "Merge",
           "value": "git fetch origin develop && git merge origin/develop",
           "type": "command"
         }
@@ -300,6 +345,7 @@
     {
       "label": "Reset",
       "color": "",
+      "icon": "Trash2",
       "resetTerminal": true
     }
   ]

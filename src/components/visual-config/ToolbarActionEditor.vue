@@ -13,6 +13,7 @@
       @update:model-value="updateField('value', $event)"
     />
 
+    <FieldIcon label="Иконка" :model-value="action.icon" @update:model-value="updateField('icon', $event)" />
     <FieldColor label="Цвет" :model-value="action.color" @update:model-value="updateField('color', $event)" />
     <FieldText label="Шорткат" :model-value="action.shortcut ?? ''" placeholder="e.g. ctrl+1" @update:model-value="updateOptionalString('shortcut', $event)" />
     <FieldCheckbox label="Сбросить терминал" :model-value="action.resetTerminal ?? false" @update:model-value="updateOptionalBool('resetTerminal', $event)" />
@@ -137,6 +138,7 @@ import FieldText from "./FieldText.vue";
 import FieldSelect from "./FieldSelect.vue";
 import FieldCheckbox from "./FieldCheckbox.vue";
 import FieldColor from "./FieldColor.vue";
+import FieldIcon from "./FieldIcon.vue";
 
 const ACTION_TYPE_OPTIONS = [
   { label: "command", value: "command" },

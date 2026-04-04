@@ -32,6 +32,10 @@ const isToolbarButtonColor = (value: unknown): value is ToolbarButtonColor =>
     OKLCH_COLOR_PATTERN.test(value)
   );
 
+const ICON_NAME_PATTERN = /^[A-Z][a-zA-Z0-9]*$/;
+const isIconName = (value: unknown): value is string =>
+  typeof value === "string" && ICON_NAME_PATTERN.test(value);
+
 export const isToolbarPresetColor = (value: string): value is ToolbarPresetColor =>
   TOOLBAR_PRESET_COLORS.has(value);
 
@@ -164,12 +168,14 @@ function buildToolbarAction(
   tracking: { readonly lastUsed: string | null | undefined; readonly done: boolean | undefined }
 ): ToolbarAction {
   const shortcut = typeof value.shortcut === "string" ? value.shortcut : undefined;
+  const icon = isIconName(value.icon) ? value.icon : undefined;
   const color = isToolbarButtonColor(value.color) ? value.color : undefined;
 
   return {
     label,
     value: definition.value,
     type: definition.type,
+    ...(icon !== undefined && { icon }),
     ...(shortcut !== undefined && { shortcut }),
     ...(color !== undefined && { color }),
     ...(resetTerminal !== undefined && { resetTerminal }),
@@ -222,8 +228,9 @@ const parseToolbarElement = (value: unknown): ToolbarElement | null => {
       items.push(parsedItem);
     }
 
+    const icon = isIconName(value.icon) ? value.icon : undefined;
     const color = isToolbarButtonColor(value.color) ? value.color : undefined;
-    return { label: value.label, items, color };
+    return { label: value.label, items, ...(icon !== undefined && { icon }), color };
   }
 
   return parseToolbarAction(value);
@@ -261,38 +268,28 @@ if (!parsedDefaultToolbarConfig) {
 }
 export const defaultToolbarConfig: ToolbarConfig = parsedDefaultToolbarConfig;
 
+function serializeActionOptionalFields(target: Record<string, unknown>, action: ToolbarAction) {
+  if (action.icon) { target.icon = action.icon; }
+  if (action.shortcut) { target.shortcut = action.shortcut; }
+  if (action.color) { target.color = action.color; }
+  if (action.resetTerminal) { target.resetTerminal = true; }
+  if (action.lastUsed !== undefined) { target.lastUsed = action.lastUsed; }
+  if (action.done !== undefined) { target.done = action.done; }
+}
+
 function serializeToolbarAction(action: ToolbarAction) {
-  const serializedAction: Record<string, unknown> = {
-    label: action.label
-  };
+  const result: Record<string, unknown> = { label: action.label };
 
   if (action.type === "scenario") {
-    serializedAction.type = "scenario";
-    if (action.steps) {
-      serializedAction.steps = action.steps;
-    }
+    result.type = "scenario";
+    if (action.steps) { result.steps = action.steps; }
   } else if (!(action.resetTerminal && action.type === "command" && action.value.length === 0)) {
-    serializedAction.value = action.value;
-    serializedAction.type = action.type;
+    result.value = action.value;
+    result.type = action.type;
   }
 
-  if (action.shortcut) {
-    serializedAction.shortcut = action.shortcut;
-  }
-  if (action.color) {
-    serializedAction.color = action.color;
-  }
-  if (action.resetTerminal) {
-    serializedAction.resetTerminal = true;
-  }
-  if (action.lastUsed !== undefined) {
-    serializedAction.lastUsed = action.lastUsed;
-  }
-  if (action.done !== undefined) {
-    serializedAction.done = action.done;
-  }
-
-  return serializedAction;
+  serializeActionOptionalFields(result, action);
+  return result;
 }
 
 function serializeToolbarElement(element: ToolbarElement) {
@@ -304,6 +301,9 @@ function serializeToolbarElement(element: ToolbarElement) {
     label: element.label,
     items: element.items.map(serializeToolbarElement)
   };
+  if (element.icon) {
+    serializedElement.icon = element.icon;
+  }
   if (element.color) {
     serializedElement.color = element.color;
   }

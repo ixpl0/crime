@@ -29,6 +29,7 @@ export interface ToolbarAction {
   readonly label: string;
   readonly value: string;
   readonly type: ToolbarActionType;
+  readonly icon?: string;
   readonly shortcut?: string;
   readonly color?: ToolbarButtonColor;
   readonly resetTerminal?: boolean;
@@ -40,6 +41,7 @@ export interface ToolbarAction {
 export interface ToolbarDropdown {
   readonly label: string;
   readonly items: readonly ToolbarElement[];
+  readonly icon?: string;
   readonly color?: ToolbarButtonColor;
 }
 

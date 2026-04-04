@@ -5,6 +5,7 @@
 
 [data-theme="dark"] {
   --color-primary: oklch(0.64 0.16 249.92);
+  --color-secondary: oklch(0.65 0.2 12.83);
 }
 
 :root {
