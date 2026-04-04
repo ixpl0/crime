@@ -192,6 +192,7 @@ import { useAppNavigationStore } from "../navigation/navigation-store";
 import { defaultGitToolbarConfig } from "../toolbar/git-toolbar-storage";
 import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { useGitStatus } from "../composables/use-git-status";
+import { useStatusBarStore } from "../composables/status-bar-store";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
 import ConfirmDialog from "./ConfirmDialog.vue";
@@ -354,6 +355,13 @@ const {
 
 const changesCount = computed(() => gitStatusResponse.value?.entries?.length ?? 0);
 const terminalSessionCount = ref(0);
+
+const statusBarStore = useStatusBarStore();
+watchEffect(() => {
+  const response = gitStatusResponse.value;
+  statusBarStore.gitBranch.value = response?.branch ?? null;
+  statusBarStore.gitChangesCount.value = response?.entries?.length ?? 0;
+});
 
 const toolbarConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${toolbarConfigFilename}`

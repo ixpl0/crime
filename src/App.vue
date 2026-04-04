@@ -2,6 +2,7 @@
   <AppToastViewport />
   <main class="app-drag-region flex h-screen flex-col overflow-hidden bg-base-200 text-base-content" @mousedown="handleGlobalMousedown">
     <div class="flex h-8 shrink-0 items-center bg-base-100">
+      <TitleBar />
       <div class="flex-1" />
       <div class="flex h-full items-stretch">
         <button
@@ -114,6 +115,7 @@ import PanelResizeHandle from "./components/PanelResizeHandle.vue";
 import ProjectPicker from "./components/ProjectPicker.vue";
 import TasksPanel from "./components/TasksPanel.vue";
 import TipBar from "./components/TipBar.vue";
+import TitleBar from "./components/TitleBar.vue";
 
 const TASKS_PANEL_DEFAULT_WIDTH = 288;
 const DEBUG_PANEL_DEFAULT_HEIGHT = 200;

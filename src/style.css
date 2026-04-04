@@ -4,7 +4,8 @@
 }
 
 [data-theme="dark"] {
-  --color-primary: oklch(0.64 0.16 249.92);
+  --color-primary: oklch(0.83 0.185 84);
+  --color-primary-content: oklch(0.27 0.07 50);
   --color-secondary: oklch(0.65 0.2 12.83);
 }
 

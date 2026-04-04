@@ -161,6 +161,7 @@ interface GitStatusResponse {
   ok: boolean;
   available?: boolean;
   reason?: "git-not-installed" | "not-a-repository";
+  branch?: string | null;
   entries?: GitStatusEntry[];
   error?: string;
 }

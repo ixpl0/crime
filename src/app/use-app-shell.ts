@@ -46,6 +46,7 @@ import { provideAppTodoStore } from "../todo/todo-store";
 import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
 import { provideSearchDialogStore } from "../search/search-dialog-store";
+import { provideStatusBarStore } from "../composables/status-bar-store";
 import { provideAppToastStore } from "../toast/toast-store";
 
 // eslint-disable-next-line max-lines-per-function
@@ -477,6 +478,7 @@ export function useAppShell() {
 
   useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
+  provideStatusBarStore();
   provideConfirmDialog();
   providePromptDialog();
   provideSearchDialogStore();

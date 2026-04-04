@@ -151,20 +151,23 @@ export function createGitService(runCommand) {
     }
 
     try {
-      const statusResult = await runCommand(
-        "git",
-        [
-          "-c",
-          "core.quotepath=false",
-          "status",
-          "--porcelain=v1",
-          "-z",
-          "--untracked-files=all",
-          "--",
-          "."
-        ],
-        projectPath
-      );
+      const [statusResult, branch] = await Promise.all([
+        runCommand(
+          "git",
+          [
+            "-c",
+            "core.quotepath=false",
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--",
+            "."
+          ],
+          projectPath
+        ),
+        getCurrentBranch(projectPath)
+      ]);
       if (statusResult.code !== 0) {
         const stderr = statusResult.stderr.toString("utf-8").trim();
         return { ok: false, error: stderr.length > 0 ? stderr : "Failed to read git status." };
@@ -173,6 +176,7 @@ export function createGitService(runCommand) {
       return {
         ok: true,
         available: true,
+        branch,
         entries: parseGitStatusPorcelain(statusResult.stdout.toString("utf-8"), projectPath)
       };
     } catch (error) {
