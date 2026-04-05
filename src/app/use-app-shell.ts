@@ -44,7 +44,6 @@ import { useTerminalSubmit } from "../terminal/use-terminal-submit";
 import { useTerminalView } from "../terminal/use-terminal-view";
 import { provideDebugTodoStore } from "../todo/debug-todo-store";
 import { provideAppTodoStore } from "../todo/todo-store";
-import { useTodoNudge } from "../todo/use-todo-nudge";
 import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
 import { provideSearchDialogStore } from "../search/search-dialog-store";
@@ -342,8 +341,7 @@ export function useAppShell() {
 
   const { handleBell, acknowledgeBellReminder } = useBellReminder({
     bellReminderSettings,
-    flashFrame: () => { void window.projectApi.window.flashFrame(); },
-    pushToast: (message, pushToastOptions) => toastStore.pushToast(message, pushToastOptions)
+    flashFrame: () => { void window.projectApi.window.flashFrame(); }
   });
 
   const {
@@ -599,21 +597,8 @@ export function useAppShell() {
     closeSecretsEditor,
     handlePromptSuffixToggle
   });
-  const {
-    isNudgeEnabled,
-    nudgeIntervalMinutes,
-    toggleNudgeEnabled,
-    setNudgeIntervalMinutes,
-    acknowledgeNudge
-  } = useTodoNudge({
-    todoDraftViewItems,
-    pushToast: (message, pushToastOptions) => toastStore.pushToast(message, pushToastOptions),
-    flashFrame: () => { void window.projectApi.window.flashFrame(); }
-  });
-
   const sendTextareaToTerminal = () => {
     void sendTextareaToTerminalBase();
-    acknowledgeNudge();
     acknowledgeBellReminder();
   };
 
@@ -636,26 +621,6 @@ export function useAppShell() {
     focusTextarea: () => terminalInputTextarea.value?.focus()
   });
 
-  const handleTodoTextareaInputWithNudge = (index: number, event: Event) => {
-    handleTodoTextareaInput(index, event);
-    acknowledgeNudge();
-  };
-
-  const confirmTodoEntryWithNudge = () => {
-    confirmTodoEntry();
-    acknowledgeNudge();
-  };
-
-  const removeTodoEntryWithNudge = (index: number) => {
-    removeTodoEntry(index);
-    acknowledgeNudge();
-  };
-
-  const sendTodoEntryToTerminalWithNudge = (index: number) => {
-    acknowledgeNudge();
-    return sendTodoEntryToTerminal(index);
-  };
-
   provideAppTodoStore({
     isTodoPanelCollapsed,
     todoDraftViewItems,
@@ -665,19 +630,15 @@ export function useAppShell() {
     canDragTodoDraft,
     shouldShowTodoDragHandle,
     handleTodoGripMouseDown,
-    handleTodoTextareaInput: handleTodoTextareaInputWithNudge,
+    handleTodoTextareaInput,
     handleTodoTextareaKeydown,
     handleTodoTextareaBlur,
-    confirmTodoEntry: confirmTodoEntryWithNudge,
-    removeTodoEntry: removeTodoEntryWithNudge,
+    confirmTodoEntry,
+    removeTodoEntry,
     forcePersistTodoEntries,
-    sendTodoEntryToTerminal: sendTodoEntryToTerminalWithNudge,
+    sendTodoEntryToTerminal,
     isDebugTodoPanelVisible,
-    toggleDebugTodoPanel,
-    isNudgeEnabled,
-    nudgeIntervalMinutes,
-    toggleNudgeEnabled,
-    setNudgeIntervalMinutes
+    toggleDebugTodoPanel
   });
   provideDebugTodoStore({
     todoDraftViewItems: debugTodo.todoDraftViewItems,

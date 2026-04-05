@@ -5,17 +5,14 @@ import { playTerminalBell } from "./play-terminal-bell";
 export interface UseBellReminderOptions {
   bellReminderSettings: Ref<BellReminderSettings>;
   flashFrame: () => void;
-  pushToast: (message: string, options?: { tone?: "info" | "warning"; durationMs?: number; dedupeKey?: string }) => number | null;
 }
+
+const BELL_REPEAT_DELAY_MS = 333;
 
 interface BellReminderState {
   timerId: ReturnType<typeof setTimeout> | null;
   repeatCount: number;
 }
-
-const TOAST_DURATION_MS = 6000;
-const TOAST_ESCALATED_DURATION_MS = 15_000;
-const ESCALATION_THRESHOLD = 2;
 
 function clearTimer(state: BellReminderState) {
   if (state.timerId !== null) {
@@ -35,22 +32,21 @@ function scheduleReminder(state: BellReminderState, options: UseBellReminderOpti
   const intervalMs = settings.intervalMinutes * 60_000;
 
   state.timerId = setTimeout(() => {
-    state.repeatCount += 1;
     fireReminder(state, options);
   }, intervalMs);
 }
 
-function fireReminder(state: BellReminderState, options: UseBellReminderOptions) {
+function playBellSequence(count: number, index = 0): void {
   playTerminalBell();
+  if (index + 1 < count) {
+    setTimeout(() => { playBellSequence(count, index + 1); }, BELL_REPEAT_DELAY_MS);
+  }
+}
+
+function fireReminder(state: BellReminderState, options: UseBellReminderOptions) {
+  state.repeatCount += 1;
+  playBellSequence(state.repeatCount);
   options.flashFrame();
-
-  const isEscalated = state.repeatCount > ESCALATION_THRESHOLD;
-  options.pushToast("Терминал ждёт реакции", {
-    tone: isEscalated ? "warning" : "info",
-    durationMs: isEscalated ? TOAST_ESCALATED_DURATION_MS : TOAST_DURATION_MS,
-    dedupeKey: "bell-reminder"
-  });
-
   scheduleReminder(state, options);
 }
 
