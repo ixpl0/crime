@@ -44,6 +44,12 @@ function playBellSequence(count: number, index = 0): void {
 }
 
 function fireReminder(state: BellReminderState, options: UseBellReminderOptions) {
+  if (document.hasFocus()) {
+    clearTimer(state);
+    state.repeatCount = 0;
+    return;
+  }
+
   state.repeatCount += 1;
   playBellSequence(state.repeatCount);
   options.flashFrame();
@@ -58,6 +64,10 @@ export function useBellReminder(options: UseBellReminderOptions) {
 
   const handleBell = () => {
     state.repeatCount = 0;
+    if (document.hasFocus()) {
+      clearTimer(state);
+      return;
+    }
     scheduleReminder(state, options);
   };
 
