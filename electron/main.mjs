@@ -1,4 +1,4 @@
-﻿import { app, BrowserWindow, globalShortcut, ipcMain } from "electron";
+﻿import { app, BrowserWindow, globalShortcut, ipcMain, powerSaveBlocker, screen } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import ipcChannelsModule from "./ipc-channels.cjs";
@@ -24,7 +24,10 @@ if (!app.isPackaged) {
   app.name = "crime-dev";
 }
 
+app.disableHardwareAcceleration();
+
 logger.info(`App starting (pid=${process.pid}, packaged=${app.isPackaged}, platform=${process.platform}, arch=${process.arch})`);
+logger.info("Hardware acceleration disabled");
 logger.info(`Electron ${process.versions.electron}, Chrome ${process.versions.chrome}, Node ${process.versions.node}`);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -181,7 +184,8 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      backgroundThrottling: false
     }
   });
 
@@ -192,6 +196,40 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
 
   mainWindow.on("focus", () => {
     lastFocusedWindow = mainWindow;
+  });
+
+  mainWindow.webContents.on("did-start-navigation", (_event, url) => {
+    logger.info(`WebContents did-start-navigation: ${url}`);
+  });
+
+  mainWindow.webContents.on("dom-ready", () => {
+    logger.info("WebContents dom-ready");
+  });
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    logger.info("WebContents did-finish-load");
+  });
+
+  mainWindow.webContents.on("console-message", (_event, level, message) => {
+    if (level >= 2) {
+      logger.warn(`[console] ${message}`);
+    }
+  });
+
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription) => {
+    logger.error(`WebContents did-fail-load: code=${errorCode}, description=${errorDescription}`);
+  });
+
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    logger.error(`WebContents render-process-gone: reason=${details.reason}, exitCode=${details.exitCode}`);
+  });
+
+  mainWindow.webContents.on("unresponsive", () => {
+    logger.warn("WebContents unresponsive");
+  });
+
+  mainWindow.webContents.on("responsive", () => {
+    logger.info("WebContents responsive");
   });
 
   mainWindow.on("closed", () => {
@@ -208,13 +246,42 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
   // Fixes wrong size when restoring on a monitor with different DPI scale.
   mainWindow.once("ready-to-show", () => {
     logger.info("Window ready-to-show");
+    const allDisplays = screen.getAllDisplays();
+    const primaryDisplay = screen.getPrimaryDisplay();
+    logger.info(`Displays: count=${allDisplays.length}, primary=${primaryDisplay.id} (${primaryDisplay.bounds.width}x${primaryDisplay.bounds.height}, scale=${primaryDisplay.scaleFactor})`);
+    for (const display of allDisplays) {
+      logger.info(`  Display ${display.id}: ${display.bounds.width}x${display.bounds.height} at (${display.bounds.x},${display.bounds.y}), scale=${display.scaleFactor}, rotation=${display.rotation}`);
+    }
+    logger.info(`Saved state: maximized=${initialWindowState.isMaximized}, bounds=${JSON.stringify(initialWindowState.bounds)}`);
+
+    // Always set bounds first so the window manager knows which display the
+    // window belongs to.  Without this, maximize() on a hidden window may
+    // target the primary display instead of the saved one.
+    mainWindow.setBounds(initialWindowState.bounds);
+    const savedDisplay = screen.getDisplayMatching(initialWindowState.bounds);
+    logger.info(`Window positioned on display ${savedDisplay.id}`);
+
     if (initialWindowState.isMaximized) {
       mainWindow.maximize();
-    } else {
-      mainWindow.setBounds(initialWindowState.bounds);
     }
     if (!mainWindow.isVisible()) {
       mainWindow.show();
+    }
+
+    const bounds = mainWindow.getBounds();
+    const windowDisplay = screen.getDisplayMatching(bounds);
+    logger.info(`Window shown: ${bounds.width}x${bounds.height} at (${bounds.x},${bounds.y}), maximized=${mainWindow.isMaximized()}, display=${windowDisplay.id}`);
+
+    // When the window lands on a different display than saved (e.g. the saved
+    // monitor was disconnected, or WM overrode placement), Chromium's
+    // compositor can target the wrong display surface — especially across
+    // monitors with different DPI scales — producing a blank window.
+    // Hide+show forces a full compositor reset on the correct surface.
+    if (windowDisplay.id !== savedDisplay.id) {
+      logger.warn(`Display mismatch: saved=${savedDisplay.id}, actual=${windowDisplay.id}. Forcing compositor reset.`);
+      mainWindow.hide();
+      mainWindow.show();
+      logger.info("Compositor reset applied (hide/show)");
     }
   });
 
@@ -340,8 +407,14 @@ if (!gotSingleInstanceLock) {
     createWindow({ skipLastProjectRestore: true });
   });
 
+  let powerSaveId = null;
+
   app.whenReady().then(() => {
     logger.info("App ready");
+    powerSaveId = powerSaveBlocker.start("prevent-app-suspension");
+    logger.info(`powerSaveBlocker started (id=${powerSaveId})`);
+    const gpuInfo = app.getGPUFeatureStatus();
+    logger.info(`GPU features: ${JSON.stringify(gpuInfo)}`);
     registerIpcHandlers();
     logger.info("IPC handlers registered");
     createWindow();
@@ -354,8 +427,19 @@ if (!gotSingleInstanceLock) {
     });
   });
 
+  app.on("child-process-gone", (_event, details) => {
+    logger.error(`Child process gone: type=${details.type}, reason=${details.reason}, exitCode=${details.exitCode}`);
+  });
+
+  app.on("render-process-gone", (_event, _webContents, details) => {
+    logger.error(`Render process gone: reason=${details.reason}, exitCode=${details.exitCode}`);
+  });
+
   app.on("will-quit", () => {
     logger.info("App quitting");
+    if (powerSaveId !== null && powerSaveBlocker.isStarted(powerSaveId)) {
+      powerSaveBlocker.stop(powerSaveId);
+    }
     globalShortcut.unregisterAll();
   });
 
