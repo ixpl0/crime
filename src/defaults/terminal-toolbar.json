@@ -4,29 +4,29 @@
       "label": "Dev",
       "value": "bun run dev",
       "type": "command",
-      "color": "primary"
+      "color": ""
     },
     {
       "label": "Build",
       "value": "bun run build",
       "type": "command",
-      "color": "secondary"
+      "color": ""
     },
     {
       "label": "Typecheck",
       "value": "bun run typecheck",
       "type": "command",
-      "color": "accent"
+      "color": ""
     },
     {
       "label": "Lint",
       "value": "bun run lint",
       "type": "command",
-      "color": "info"
+      "color": ""
     },
     {
       "label": "Git",
-      "color": "#fbbf24",
+      "color": "",
       "items": [
         {
           "label": "status",

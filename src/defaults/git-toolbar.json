@@ -4,19 +4,19 @@
       "label": "Status",
       "value": "git status",
       "type": "command",
-      "color": "info"
+      "color": ""
     },
     {
       "label": "Diff",
       "value": "git diff --stat",
       "type": "command",
-      "color": "accent"
+      "color": ""
     },
     {
       "label": "Log",
       "value": "git log --oneline -15",
       "type": "command",
-      "color": "neutral"
+      "color": ""
     },
     {
       "label": "Коммит",
@@ -37,7 +37,7 @@
           "type": "command"
         }
       ],
-      "color": "primary"
+      "color": ""
     },
     {
       "label": "Ветки",
@@ -73,7 +73,7 @@
           "type": "command"
         }
       ],
-      "color": "secondary"
+      "color": ""
     },
     {
       "label": "Stash",
@@ -94,7 +94,7 @@
           "type": "command"
         }
       ],
-      "color": "warning"
+      "color": ""
     },
     {
       "label": "Ревью",
@@ -115,7 +115,7 @@
           "type": "prompt"
         }
       ],
-      "color": "success"
+      "color": ""
     }
   ]
 }
