@@ -44,7 +44,8 @@ describe("parseProjectSettings", () => {
       const result = parseProjectSettings(validSettings);
       expect(result).toEqual({
         slashCommand: validSlashCommand,
-        zoom: validZoom
+        zoom: validZoom,
+        bellReminder: defaultProjectSettings.bellReminder
       });
     });
 

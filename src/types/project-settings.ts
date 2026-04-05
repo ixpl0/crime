@@ -12,7 +12,13 @@ export interface ZoomSettings {
   terminalFontSize: number;
 }
 
+export interface BellReminderSettings {
+  enabled: boolean;
+  intervalMinutes: number;
+}
+
 export interface ProjectSettings {
   slashCommand: SlashCommandSettings;
   zoom: ZoomSettings;
+  bellReminder: BellReminderSettings;
 }

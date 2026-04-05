@@ -20,6 +20,10 @@ export interface AppTodoStore {
   sendTodoEntryToTerminal: (index: number) => MaybePromise;
   isDebugTodoPanelVisible: ReadableRef<boolean>;
   toggleDebugTodoPanel: () => void;
+  isNudgeEnabled: ReadableRef<boolean>;
+  nudgeIntervalMinutes: ReadableRef<number>;
+  toggleNudgeEnabled: () => void;
+  setNudgeIntervalMinutes: (minutes: number) => void;
 }
 
 const appTodoStoreKey: InjectionKey<AppTodoStore> = Symbol(

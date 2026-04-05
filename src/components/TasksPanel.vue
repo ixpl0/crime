@@ -7,6 +7,18 @@
         </h2>
         <div class="flex items-center gap-3">
           <button
+            class="icon-btn text-base-content/40 hover:text-warning"
+            type="button"
+            tabindex="-1"
+            :title="isNudgeEnabled
+              ? `Напоминания вкл (каждые ${nudgeIntervalMinutes} мин). Нажмите чтобы выключить`
+              : 'Напоминания выкл. Нажмите чтобы включить'"
+            @click="toggleNudgeEnabled"
+          >
+            <BellRing v-if="isNudgeEnabled" :size="14" class="text-warning" />
+            <BellOff v-else :size="14" />
+          </button>
+          <button
             class="icon-btn text-base-content/40 hover:text-primary"
             type="button"
             tabindex="-1"
@@ -106,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bug, EyeOff, GripVertical, Save, Trash2 } from "lucide-vue-next";
+import { BellOff, BellRing, Bug, EyeOff, GripVertical, Save, Trash2 } from "lucide-vue-next";
 import { useAppTerminalStore } from "../terminal/terminal-store";
 import { useAppTodoStore } from "../todo/todo-store";
 
@@ -125,7 +137,10 @@ const {
   forcePersistTodoEntries,
   sendTodoEntryToTerminal,
   isDebugTodoPanelVisible,
-  toggleDebugTodoPanel
+  toggleDebugTodoPanel,
+  isNudgeEnabled,
+  nudgeIntervalMinutes,
+  toggleNudgeEnabled
 } = useAppTodoStore();
 const { isTerminalReady, lastPrompt } = useAppTerminalStore();
 

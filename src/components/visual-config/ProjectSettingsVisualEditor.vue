@@ -60,16 +60,35 @@
       />
     </fieldset>
 
+    <fieldset class="rounded-lg border border-base-300 p-3 space-y-2">
+      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Напоминание о звонке</legend>
+      <FieldCheckbox
+        label="Напоминать, если не среагировал на звонок"
+        :model-value="settings.bellReminder.enabled"
+        @update:model-value="updateBellReminder('enabled', $event)"
+      />
+      <FieldNumber
+        label="Интервал напоминания (мин)"
+        :model-value="settings.bellReminder.intervalMinutes"
+        :min="1"
+        :max="60"
+        :step="1"
+        @update:model-value="updateBellReminder('intervalMinutes', $event)"
+      />
+    </fieldset>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import {
+  type BellReminderSettings,
   type ProjectSettings,
   type SlashCommandSettings,
   type ZoomSettings
 } from "../../types/project-settings";
+import FieldCheckbox from "./FieldCheckbox.vue";
 import FieldNumber from "./FieldNumber.vue";
 
 const props = defineProps<{
@@ -93,6 +112,13 @@ const updateZoom = (field: keyof ZoomSettings, value: number) => {
   emit("update:modelValue", {
     ...settings.value,
     zoom: { ...settings.value.zoom, [field]: value }
+  });
+};
+
+const updateBellReminder = (field: keyof BellReminderSettings, value: boolean | number) => {
+  emit("update:modelValue", {
+    ...settings.value,
+    bellReminder: { ...settings.value.bellReminder, [field]: value }
   });
 };
 

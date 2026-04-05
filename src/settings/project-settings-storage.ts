@@ -1,4 +1,5 @@
 import {
+  type BellReminderSettings,
   type ProjectSettings,
   type SlashCommandSettings,
   type ZoomSettings
@@ -18,6 +19,10 @@ export const TERMINAL_FONT_SIZE_MIN = 8;
 export const TERMINAL_FONT_SIZE_MAX = 32;
 export const DEFAULT_TERMINAL_FONT_SIZE = 14;
 export const TERMINAL_FONT_SIZE_STEP = 1;
+export const BELL_REMINDER_INTERVAL_MIN = 1;
+export const BELL_REMINDER_INTERVAL_MAX = 60;
+export const DEFAULT_BELL_REMINDER_INTERVAL_MINUTES = 3;
+
 export const defaultProjectSettings: ProjectSettings = {
   slashCommand: {
     charDelayMs: 20,
@@ -30,6 +35,10 @@ export const defaultProjectSettings: ProjectSettings = {
   zoom: {
     ideZoomFactor: DEFAULT_IDE_ZOOM_FACTOR,
     terminalFontSize: DEFAULT_TERMINAL_FONT_SIZE
+  },
+  bellReminder: {
+    enabled: true,
+    intervalMinutes: DEFAULT_BELL_REMINDER_INTERVAL_MINUTES
   }
 };
 
@@ -97,15 +106,47 @@ function parseOptionalZoomSettings(value: Record<string, unknown>): ZoomSettings
   return parseZoomSettings(value.zoom);
 }
 
+const parseBellReminderSettings = (value: unknown): BellReminderSettings | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (typeof value.enabled !== "boolean") {
+    return null;
+  }
+
+  if (!isIntegerInRange(value.intervalMinutes, BELL_REMINDER_INTERVAL_MIN, BELL_REMINDER_INTERVAL_MAX)) {
+    return null;
+  }
+
+  return {
+    enabled: value.enabled,
+    intervalMinutes: value.intervalMinutes
+  };
+};
+
+function parseOptionalBellReminderSettings(value: Record<string, unknown>): BellReminderSettings | null {
+  if (!("bellReminder" in value)) {
+    return defaultProjectSettings.bellReminder;
+  }
+
+  return parseBellReminderSettings(value.bellReminder);
+}
+
 function toProjectSettings(
   slashCommand: SlashCommandSettings,
-  zoom: ZoomSettings
+  zoom: ZoomSettings,
+  bellReminder: BellReminderSettings
 ): ProjectSettings {
   return {
     slashCommand,
     zoom: {
       ideZoomFactor: zoom.ideZoomFactor,
       terminalFontSize: zoom.terminalFontSize
+    },
+    bellReminder: {
+      enabled: bellReminder.enabled,
+      intervalMinutes: bellReminder.intervalMinutes
     }
   };
 }
@@ -129,7 +170,12 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
     return null;
   }
 
-  return toProjectSettings(slashCommand, parsedZoom);
+  const parsedBellReminder = parseOptionalBellReminderSettings(value);
+  if (parsedBellReminder === null) {
+    return null;
+  }
+
+  return toProjectSettings(slashCommand, parsedZoom, parsedBellReminder);
 };
 
 export const loadProjectSettings = async (projectPath: string): Promise<ProjectSettings> => {

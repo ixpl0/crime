@@ -1,5 +1,5 @@
 /* eslint-disable max-lines */
-import { nextTick, ref, watch, type ComponentPublicInstance } from "vue";
+import { computed, nextTick, ref, watch, type ComponentPublicInstance } from "vue";
 import { type ProjectSettings } from "../types/project-settings";
 import { type ToolbarAction } from "../types/toolbar";
 import {
@@ -37,12 +37,14 @@ import { useProjectLayout } from "../layout/use-project-layout";
 import { useProjectSession } from "../session/use-project-session";
 import { useRecentProjects } from "../session/use-recent-projects";
 import { provideAppTerminalStore } from "../terminal/terminal-store";
+import { useBellReminder } from "../terminal/use-bell-reminder";
 import { useTerminalActions } from "../terminal/use-terminal-actions";
 import { useTerminalInputHistory } from "../terminal/use-terminal-input-history";
 import { useTerminalSubmit } from "../terminal/use-terminal-submit";
 import { useTerminalView } from "../terminal/use-terminal-view";
 import { provideDebugTodoStore } from "../todo/debug-todo-store";
 import { provideAppTodoStore } from "../todo/todo-store";
+import { useTodoNudge } from "../todo/use-todo-nudge";
 import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
 import { provideSearchDialogStore } from "../search/search-dialog-store";
@@ -221,7 +223,7 @@ export function useAppShell() {
     handleTextareaKeydown,
     handleTextareaInput,
     handleTextareaPaste,
-    sendTextareaToTerminal,
+    sendTextareaToTerminal: sendTextareaToTerminalBase,
     resetTerminalInputRuntimeState
   } = useTerminalInputHistory({
     projectPath,
@@ -334,6 +336,14 @@ export function useAppShell() {
     readDirectory: (path) => window.projectApi.filesystem.readDirectory(path),
     readFile: (currentProjectPath, path) =>
       window.projectApi.filesystem.readFile(currentProjectPath, path)
+  });
+
+  const bellReminderSettings = computed(() => projectSettings.value.bellReminder);
+
+  const { handleBell, acknowledgeBellReminder } = useBellReminder({
+    bellReminderSettings,
+    flashFrame: () => { void window.projectApi.window.flashFrame(); },
+    pushToast: (message, pushToastOptions) => toastStore.pushToast(message, pushToastOptions)
   });
 
   const {
@@ -589,6 +599,24 @@ export function useAppShell() {
     closeSecretsEditor,
     handlePromptSuffixToggle
   });
+  const {
+    isNudgeEnabled,
+    nudgeIntervalMinutes,
+    toggleNudgeEnabled,
+    setNudgeIntervalMinutes,
+    acknowledgeNudge
+  } = useTodoNudge({
+    todoDraftViewItems,
+    pushToast: (message, pushToastOptions) => toastStore.pushToast(message, pushToastOptions),
+    flashFrame: () => { void window.projectApi.window.flashFrame(); }
+  });
+
+  const sendTextareaToTerminal = () => {
+    void sendTextareaToTerminalBase();
+    acknowledgeNudge();
+    acknowledgeBellReminder();
+  };
+
   provideAppTerminalStore({
     isTerminalReady,
     terminalInputText,
@@ -607,6 +635,27 @@ export function useAppShell() {
     sendQuickKey,
     focusTextarea: () => terminalInputTextarea.value?.focus()
   });
+
+  const handleTodoTextareaInputWithNudge = (index: number, event: Event) => {
+    handleTodoTextareaInput(index, event);
+    acknowledgeNudge();
+  };
+
+  const confirmTodoEntryWithNudge = () => {
+    confirmTodoEntry();
+    acknowledgeNudge();
+  };
+
+  const removeTodoEntryWithNudge = (index: number) => {
+    removeTodoEntry(index);
+    acknowledgeNudge();
+  };
+
+  const sendTodoEntryToTerminalWithNudge = (index: number) => {
+    acknowledgeNudge();
+    return sendTodoEntryToTerminal(index);
+  };
+
   provideAppTodoStore({
     isTodoPanelCollapsed,
     todoDraftViewItems,
@@ -616,15 +665,19 @@ export function useAppShell() {
     canDragTodoDraft,
     shouldShowTodoDragHandle,
     handleTodoGripMouseDown,
-    handleTodoTextareaInput,
+    handleTodoTextareaInput: handleTodoTextareaInputWithNudge,
     handleTodoTextareaKeydown,
     handleTodoTextareaBlur,
-    confirmTodoEntry,
-    removeTodoEntry,
+    confirmTodoEntry: confirmTodoEntryWithNudge,
+    removeTodoEntry: removeTodoEntryWithNudge,
     forcePersistTodoEntries,
-    sendTodoEntryToTerminal,
+    sendTodoEntryToTerminal: sendTodoEntryToTerminalWithNudge,
     isDebugTodoPanelVisible,
-    toggleDebugTodoPanel
+    toggleDebugTodoPanel,
+    isNudgeEnabled,
+    nudgeIntervalMinutes,
+    toggleNudgeEnabled,
+    setNudgeIntervalMinutes
   });
   provideDebugTodoStore({
     todoDraftViewItems: debugTodo.todoDraftViewItems,
@@ -660,6 +713,7 @@ export function useAppShell() {
 
   function triggerTerminalBell() {
     void window.projectApi.window.flashFrame();
+    handleBell();
   }
 
   function handleDetachAgent() {
