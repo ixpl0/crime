@@ -105,13 +105,17 @@
       <GitBranch :size="12" />
       {{ gitBranch }}
     </button>
-    <span
+    <button
       v-if="gitChangesCount > 0"
-      class="flex items-center gap-1 text-warning"
+      type="button"
+      class="flex cursor-pointer items-center gap-1 text-warning hover:text-warning/80"
+      tabindex="-1"
+      title="Показать изменения"
+      @click="setActiveTab('changes')"
     >
       <Pencil :size="11" />
       {{ gitChangesCount }}
-    </span>
+    </button>
 
     <div class="ml-1 flex items-center gap-2">
       <button
@@ -170,7 +174,8 @@ const {
   openRecentProject,
   removeRecentProject,
   openProjectInNewWindow,
-  navigateToBranch
+  navigateToBranch,
+  setActiveTab
 } = useAppNavigationStore();
 const { gitBranch, gitChangesCount } = useStatusBarStore();
 const { openSearchDialog } = useSearchDialogStore();
