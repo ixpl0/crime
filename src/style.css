@@ -42,6 +42,13 @@ body {
 
 body {
   margin: 0;
+  user-select: none;
+}
+
+input,
+textarea,
+.cm-editor {
+  user-select: text;
 }
 
 * {
