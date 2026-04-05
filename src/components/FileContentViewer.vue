@@ -32,6 +32,8 @@
       :project-path="projectPath"
       :file-path="filePath"
       :is-active="isActive"
+      :target-line="targetLine"
+      :target-request-token="targetRequestToken"
       :search-request-token="isActive ? searchRequestToken : undefined"
       class="min-h-0 flex-1"
       @saved="handleEditorSaved"
@@ -225,6 +227,13 @@ async function requestFilePreviewResponses(requestId: number, filePath: string):
   }
 }
 
+function activateEditModeForTargetLine() {
+  const hasTargetLine = props.targetLine !== null && props.targetLine !== undefined && props.targetLine > 0;
+  if (hasTargetLine && canEdit.value) {
+    isEditing.value = true;
+  }
+}
+
 async function loadFilePreview() {
   const requestId = ++loadRequestId;
   const filePath = props.filePath;
@@ -251,6 +260,7 @@ async function loadFilePreview() {
   }
   const fallbackLines = buildFallbackLines(responses.fileResponse);
   applyDiffResultState(responses.diffResponse, responses.fileResponse, fallbackLines);
+  activateEditModeForTargetLine();
 }
 
 const diffViewerRef = ref<InstanceType<typeof CodeMirrorDiffViewer> | null>(null);

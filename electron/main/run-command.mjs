@@ -17,8 +17,12 @@ function attachStderrCollector(child, chunks) {
   });
 }
 
+const DEFAULT_COMMAND_TIMEOUT_MS = 15_000;
+
 export function createCommandRunner(ideNodeModulesBinPath) {
-  return function runCommand(command, args, cwd) {
+  return function runCommand(command, args, cwd, options) {
+    const timeoutMs = options?.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS;
+
     return new Promise((resolvePromise, rejectPromise) => {
       const env = buildChildProcessEnv(cwd, ideNodeModulesBinPath);
       const child = spawn(command, args, {
@@ -28,21 +32,38 @@ export function createCommandRunner(ideNodeModulesBinPath) {
         stdio: ["ignore", "pipe", "pipe"]
       });
 
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          child.kill();
+          rejectPromise(new Error(`Command timed out after ${timeoutMs}ms: ${command} ${args.join(" ")}`));
+        }
+      }, timeoutMs);
+
       const stdoutChunks = [];
       const stderrChunks = [];
       attachStdoutCollector(child, stdoutChunks);
       attachStderrCollector(child, stderrChunks);
 
       child.on("error", (error) => {
-        rejectPromise(error);
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          rejectPromise(error);
+        }
       });
 
       child.on("close", (code) => {
-        resolvePromise({
-          code: typeof code === "number" ? code : -1,
-          stdout: Buffer.concat(stdoutChunks),
-          stderr: Buffer.concat(stderrChunks)
-        });
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolvePromise({
+            code: typeof code === "number" ? code : -1,
+            stdout: Buffer.concat(stdoutChunks),
+            stderr: Buffer.concat(stderrChunks)
+          });
+        }
       });
     });
   };

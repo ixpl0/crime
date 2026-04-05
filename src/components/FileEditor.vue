@@ -20,6 +20,7 @@ import { toErrorMessage } from "../utils/fail-fast";
 import { useAppToastStore } from "../toast/toast-store";
 import { loadLanguageExtension, LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
 import { searchMatchCounter } from "../codemirror/search-match-counter";
+import { setTargetLineEffect, targetLineHighlightField } from "../codemirror/diff-decorations";
 
 type SaveStatus = "idle" | "saving" | "error";
 
@@ -27,6 +28,8 @@ const props = defineProps<{
   projectPath: string;
   filePath: string;
   isActive: boolean;
+  targetLine?: number | null;
+  targetRequestToken?: number;
   searchRequestToken?: number;
 }>();
 
@@ -38,6 +41,7 @@ const saveError = ref("");
 const { pushError } = useAppToastStore();
 let editorView: EditorView | null = null;
 let autoSaveTimeoutId: number | null = null;
+let clearHighlightTimeoutId: number | null = null;
 const AUTO_SAVE_DELAY = 1000;
 
 const clearAutoSaveTimeout = () => {
@@ -63,6 +67,37 @@ const scheduleAutoSave = () => {
     autoSaveTimeoutId = null;
     void saveFile();
   }, AUTO_SAVE_DELAY);
+};
+
+const clearHighlightTimer = () => {
+  if (clearHighlightTimeoutId !== null) {
+    window.clearTimeout(clearHighlightTimeoutId);
+    clearHighlightTimeoutId = null;
+  }
+};
+
+const focusTargetLine = () => {
+  if (!editorView) { return; }
+  const targetLine = props.targetLine ?? null;
+  if (targetLine === null || targetLine <= 0) { return; }
+
+  const lineCount = editorView.state.doc.lines;
+  const clamped = Math.max(1, Math.min(targetLine, lineCount));
+
+  editorView.dispatch({
+    effects: [
+      setTargetLineEffect.of(clamped),
+      EditorView.scrollIntoView(editorView.state.doc.line(clamped).from, { y: "center" }),
+    ],
+  });
+
+  clearHighlightTimer();
+  clearHighlightTimeoutId = window.setTimeout(() => {
+    if (editorView) {
+      editorView.dispatch({ effects: setTargetLineEffect.of(null) });
+    }
+    clearHighlightTimeoutId = null;
+  }, 1500);
 };
 
 const saveFile = async () => {
@@ -106,6 +141,7 @@ const editorTheme = EditorView.theme({
   "&": { height: "100%", fontSize: "13px" },
   ".cm-scroller": { overflow: "auto", fontFamily: "monospace" },
   ".cm-content": { padding: "4px 0" },
+  ".cm-target-line-highlight": { backgroundColor: "rgba(250, 204, 21, 0.25)", outline: "1px solid rgba(250, 204, 21, 0.4)" },
 });
 
 const createEditor = async (container: HTMLElement, content: string) => {
@@ -127,6 +163,7 @@ const createEditor = async (container: HTMLElement, content: string) => {
       autoSaveListener,
       search({ top: true }),
       searchMatchCounter,
+      targetLineHighlightField,
       ...languageExtensions,
       editorTheme,
     ],
@@ -156,6 +193,7 @@ const loadAndCreateEditor = async () => {
       return;
     }
     editorView = await createEditor(container, response.content);
+    focusTargetLine();
   } catch (error) {
     saveStatus.value = "error";
     saveError.value = toErrorMessage(error, "Не удалось загрузить файл.");
@@ -167,6 +205,11 @@ watch(saveError, (message) => {
     pushError(message);
   }
 });
+
+watch(
+  () => [props.targetLine ?? null, props.targetRequestToken ?? 0] as const,
+  () => { focusTargetLine(); },
+);
 
 watch(
   () => props.searchRequestToken ?? 0,
@@ -192,6 +235,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  clearHighlightTimer();
   flushPendingSave();
   if (editorView) {
     editorView.destroy();

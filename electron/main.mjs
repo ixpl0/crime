@@ -18,10 +18,14 @@ import { registerTerminalIpcHandlers } from "./main/ipc/register-terminal-ipc.mj
 import { registerGitWatcherIpcHandlers } from "./main/ipc/register-git-watcher-ipc.mjs";
 import { registerSearchIpcHandlers } from "./main/ipc/register-search-ipc.mjs";
 import { toErrorMessage, toIpcErrorResponse } from "./main/error-utils.mjs";
+import { logger } from "./main/logger.mjs";
 
 if (!app.isPackaged) {
   app.name = "crime-dev";
 }
+
+logger.info(`App starting (pid=${process.pid}, packaged=${app.isPackaged}, platform=${process.platform}, arch=${process.arch})`);
+logger.info(`Electron ${process.versions.electron}, Chrome ${process.versions.chrome}, Node ${process.versions.node}`);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -166,6 +170,7 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     width: initialWindowState.bounds.width,
     height: initialWindowState.bounds.height,
     show: false,
+    backgroundColor: "#1d232a",
     icon: getIconPath(),
     titleBarStyle: "hidden",
     titleBarOverlay: {
@@ -180,6 +185,8 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     }
   });
 
+  logger.info(`Window created (webContentsId=${mainWindow.webContents.id})`);
+
   const webContentsId = mainWindow.webContents.id;
   attachWindowStatePersistence(mainWindow, WINDOW_STATE_SAVE_DEBOUNCE_MS);
 
@@ -188,6 +195,7 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
   });
 
   mainWindow.on("closed", () => {
+    logger.info(`Window closed (webContentsId=${webContentsId})`);
     if (lastFocusedWindow === mainWindow) {
       lastFocusedWindow = null;
     }
@@ -199,6 +207,7 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
   // Re-apply bounds once the window is fully initialized on the target display.
   // Fixes wrong size when restoring on a monitor with different DPI scale.
   mainWindow.once("ready-to-show", () => {
+    logger.info("Window ready-to-show");
     if (initialWindowState.isMaximized) {
       mainWindow.maximize();
     } else {
@@ -220,7 +229,20 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     }
     const queryString = queryParams.toString();
     const url = queryString ? `${devServerUrl}?${queryString}` : devServerUrl;
-    mainWindow.loadURL(url);
+    logger.info(`Loading dev server: ${url}`);
+    const DEV_LOAD_MAX_RETRIES = 5;
+    const DEV_LOAD_RETRY_DELAY_MS = 600;
+    const loadWithRetry = (retriesLeft) => {
+      mainWindow.loadURL(url).catch((error) => {
+        if (retriesLeft > 0 && !mainWindow.isDestroyed()) {
+          logger.warn(`Dev server load failed, retrying (${retriesLeft} left)`, error);
+          setTimeout(() => loadWithRetry(retriesLeft - 1), DEV_LOAD_RETRY_DELAY_MS);
+        } else {
+          logger.error("Dev server load failed, no retries left", error);
+        }
+      });
+    };
+    loadWithRetry(DEV_LOAD_MAX_RETRIES);
     if (process.env.OPEN_DEVTOOLS === "1") {
       mainWindow.webContents.openDevTools({ mode: "detach" });
     }
@@ -235,7 +257,9 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     query.openProject = openProjectPath;
   }
   const loadFileOptions = Object.keys(query).length > 0 ? { query } : undefined;
-  mainWindow.loadFile(join(__dirname, "../dist/index.html"), loadFileOptions);
+  const indexPath = join(__dirname, "../dist/index.html");
+  logger.info(`Loading production file: ${indexPath}`);
+  mainWindow.loadFile(indexPath, loadFileOptions);
 }
 
 function registerIpcHandlers() {
@@ -276,6 +300,13 @@ function registerIpcHandlers() {
       win.flashFrame(true);
     }
   });
+
+  ipcMain.handle(IPC_CHANNELS.logWrite, (_event, level, message) => {
+    const logMethod = level === "error" ? logger.error
+      : level === "warn" ? logger.warn
+        : logger.info;
+    logMethod(`[renderer] ${message}`);
+  });
 }
 
 function registerGlobalQuickKeys() {
@@ -293,7 +324,7 @@ function registerGlobalQuickKeys() {
     if (!isRegistered) {
       // Global shortcut conflict is an external condition (another app holds
       // the accelerator), not a programming error — log but do not throw.
-      console.error(`Failed to register global shortcut: ${binding.accelerator}`);
+      logger.warn(`Failed to register global shortcut: ${binding.accelerator}`);
     }
   }
 }
@@ -301,14 +332,18 @@ function registerGlobalQuickKeys() {
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
 if (!gotSingleInstanceLock) {
+  logger.warn("Another instance is already running, quitting");
   app.quit();
 } else {
   app.on("second-instance", () => {
+    logger.info("Second instance requested, opening new window");
     createWindow({ skipLastProjectRestore: true });
   });
 
   app.whenReady().then(() => {
+    logger.info("App ready");
     registerIpcHandlers();
+    logger.info("IPC handlers registered");
     createWindow();
     registerGlobalQuickKeys();
 
@@ -320,6 +355,7 @@ if (!gotSingleInstanceLock) {
   });
 
   app.on("will-quit", () => {
+    logger.info("App quitting");
     globalShortcut.unregisterAll();
   });
 

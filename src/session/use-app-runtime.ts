@@ -132,7 +132,12 @@ function subscribeGlobalQuickKeys(
   });
 }
 
+const log = (level: LogLevel, message: string) => {
+  void window.projectApi.log.write(level, message);
+};
+
 async function runStartupFlow(options: UseAppRuntimeOptions) {
+  log("info", "Renderer startup flow started");
   options.loadRecentProjectsFromStorage();
   void options.validateRecentProjects();
   options.startProjectLayoutListeners();
@@ -140,9 +145,14 @@ async function runStartupFlow(options: UseAppRuntimeOptions) {
     options.resizeTerminalInputTextareaElement();
   });
   try {
+    log("info", "Opening last project on startup");
     await options.openLastProjectOnStartup();
+    log("info", "Last project opened successfully");
+  } catch (error) {
+    log("error", `Startup project open failed: ${error instanceof Error ? error.message : String(error)}`);
   } finally {
     options.isStartupReady.value = true;
+    log("info", "Startup ready");
   }
   void options.loadDebugTodoEntries();
 }

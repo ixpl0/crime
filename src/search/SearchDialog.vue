@@ -33,7 +33,7 @@
           :class="searchMode === 'content' ? 'btn-primary' : 'btn-ghost'"
           @click="setSearchMode('content')"
         >
-          В файлах
+          В тексте файлов
         </button>
         <label
           tabindex="-1"

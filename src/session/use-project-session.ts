@@ -260,20 +260,29 @@ async function startSettingsWatcher(state: ProjectSessionState, path: string) {
   throw new Error(toErrorMessage(response.error, "Не удалось запустить наблюдатель настроек."));
 }
 
+const log = (level: LogLevel, message: string) => {
+  void window.projectApi.log.write(level, message);
+};
+
 function getProjectFolderName(path: string) {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
 async function performProjectOpen(state: ProjectSessionState, path: string) {
+  log("info", `Opening project: ${path}`);
   state.options.projectPath.value = path;
   document.title = `CRIME — ${getProjectFolderName(path)}`;
   state.options.addRecentProject(path);
   state.options.resetProjectRuntimeState();
+  log("info", "Loading project resources");
   await loadProjectResources(state, path);
+  log("info", "Starting settings watcher");
   await startSettingsWatcher(state, path);
   await nextTick();
+  log("info", "Starting terminal");
   await state.options.startTerminal(path);
   setLastProjectPathInStorage(path);
+  log("info", "Project opened successfully");
 }
 
 async function closeProject(state: ProjectSessionState) {
@@ -403,11 +412,14 @@ async function openStartupProject(state: ProjectSessionState, path: string) {
 async function restoreLastProject(state: ProjectSessionState) {
   const lastProjectPath = getLastProjectPathFromStorage();
   if (!lastProjectPath) {
+    log("info", "No last project to restore");
     return;
   }
 
+  log("info", `Restoring last project: ${lastProjectPath}`);
   const isAccessible = await isProjectFolderAccessible(lastProjectPath);
   if (!isAccessible) {
+    log("warn", `Last project folder not accessible: ${lastProjectPath}`);
     clearLastProjectPathInStorage();
     return;
   }

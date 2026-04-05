@@ -46,7 +46,8 @@ const IPC_CHANNELS = Object.freeze({
   "projectOpenInNewWindow": "project:open-in-new-window",
   "projectCreateFolder": "project:create-folder",
   "filesystemSearch": "filesystem:search",
-  "filesystemSearchContent": "filesystem:search-content"
+  "filesystemSearchContent": "filesystem:search-content",
+  "logWrite": "log:write"
 });
 
 const SETTINGS_DIRNAME = ".crime";
@@ -288,5 +289,8 @@ contextBridge.exposeInMainWorld("projectApi", {
     const handler = (_event, input) => listener(input);
     ipcRenderer.on(IPC_CHANNELS.globalQuickKey, handler);
     return () => ipcRenderer.removeListener(IPC_CHANNELS.globalQuickKey, handler);
+  },
+  log: {
+    write: (level, message) => ipcRenderer.invoke(IPC_CHANNELS.logWrite, level, message)
   }
 });

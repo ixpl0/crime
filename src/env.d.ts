@@ -268,6 +268,12 @@ interface WindowApi {
   flashFrame: () => Promise<void>;
 }
 
+type LogLevel = "info" | "warn" | "error";
+
+interface LogApi {
+  write: (level: LogLevel, message: string) => Promise<void>;
+}
+
 interface ProjectApi {
   quickKeys: readonly QuickKeyBinding[];
   openFolder: () => Promise<string | null>;
@@ -281,6 +287,7 @@ interface ProjectApi {
   git: GitApi;
   zoom: ZoomApi;
   window: WindowApi;
+  log: LogApi;
   onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }
 
