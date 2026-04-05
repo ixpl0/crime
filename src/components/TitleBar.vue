@@ -113,7 +113,7 @@
       {{ gitChangesCount }}
     </span>
 
-    <div class="flex items-center gap-1">
+    <div class="ml-1 flex items-center gap-2">
       <button
         class="icon-btn text-base-content/40 hover:text-accent"
         tabindex="-1"

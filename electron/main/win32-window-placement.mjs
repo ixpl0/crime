@@ -52,3 +52,4 @@ export const getWindowPlacement = (win) => {
 
 export const setWindowPlacement = (win, placement) =>
   SetWindowPlacement(readHwnd(win), { ...placement, length: PLACEMENT_LENGTH });
+

@@ -1,7 +1,7 @@
 <template>
   <AppToastViewport />
-  <main class="app-drag-region flex h-screen flex-col overflow-hidden bg-base-200 text-base-content" @mousedown="handleGlobalMousedown">
-    <div class="shrink-0 overflow-hidden bg-base-100" :style="titleBarStyle">
+  <main class="flex h-screen flex-col overflow-hidden bg-base-200 text-base-content" @mousedown="handleGlobalMousedown">
+    <div class="app-drag-region shrink-0 overflow-hidden bg-base-100" :style="titleBarStyle">
       <div class="flex h-8 items-center" :style="titleBarInnerStyle">
         <TitleBar />
       </div>

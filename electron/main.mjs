@@ -276,7 +276,6 @@ function registerIpcHandlers() {
       win.flashFrame(true);
     }
   });
-
 }
 
 function registerGlobalQuickKeys() {
