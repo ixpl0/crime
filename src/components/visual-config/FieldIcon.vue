@@ -13,7 +13,7 @@
       <ChevronDown :size="12" />
     </button>
 
-    <Teleport to="body">
+    <Teleport :to="teleportTarget">
       <div
         v-if="isOpen"
         ref="popoverRef"
@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, type CSSProperties, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, type CSSProperties, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { ChevronDown, X } from "lucide-vue-next";
 import { resolveLucideIcon, lucideIconNames } from "../../toolbar/toolbar-icons";
 
@@ -78,6 +78,7 @@ const emit = defineEmits<{
   "update:modelValue": [value: string | undefined];
 }>();
 
+const teleportTarget = ref<HTMLElement | string>("body");
 const isOpen = ref(false);
 const searchQuery = ref("");
 const searchInputRef = ref<HTMLInputElement | null>(null);
@@ -87,6 +88,13 @@ const scrollContainerRef = ref<HTMLElement | null>(null);
 const sentinelRef = ref<HTMLElement | null>(null);
 const visibleCount = ref(BATCH_SIZE);
 const popoverStyle = ref<CSSProperties>({});
+
+onMounted(() => {
+  const dialog = triggerRef.value?.closest("dialog");
+  if (dialog) {
+    teleportTarget.value = dialog;
+  }
+});
 
 const selectedIcon = computed(() => resolveLucideIcon(props.modelValue));
 

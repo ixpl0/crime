@@ -7,35 +7,35 @@
       "items": [
         {
           "label": "Claude Code",
-          "icon": "Sparkles",
+          "icon": "BrandClaude",
           "value": "claude",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "Codex CLI",
-          "icon": "Zap",
+          "icon": "BrandOpenAI",
           "value": "codex",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "Gemini CLI",
-          "icon": "Star",
+          "icon": "BrandGemini",
           "value": "gemini",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "GLM-5",
-          "icon": "Brain",
+          "icon": "BrandZhipu",
           "value": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$f='.crime\\.env'; if(-not(Test-Path $f)){Write-Host '>>> Ошибка: Секреты не настроены. Нажмите кнопку [Секреты] в верхней панели.' -ForegroundColor Red; exit 1}; $k=(Get-Content $f | ConvertFrom-StringData).GLM_API_KEY; if(-not $k){Write-Host '>>> Ошибка: GLM_API_KEY не найден в .crime\\.env. Настройте его через меню [Секреты].' -ForegroundColor Red; exit 1}; $env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=$k; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5'; claude /resume\"",
           "type": "command",
           "resetTerminal": true
         },
         {
           "label": "GLM-4.7",
-          "icon": "Cpu",
+          "icon": "BrandZhipu",
           "value": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$f='.crime\\.env'; if(-not(Test-Path $f)){Write-Host '>>> Ошибка: Секреты не настроены. Нажмите кнопку [Секреты] в верхней панели.' -ForegroundColor Red; exit 1}; $k=(Get-Content $f | ConvertFrom-StringData).GLM_API_KEY; if(-not $k){Write-Host '>>> Ошибка: GLM_API_KEY не найден в .crime\\.env. Настройте его через меню [Секреты].' -ForegroundColor Red; exit 1}; $env:ANTHROPIC_BASE_URL='https://api.z.ai/api/anthropic'; $env:ANTHROPIC_AUTH_TOKEN=$k; $env:ANTHROPIC_DEFAULT_SONNET_MODEL='glm-4.7'; claude /resume\"",
           "type": "command",
           "resetTerminal": true
@@ -214,19 +214,19 @@
       "items": [
         {
           "label": "Claude Code ревью",
-          "icon": "Sparkles",
+          "icon": "BrandClaude",
           "type": "prompt",
           "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Claude Code CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: claude -p 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
         },
         {
           "label": "Codex ревью",
-          "icon": "Zap",
+          "icon": "BrandOpenAI",
           "type": "prompt",
           "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Codex CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: codex exec -c hide_agent_reasoning=true 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
         },
         {
           "label": "Gemini ревью",
-          "icon": "Star",
+          "icon": "BrandGemini",
           "type": "prompt",
           "value": "Кратко сформулируй суть текущих изменений в 1-2 предложениях на английском и запусти Gemini CLI, подставив эту суть вместо {SUMMARY}. Дождись полного завершения команды и только потом выведи результат. Команда: gemini -p 'Context: {SUMMARY}. Do a thorough code review of the current git changes. Check for: bugs, security issues, performance problems, readability, architecture violations. For each finding specify: severity, file and line, what is wrong, concrete fix. Do NOT modify any files. Respond in Russian.'"
         }
