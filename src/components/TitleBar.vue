@@ -136,6 +136,14 @@
         <Moon v-else :size="14" />
       </button>
       <button
+        class="icon-btn text-base-content/40 hover:text-primary"
+        tabindex="-1"
+        title="Секреты проекта (.env)"
+        @click="openSecretsEditor"
+      >
+        <KeyRound :size="14" />
+      </button>
+      <button
         class="icon-btn text-base-content/40 hover:text-info"
         tabindex="-1"
         title="Настройки проекта"
@@ -149,7 +157,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { ExternalLink, FolderPlus, GitBranch, Moon, Pencil, Search, Settings, Sun, X } from "lucide-vue-next";
+import { ExternalLink, FolderPlus, GitBranch, KeyRound, Moon, Pencil, Search, Settings, Sun, X } from "lucide-vue-next";
 import { useStatusBarStore } from "../composables/status-bar-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useSearchDialogStore } from "../search/search-dialog-store";
@@ -180,7 +188,7 @@ const {
 const { gitBranch, gitChangesCount } = useStatusBarStore();
 const { openSearchDialog } = useSearchDialogStore();
 const { currentTheme, toggleTheme } = useTheme();
-const { openProjectSettingsEditor: openProjectSettings } = useAppConfigStore();
+const { openProjectSettingsEditor: openProjectSettings, openSecretsEditor } = useAppConfigStore();
 
 const projectName = computed(() => {
   const path = projectPath.value;

@@ -19,18 +19,6 @@
           <span v-if="tab.id === 'changes' && changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
         </button>
       </template>
-      <button
-        type="button"
-        role="tab"
-        class="tab gap-1"
-        tabindex="-1"
-        title="Секреты проекта (.env)"
-        @click="openSecretsEditor"
-      >
-        <KeyRound :size="14" class="text-base-content/40" />
-        Секреты
-      </button>
-
     <div
       v-if="hiddenPanelOptions.length > 0"
       class="dropdown dropdown-end manual-dropdown ml-4 self-center"
@@ -78,8 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bot, ChevronDown, Eye, FolderOpen, GitCompareArrows, GitGraph, KeyRound, PanelRightOpen, Terminal } from "lucide-vue-next";
-import { useAppConfigStore } from "../config/config-store";
+import { Bot, ChevronDown, Eye, FolderOpen, GitCompareArrows, GitGraph, PanelRightOpen, Terminal } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { positionFixedDropdown } from "../utils/dropdown-utils";
 
@@ -108,7 +95,6 @@ const {
   setHiddenPanelsDropdownOpen,
   showHiddenPanel
 } = useAppNavigationStore();
-const { openSecretsEditor } = useAppConfigStore();
 
 const handleHiddenPanelsDropdownClick = (event: MouseEvent) => {
   toggleHiddenPanelsDropdown();
