@@ -286,7 +286,11 @@ async function performProjectOpen(state: ProjectSessionState, path: string) {
 }
 
 async function closeProject(state: ProjectSessionState) {
-  clearLastProjectPathInStorage();
+  const closingPath = state.options.projectPath.value;
+  if (closingPath) {
+    setLastProjectPathInStorage(closingPath);
+    state.options.addRecentProject(closingPath);
+  }
   await stopSettingsWatcher(state);
   state.options.stopTerminal();
   resetProjectSessionToDefaults(state);
