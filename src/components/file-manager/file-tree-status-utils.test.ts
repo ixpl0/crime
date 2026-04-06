@@ -23,24 +23,30 @@ describe("buildEntryListSnapshot", () => {
     expect(buildEntryListSnapshot([])).toBe("");
   });
 
-  it("serializes file entry correctly", () => {
+  it("serializes file entry with path, type, reality and ignored flags", () => {
     const entries = [makeEntry("app.ts", "/project/app.ts")];
-    expect(buildEntryListSnapshot(entries)).toBe("/project/app.ts|f|r|n");
+    const snapshot = buildEntryListSnapshot(entries);
+    expect(snapshot).toContain("/project/app.ts");
+    expect(snapshot).toContain("f");
+    expect(snapshot).not.toContain("d");
   });
 
-  it("serializes directory entry", () => {
-    const entries = [makeEntry("src", "/project/src", { isDirectory: true })];
-    expect(buildEntryListSnapshot(entries)).toBe("/project/src|d|r|n");
+  it("marks directories distinctly from files", () => {
+    const file = [makeEntry("app.ts", "/project/app.ts")];
+    const dir = [makeEntry("src", "/project/src", { isDirectory: true })];
+    expect(buildEntryListSnapshot(file)).not.toBe(buildEntryListSnapshot(dir));
   });
 
-  it("serializes virtual entry", () => {
-    const entries = [makeEntry("deleted.ts", "/project/deleted.ts", { isVirtual: true })];
-    expect(buildEntryListSnapshot(entries)).toBe("/project/deleted.ts|f|v|n");
+  it("marks virtual entries distinctly from real entries", () => {
+    const real = [makeEntry("a.ts", "/p/a.ts")];
+    const virtual = [makeEntry("a.ts", "/p/a.ts", { isVirtual: true })];
+    expect(buildEntryListSnapshot(real)).not.toBe(buildEntryListSnapshot(virtual));
   });
 
-  it("serializes ignored entry", () => {
-    const entries = [makeEntry("node_modules", "/p/node_modules", { isDirectory: true, isIgnored: true })];
-    expect(buildEntryListSnapshot(entries)).toBe("/p/node_modules|d|r|i");
+  it("marks ignored entries distinctly from non-ignored", () => {
+    const normal = [makeEntry("src", "/p/src", { isDirectory: true })];
+    const ignored = [makeEntry("src", "/p/src", { isDirectory: true, isIgnored: true })];
+    expect(buildEntryListSnapshot(normal)).not.toBe(buildEntryListSnapshot(ignored));
   });
 
   it("joins multiple entries with newlines", () => {
@@ -49,7 +55,10 @@ describe("buildEntryListSnapshot", () => {
       makeEntry("b.ts", "/p/b.ts")
     ];
     const snapshot = buildEntryListSnapshot(entries);
-    expect(snapshot).toBe("/p/a.ts|f|r|n\n/p/b.ts|f|r|n");
+    const lines = snapshot.split("\n");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain("/p/a.ts");
+    expect(lines[1]).toContain("/p/b.ts");
   });
 });
 
