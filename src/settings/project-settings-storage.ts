@@ -19,9 +19,12 @@ export const TERMINAL_FONT_SIZE_MIN = 8;
 export const TERMINAL_FONT_SIZE_MAX = 32;
 export const DEFAULT_TERMINAL_FONT_SIZE = 14;
 export const TERMINAL_FONT_SIZE_STEP = 1;
-export const BELL_REMINDER_INTERVAL_MIN = 0.25;
-export const BELL_REMINDER_INTERVAL_MAX = 60;
-export const DEFAULT_BELL_REMINDER_INTERVAL_MINUTES = 0.25;
+export const BELL_REMINDER_INTERVAL_SECONDS_MIN = 5;
+export const BELL_REMINDER_INTERVAL_SECONDS_MAX = 3600;
+export const DEFAULT_BELL_REMINDER_INTERVAL_SECONDS = 10;
+export const BELL_REMINDER_INTERVAL_DELTA_MIN = 0;
+export const BELL_REMINDER_INTERVAL_DELTA_MAX = 60;
+export const DEFAULT_BELL_REMINDER_INTERVAL_DELTA_SECONDS = 5;
 
 export const defaultProjectSettings: ProjectSettings = {
   slashCommand: {
@@ -38,7 +41,8 @@ export const defaultProjectSettings: ProjectSettings = {
   },
   bellReminder: {
     enabled: true,
-    intervalMinutes: DEFAULT_BELL_REMINDER_INTERVAL_MINUTES
+    intervalSeconds: DEFAULT_BELL_REMINDER_INTERVAL_SECONDS,
+    intervalDeltaSeconds: DEFAULT_BELL_REMINDER_INTERVAL_DELTA_SECONDS
   }
 };
 
@@ -115,13 +119,18 @@ const parseBellReminderSettings = (value: unknown): BellReminderSettings | null 
     return null;
   }
 
-  if (!isIntegerInRange(value.intervalMinutes, BELL_REMINDER_INTERVAL_MIN, BELL_REMINDER_INTERVAL_MAX)) {
+  if (!isNumberInRange(value.intervalSeconds, BELL_REMINDER_INTERVAL_SECONDS_MIN, BELL_REMINDER_INTERVAL_SECONDS_MAX)) {
+    return null;
+  }
+
+  if (!isIntegerInRange(value.intervalDeltaSeconds, BELL_REMINDER_INTERVAL_DELTA_MIN, BELL_REMINDER_INTERVAL_DELTA_MAX)) {
     return null;
   }
 
   return {
     enabled: value.enabled,
-    intervalMinutes: value.intervalMinutes
+    intervalSeconds: value.intervalSeconds,
+    intervalDeltaSeconds: value.intervalDeltaSeconds
   };
 };
 
@@ -146,7 +155,8 @@ function toProjectSettings(
     },
     bellReminder: {
       enabled: bellReminder.enabled,
-      intervalMinutes: bellReminder.intervalMinutes
+      intervalSeconds: bellReminder.intervalSeconds,
+      intervalDeltaSeconds: bellReminder.intervalDeltaSeconds
     }
   };
 }

@@ -34,6 +34,13 @@ function clearAllTimers(state: BellReminderState) {
   clearSequenceTimer(state);
 }
 
+function computeIntervalMs(state: BellReminderState, options: UseBellReminderOptions): number {
+  const settings = options.bellReminderSettings.value;
+  const baseMs = settings.intervalSeconds * 1_000;
+  const deltaMs = settings.intervalDeltaSeconds * 1_000;
+  return baseMs + (state.repeatCount - 1) * deltaMs;
+}
+
 function scheduleReminder(state: BellReminderState, options: UseBellReminderOptions) {
   clearReminderTimer(state);
 
@@ -42,7 +49,7 @@ function scheduleReminder(state: BellReminderState, options: UseBellReminderOpti
     return;
   }
 
-  const intervalMs = settings.intervalMinutes * 60_000;
+  const intervalMs = computeIntervalMs(state, options);
 
   state.timerId = setTimeout(() => {
     fireReminder(state, options);

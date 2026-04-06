@@ -68,12 +68,20 @@
         @update:model-value="updateBellReminder('enabled', $event)"
       />
       <FieldNumber
-        label="Интервал напоминания (мин)"
-        :model-value="settings.bellReminder.intervalMinutes"
-        :min="1"
+        label="Интервал напоминания (сек)"
+        :model-value="settings.bellReminder.intervalSeconds"
+        :min="5"
+        :max="3600"
+        :step="5"
+        @update:model-value="updateBellReminder('intervalSeconds', $event)"
+      />
+      <FieldNumber
+        label="Прирост интервала (сек)"
+        :model-value="settings.bellReminder.intervalDeltaSeconds"
+        :min="0"
         :max="60"
         :step="1"
-        @update:model-value="updateBellReminder('intervalMinutes', $event)"
+        @update:model-value="updateBellReminder('intervalDeltaSeconds', $event)"
       />
     </fieldset>
 

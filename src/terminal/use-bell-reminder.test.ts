@@ -15,7 +15,8 @@ const BELL_REPEAT_DELAY_MS = 333;
 function createOptions(overrides: Partial<BellReminderSettings> = {}) {
   const bellReminderSettings = ref<BellReminderSettings>({
     enabled: true,
-    intervalMinutes: 1,
+    intervalSeconds: 60,
+    intervalDeltaSeconds: 0,
     ...overrides
   });
   const flashFrame = vi.fn();
@@ -45,7 +46,7 @@ describe("useBellReminder", () => {
   });
 
   it("fires 2 bells on first reminder (terminal bell counts as 1st)", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell } = useBellReminder(options);
 
     handleBell();
@@ -61,7 +62,7 @@ describe("useBellReminder", () => {
   });
 
   it("escalates bell count on each successive reminder", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell } = useBellReminder(options);
 
     handleBell();
@@ -92,7 +93,7 @@ describe("useBellReminder", () => {
   });
 
   it("resets escalation when handleBell is called again", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell } = useBellReminder(options);
 
     handleBell();
@@ -114,7 +115,7 @@ describe("useBellReminder", () => {
   });
 
   it("stops reminders on acknowledge", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell, acknowledgeBellReminder } = useBellReminder(options);
 
     handleBell();
@@ -129,7 +130,7 @@ describe("useBellReminder", () => {
   });
 
   it("resets escalation after acknowledge and new bell", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell, acknowledgeBellReminder } = useBellReminder(options);
 
     handleBell();
@@ -150,7 +151,7 @@ describe("useBellReminder", () => {
   });
 
   it("flashes frame on each reminder", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell } = useBellReminder(options);
 
     handleBell();
@@ -163,7 +164,7 @@ describe("useBellReminder", () => {
 
   it("does not schedule reminder when window is focused on bell", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell } = useBellReminder(options);
 
     handleBell();
@@ -175,7 +176,7 @@ describe("useBellReminder", () => {
 
   it("auto-acknowledges when window gains focus before reminder fires", () => {
     const hasFocusMock = vi.spyOn(document, "hasFocus").mockReturnValue(false);
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell } = useBellReminder(options);
 
     handleBell();
@@ -193,7 +194,7 @@ describe("useBellReminder", () => {
   });
 
   it("acknowledge stops bell sequence mid-play", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell, acknowledgeBellReminder } = useBellReminder(options);
 
     handleBell();
@@ -218,7 +219,7 @@ describe("useBellReminder", () => {
   });
 
   it("plays bell sequence with correct delays", () => {
-    const options = createOptions({ intervalMinutes: 1 });
+    const options = createOptions({ intervalSeconds: 60 });
     const { handleBell } = useBellReminder(options);
 
     handleBell();
@@ -243,5 +244,34 @@ describe("useBellReminder", () => {
     // No more
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
     expect(playTerminalBell).toHaveBeenCalledTimes(4);
+  });
+
+  it("increases interval progressively by intervalDeltaSeconds", () => {
+    const options = createOptions({ intervalSeconds: 10, intervalDeltaSeconds: 5 });
+    const { handleBell } = useBellReminder(options);
+
+    handleBell();
+
+    // repeatCount=1, first interval = 10s + (1-1)*5s = 10s
+    vi.advanceTimersByTime(9_999);
+    expect(playTerminalBell).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(playTerminalBell).toHaveBeenCalledTimes(1); // first bell of sequence(2)
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(2);
+
+    // repeatCount=2, second interval = 10s + (2-1)*5s = 15s
+    playTerminalBell.mockClear();
+    vi.advanceTimersByTime(15_000 - BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(1); // first bell of sequence(3)
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(3);
+
+    // repeatCount=3, third interval = 10s + (3-1)*5s = 20s
+    playTerminalBell.mockClear();
+    vi.advanceTimersByTime(20_000 - BELL_REPEAT_DELAY_MS * 2);
+    expect(playTerminalBell).toHaveBeenCalledTimes(1); // first bell of sequence(4)
   });
 });

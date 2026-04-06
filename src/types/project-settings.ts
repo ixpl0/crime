@@ -14,7 +14,8 @@ export interface ZoomSettings {
 
 export interface BellReminderSettings {
   enabled: boolean;
-  intervalMinutes: number;
+  intervalSeconds: number;
+  intervalDeltaSeconds: number;
 }
 
 export interface ProjectSettings {
