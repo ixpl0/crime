@@ -19,9 +19,9 @@ export const TERMINAL_FONT_SIZE_MIN = 8;
 export const TERMINAL_FONT_SIZE_MAX = 32;
 export const DEFAULT_TERMINAL_FONT_SIZE = 14;
 export const TERMINAL_FONT_SIZE_STEP = 1;
-export const BELL_REMINDER_INTERVAL_MIN = 1;
+export const BELL_REMINDER_INTERVAL_MIN = 0.25;
 export const BELL_REMINDER_INTERVAL_MAX = 60;
-export const DEFAULT_BELL_REMINDER_INTERVAL_MINUTES = 2;
+export const DEFAULT_BELL_REMINDER_INTERVAL_MINUTES = 0.25;
 
 export const defaultProjectSettings: ProjectSettings = {
   slashCommand: {
