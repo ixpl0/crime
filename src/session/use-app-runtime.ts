@@ -13,6 +13,7 @@ interface UseAppRuntimeOptions {
   isTerminalReady: Ref<boolean>;
   isStartupReady: Ref<boolean>;
   isDebugTodoPanelVisible: Ref<boolean>;
+  persistCurrentProjectOnExit: () => void;
   loadRecentProjectsFromStorage: () => void;
   validateRecentProjects: () => Promise<void>;
   subscribeTerminalData: (listener: (data: string, sessionId: string) => void) => () => void;
@@ -179,6 +180,7 @@ function stopTerminalRuntime(options: UseAppRuntimeOptions) {
 }
 
 function stopAppRuntime(options: UseAppRuntimeOptions, state: RuntimeSubscriptionState) {
+  options.persistCurrentProjectOnExit();
   stopRuntimeSubscriptions(state);
   options.stopProjectLayout();
   void options.stopSettingsWatcher();

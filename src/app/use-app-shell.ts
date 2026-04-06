@@ -460,6 +460,12 @@ export function useAppShell() {
     isTerminalReady,
     isStartupReady,
     isDebugTodoPanelVisible,
+    persistCurrentProjectOnExit: () => {
+      const currentPath = projectPath.value;
+      if (currentPath) {
+        addRecentProject(currentPath);
+      }
+    },
     loadRecentProjectsFromStorage,
     validateRecentProjects,
     subscribeTerminalData: (listener) => window.projectApi.terminal.onData(listener),
