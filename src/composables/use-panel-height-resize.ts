@@ -104,13 +104,6 @@ function bindResizeListeners(state: PanelHeightResizeState) {
   };
 }
 
-function syncPanelHeightFromDom(state: PanelHeightResizeState, handle: HTMLElement) {
-  const bottomPanel = handle.nextElementSibling;
-  if (bottomPanel instanceof HTMLElement) {
-    state.panelHeight.value = Math.round(bottomPanel.getBoundingClientRect().height);
-  }
-}
-
 function handleResizePointerDown(
   state: PanelHeightResizeState,
   event: PointerEvent,
@@ -121,7 +114,6 @@ function handleResizePointerDown(
   }
   event.preventDefault();
   stopResize(state);
-  syncPanelHeightFromDom(state, event.currentTarget as HTMLElement);
   state.startY = event.clientY;
   state.startHeight = state.panelHeight.value;
   state.containerHeight = container.clientHeight;

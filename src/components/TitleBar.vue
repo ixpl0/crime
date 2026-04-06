@@ -5,6 +5,7 @@
       :class="{ 'dropdown-open': isProjectDropdownOpen }"
     >
       <button
+        ref="dropdownTriggerRef"
         type="button"
         class="cursor-pointer font-medium text-base-content/80 hover:text-base-content"
         tabindex="-1"
@@ -12,8 +13,13 @@
         @click="handleProjectDropdownClick"
         @keydown="handleProjectDropdownKeydown"
       >{{ projectName }}</button>
+    </div>
+    <Teleport to="body">
       <ul
-        class="dropdown-content menu bg-base-100 rounded-box z-10 w-72 p-0 shadow"
+        v-show="isProjectDropdownOpen"
+        ref="dropdownContentRef"
+        class="menu bg-base-100 rounded-box z-10 w-72 p-0 shadow"
+        @mousedown.stop
         @keydown.esc.stop.prevent="setProjectDropdownOpen(false)"
       >
         <li class="relative">
@@ -92,7 +98,7 @@
           </li>
         </template>
       </ul>
-    </div>
+    </Teleport>
 
     <button
       v-if="gitBranch"
@@ -156,14 +162,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { ExternalLink, FolderPlus, GitBranch, KeyRound, Moon, Pencil, Search, Settings, Sun, X } from "lucide-vue-next";
 import { useStatusBarStore } from "../composables/status-bar-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useSearchDialogStore } from "../search/search-dialog-store";
 import { useTheme } from "../composables/use-theme";
 import { useAppConfigStore } from "../config/config-store";
-import { positionFixedDropdown } from "../utils/dropdown-utils";
 
 const {
   projectPath,
@@ -190,6 +195,9 @@ const { openSearchDialog } = useSearchDialogStore();
 const { currentTheme, toggleTheme } = useTheme();
 const { openProjectSettingsEditor: openProjectSettings, openSecretsEditor } = useAppConfigStore();
 
+const dropdownTriggerRef = ref<HTMLElement | null>(null);
+const dropdownContentRef = ref<HTMLElement | null>(null);
+
 const projectName = computed(() => {
   const path = projectPath.value;
   if (!path) {
@@ -198,17 +206,29 @@ const projectName = computed(() => {
   return path.split(/[\\/]/).pop() ?? path;
 });
 
-const handleProjectDropdownClick = (event: MouseEvent) => {
+const positionDropdownContent = () => {
+  const trigger = dropdownTriggerRef.value;
+  const content = dropdownContentRef.value;
+  if (!trigger || !content) {
+    return;
+  }
+  const rect = trigger.getBoundingClientRect();
+  content.style.position = "fixed";
+  content.style.top = `${String(rect.bottom)}px`;
+  content.style.left = `${String(rect.left)}px`;
+};
+
+const handleProjectDropdownClick = () => {
   toggleProjectDropdown();
   if (isProjectDropdownOpen.value) {
-    positionFixedDropdown(event.currentTarget);
+    positionDropdownContent();
   }
 };
 
 const handleProjectDropdownKeydown = (event: KeyboardEvent) => {
   handleProjectDropdownTriggerKeydown(event);
   if (isProjectDropdownOpen.value) {
-    positionFixedDropdown(event.currentTarget);
+    positionDropdownContent();
   }
 };
 </script>
