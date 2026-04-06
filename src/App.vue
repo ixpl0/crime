@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import "@xterm/xterm/css/xterm.css";
-import { computed, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useAppShell } from "./app/use-app-shell";
 import AppToastViewport from "./components/AppToastViewport.vue";
 import { usePanelHeightResize } from "./composables/use-panel-height-resize";
@@ -91,8 +91,21 @@ const {
   openProject,
   openProjectFolder,
   createProjectFolder,
-  projectPath
+  projectPath,
+  acknowledgeBellReminder
 } = useAppShell();
+
+onMounted(() => {
+  window.addEventListener("mousedown", acknowledgeBellReminder, true);
+  window.addEventListener("wheel", acknowledgeBellReminder, true);
+  window.addEventListener("keydown", acknowledgeBellReminder, true);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("mousedown", acknowledgeBellReminder, true);
+  window.removeEventListener("wheel", acknowledgeBellReminder, true);
+  window.removeEventListener("keydown", acknowledgeBellReminder, true);
+});
 
 const TITLE_BAR_HEIGHT_PX = 32;
 

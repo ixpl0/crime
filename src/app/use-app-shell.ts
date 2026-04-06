@@ -669,7 +669,8 @@ export function useAppShell() {
     openProject,
     openProjectFolder,
     createProjectFolder,
-    projectPath
+    projectPath,
+    acknowledgeBellReminder
   };
 
   function triggerTerminalBell() {

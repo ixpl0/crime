@@ -85,7 +85,7 @@
           </div>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3" style="user-select: text;">
           <p class="text-sm font-medium">{{ details.subject }}</p>
           <p
             v-if="details.body"

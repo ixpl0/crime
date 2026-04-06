@@ -8,7 +8,6 @@ vi.mock("./play-terminal-bell", () => ({
   playTerminalBell: vi.fn()
 }));
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 const { playTerminalBell } = vi.mocked(await import("./play-terminal-bell"));
 
 const BELL_REPEAT_DELAY_MS = 333;
@@ -176,6 +175,32 @@ describe("useBellReminder", () => {
     // No further reminders scheduled
     vi.advanceTimersByTime(300_000);
     expect(playTerminalBell).not.toHaveBeenCalled();
+  });
+
+  it("acknowledge stops bell sequence mid-play", () => {
+    const options = createOptions({ intervalMinutes: 1 });
+    const { handleBell, acknowledgeBellReminder } = useBellReminder(options);
+
+    handleBell();
+
+    // Trigger 3rd reminder (3 bells expected)
+    vi.advanceTimersByTime(60_000); // 1st reminder
+    vi.advanceTimersByTime(60_000); // 2nd reminder
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS); // 3rd reminder
+
+    playTerminalBell.mockClear();
+
+    // First delayed bell plays
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(1);
+
+    // Acknowledge mid-sequence
+    acknowledgeBellReminder();
+
+    // Remaining bells should not play
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS * 10);
+    expect(playTerminalBell).toHaveBeenCalledTimes(1);
   });
 
   it("plays bell sequence with correct delays", () => {

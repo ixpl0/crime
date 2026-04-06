@@ -11,18 +11,31 @@ const BELL_REPEAT_DELAY_MS = 333;
 
 interface BellReminderState {
   timerId: ReturnType<typeof setTimeout> | null;
+  sequenceTimerId: ReturnType<typeof setTimeout> | null;
   repeatCount: number;
 }
 
-function clearTimer(state: BellReminderState) {
+function clearReminderTimer(state: BellReminderState) {
   if (state.timerId !== null) {
     clearTimeout(state.timerId);
     state.timerId = null;
   }
 }
 
+function clearSequenceTimer(state: BellReminderState) {
+  if (state.sequenceTimerId !== null) {
+    clearTimeout(state.sequenceTimerId);
+    state.sequenceTimerId = null;
+  }
+}
+
+function clearAllTimers(state: BellReminderState) {
+  clearReminderTimer(state);
+  clearSequenceTimer(state);
+}
+
 function scheduleReminder(state: BellReminderState, options: UseBellReminderOptions) {
-  clearTimer(state);
+  clearReminderTimer(state);
 
   const settings = options.bellReminderSettings.value;
   if (!settings.enabled) {
@@ -36,22 +49,22 @@ function scheduleReminder(state: BellReminderState, options: UseBellReminderOpti
   }, intervalMs);
 }
 
-function playBellSequence(count: number, index = 0): void {
+function playBellSequence(state: BellReminderState, count: number, index = 0): void {
   playTerminalBell();
   if (index + 1 < count) {
-    setTimeout(() => { playBellSequence(count, index + 1); }, BELL_REPEAT_DELAY_MS);
+    state.sequenceTimerId = setTimeout(() => { playBellSequence(state, count, index + 1); }, BELL_REPEAT_DELAY_MS);
   }
 }
 
 function fireReminder(state: BellReminderState, options: UseBellReminderOptions) {
   if (document.hasFocus()) {
-    clearTimer(state);
+    clearAllTimers(state);
     state.repeatCount = 0;
     return;
   }
 
   state.repeatCount += 1;
-  playBellSequence(state.repeatCount);
+  playBellSequence(state, state.repeatCount);
   options.flashFrame();
   scheduleReminder(state, options);
 }
@@ -59,24 +72,25 @@ function fireReminder(state: BellReminderState, options: UseBellReminderOptions)
 export function useBellReminder(options: UseBellReminderOptions) {
   const state: BellReminderState = {
     timerId: null,
+    sequenceTimerId: null,
     repeatCount: 0
   };
 
   const handleBell = () => {
     state.repeatCount = 0;
     if (document.hasFocus()) {
-      clearTimer(state);
+      clearAllTimers(state);
       return;
     }
     scheduleReminder(state, options);
   };
 
   const acknowledge = () => {
-    clearTimer(state);
+    clearAllTimers(state);
     state.repeatCount = 0;
   };
 
-  onUnmounted(() => { clearTimer(state); });
+  onUnmounted(() => { clearAllTimers(state); });
 
   return { handleBell, acknowledgeBellReminder: acknowledge };
 }
