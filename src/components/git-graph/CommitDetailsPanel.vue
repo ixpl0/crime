@@ -12,15 +12,11 @@
       </button>
     </div>
 
-    <div v-if="isLoading" class="flex items-center justify-center py-6">
-      <span class="loading loading-spinner loading-sm" />
-    </div>
-
-    <div v-else-if="error" class="px-3 py-4 text-sm text-base-content/50">
+    <div v-if="error" class="px-3 py-4 text-sm text-base-content/50">
       Детали коммита недоступны
     </div>
 
-    <div v-else class="flex min-h-0 flex-1">
+    <div v-else class="flex min-h-0 flex-1" :class="isLoading ? 'pointer-events-none' : ''">
       <div class="min-h-0 min-w-0 shrink-0 overflow-y-auto px-3 py-2" :class="fileDiff.selectedFilePath ? 'w-2/5' : 'flex-1'">
         <div class="mb-3 flex flex-col gap-1.5">
           <div class="flex items-center gap-2">

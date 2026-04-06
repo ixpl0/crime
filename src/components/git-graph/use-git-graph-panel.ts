@@ -145,7 +145,6 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     const requestId = ++detailsRequestId;
     isDetailsLoading.value = true;
     detailsError.value = "";
-    selectedCommitDetails.value = null;
     const response = await requestCommitDetails(requestId, selectedRow.commit.hash);
     if (response) {
       applyCommitDetailsResponse(response);
