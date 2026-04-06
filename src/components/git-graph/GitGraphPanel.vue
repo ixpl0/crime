@@ -69,7 +69,7 @@
             <span class="min-w-0 truncate text-sm" :class="row.commit.parentHashes.length > 1 ? 'text-base-content/50' : ''">{{ row.commit.subject }}</span>
           </div>
           <button
-            class="-mx-1 shrink-0 cursor-pointer rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
+            class="-mx-1 shrink-0 cursor-pointer justify-self-end rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
             tabindex="-1"
             :title="copiedHash === row.commit.hash ? 'Скопировано!' : 'Скопировать хеш'"
             @click.stop="copyHash(row.commit.hash)"
