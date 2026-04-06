@@ -99,12 +99,14 @@ onMounted(() => {
   window.addEventListener("mousedown", acknowledgeBellReminder, true);
   window.addEventListener("wheel", acknowledgeBellReminder, true);
   window.addEventListener("keydown", acknowledgeBellReminder, true);
+  window.addEventListener("focus", acknowledgeBellReminder);
 });
 
 onUnmounted(() => {
   window.removeEventListener("mousedown", acknowledgeBellReminder, true);
   window.removeEventListener("wheel", acknowledgeBellReminder, true);
   window.removeEventListener("keydown", acknowledgeBellReminder, true);
+  window.removeEventListener("focus", acknowledgeBellReminder);
 });
 
 const TITLE_BAR_HEIGHT_PX = 32;

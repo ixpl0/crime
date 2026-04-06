@@ -77,7 +77,7 @@ export function useBellReminder(options: UseBellReminderOptions) {
   };
 
   const handleBell = () => {
-    state.repeatCount = 0;
+    state.repeatCount = 1;
     if (document.hasFocus()) {
       clearAllTimers(state);
       return;

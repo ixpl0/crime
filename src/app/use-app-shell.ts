@@ -617,7 +617,10 @@ export function useAppShell() {
     handleTextareaInput,
     handleTextareaPaste,
     sendTextareaToTerminal,
-    sendQuickKey,
+    sendQuickKey: (quickKey: QuickKeyBinding) => {
+      sendQuickKey(quickKey);
+      acknowledgeBellReminder();
+    },
     focusTextarea: () => terminalInputTextarea.value?.focus()
   });
 

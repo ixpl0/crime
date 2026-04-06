@@ -44,7 +44,7 @@ describe("useBellReminder", () => {
     expect(options.flashFrame).not.toHaveBeenCalled();
   });
 
-  it("fires once after interval with 1 bell on first reminder", () => {
+  it("fires 2 bells on first reminder (terminal bell counts as 1st)", () => {
     const options = createOptions({ intervalMinutes: 1 });
     const { handleBell } = useBellReminder(options);
 
@@ -52,8 +52,11 @@ describe("useBellReminder", () => {
     vi.advanceTimersByTime(59_999);
     expect(playTerminalBell).not.toHaveBeenCalled();
 
+    // First reminder: 2 bells (terminal was #1, reminder starts at #2)
     vi.advanceTimersByTime(1);
     expect(playTerminalBell).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(2);
     expect(options.flashFrame).toHaveBeenCalledTimes(1);
   });
 
@@ -63,23 +66,29 @@ describe("useBellReminder", () => {
 
     handleBell();
 
-    // First reminder: 1 bell
+    // First reminder: 2 bells
     vi.advanceTimersByTime(60_000);
     expect(playTerminalBell).toHaveBeenCalledTimes(1);
-
-    // Second reminder: 2 bells (1 immediate + 1 after delay)
-    vi.advanceTimersByTime(60_000);
-    expect(playTerminalBell).toHaveBeenCalledTimes(2);
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
-    expect(playTerminalBell).toHaveBeenCalledTimes(3);
+    expect(playTerminalBell).toHaveBeenCalledTimes(2);
 
-    // Third reminder: 3 bells
+    // Second reminder: 3 bells
     vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(3);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
     expect(playTerminalBell).toHaveBeenCalledTimes(4);
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
     expect(playTerminalBell).toHaveBeenCalledTimes(5);
-    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+
+    // Third reminder: 4 bells
+    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS * 2);
     expect(playTerminalBell).toHaveBeenCalledTimes(6);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(7);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(8);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(9);
   });
 
   it("resets escalation when handleBell is called again", () => {
@@ -87,17 +96,20 @@ describe("useBellReminder", () => {
     const { handleBell } = useBellReminder(options);
 
     handleBell();
-    vi.advanceTimersByTime(60_000); // 1st reminder: 1 bell
-    vi.advanceTimersByTime(60_000); // 2nd reminder: 2 bells
+    vi.advanceTimersByTime(60_000); // 1st reminder: 2 bells
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS); // 2nd reminder: 3 bells
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS * 2);
 
     playTerminalBell.mockClear();
     options.flashFrame.mockClear();
 
-    // New bell event resets counter
+    // New bell event resets counter — first reminder plays 2 bells again
     handleBell();
     vi.advanceTimersByTime(60_000);
     expect(playTerminalBell).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(2);
     expect(options.flashFrame).toHaveBeenCalledTimes(1);
   });
 
@@ -121,17 +133,20 @@ describe("useBellReminder", () => {
     const { handleBell, acknowledgeBellReminder } = useBellReminder(options);
 
     handleBell();
-    vi.advanceTimersByTime(60_000); // 1st: 1 bell
-    vi.advanceTimersByTime(60_000); // 2nd: 2 bells
+    vi.advanceTimersByTime(60_000); // 1st: 2 bells
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS); // 2nd: 3 bells
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS * 2);
 
     acknowledgeBellReminder();
     playTerminalBell.mockClear();
 
-    // Fresh start — should be 1 bell again
+    // Fresh start — should be 2 bells again
     handleBell();
     vi.advanceTimersByTime(60_000);
     expect(playTerminalBell).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(2);
   });
 
   it("flashes frame on each reminder", () => {
@@ -183,15 +198,14 @@ describe("useBellReminder", () => {
 
     handleBell();
 
-    // Trigger 3rd reminder (3 bells expected)
-    vi.advanceTimersByTime(60_000); // 1st reminder
-    vi.advanceTimersByTime(60_000); // 2nd reminder
+    // Drain 1st reminder (2 bells), trigger 2nd reminder (3 bells)
+    vi.advanceTimersByTime(60_000);
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
-    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS); // 3rd reminder
+    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS);
 
     playTerminalBell.mockClear();
 
-    // First delayed bell plays
+    // First delayed bell of 2nd reminder plays
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
     expect(playTerminalBell).toHaveBeenCalledTimes(1);
 
@@ -209,22 +223,25 @@ describe("useBellReminder", () => {
 
     handleBell();
 
-    // Advance past 1st and 2nd reminders (+ drain 2nd bell sequence)
-    vi.advanceTimersByTime(60_000);
+    // Drain 1st reminder (2 bells) and 2nd reminder (3 bells)
     vi.advanceTimersByTime(60_000);
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS * 2);
 
     playTerminalBell.mockClear();
 
-    // 3rd reminder fires: repeatCount=3 → 3 bells
-    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS);
+    // 3rd reminder fires: repeatCount=4 → 4 bells
+    vi.advanceTimersByTime(60_000 - BELL_REPEAT_DELAY_MS * 2);
     expect(playTerminalBell).toHaveBeenCalledTimes(1); // immediate
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
     expect(playTerminalBell).toHaveBeenCalledTimes(2);
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
     expect(playTerminalBell).toHaveBeenCalledTimes(3);
+    vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
+    expect(playTerminalBell).toHaveBeenCalledTimes(4);
     // No more
     vi.advanceTimersByTime(BELL_REPEAT_DELAY_MS);
-    expect(playTerminalBell).toHaveBeenCalledTimes(3);
+    expect(playTerminalBell).toHaveBeenCalledTimes(4);
   });
 });
