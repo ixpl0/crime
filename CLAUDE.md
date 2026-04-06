@@ -27,36 +27,39 @@ electron/
   main/
     child-process-env.mjs  — PTY/shell environment setup
     error-utils.mjs        — Error handling, IPC error responses
-    git-service.mjs        — Git operations (status, diff, log, revert, checkout, branches)
+    git-service.mjs        — Git operations (status, diff, log, revert, checkout, branches, merge)
     git-utils.mjs          — Git helper utilities
     git-parsers.mjs        — Git output parsing
+    logger.mjs             — Main process logging
     run-command.mjs        — External command execution
     window-state.mjs       — Window state persistence (size, position, maximized)
     win32-window-placement.mjs — Windows-specific window placement
     ipc/
       path-utils.mjs                  — Path resolution utilities
       register-clipboard-ipc.mjs      — clipboard:write-text
-      register-filesystem-ipc.mjs     — filesystem CRUD (read/write/delete/move/copy/create)
-      register-git-ipc.mjs            — git status, diff, revert, log, commit-details, branches
+      register-filesystem-ipc.mjs     — filesystem CRUD (read/write/delete/move/copy/create/search)
+      register-git-ipc.mjs            — git status, diff, revert, log, commit-details, branches, merge
       register-git-watcher-ipc.mjs    — git file change watcher (chokidar)
       register-project-ipc.mjs        — project:open-folder, create-folder, open-in-new-window
+      register-search-ipc.mjs         — filesystem:search, filesystem:search-content
       register-settings-ipc.mjs       — settings read/write/watch
       register-shell-ipc.mjs          — shell:open-external, shell:open-path
       register-terminal-ipc.mjs       — terminal start/input/resize/stop (node-pty)
 src/
   app/                   — App shell (use-app-shell composable, initializes all stores)
-  codemirror/            — CodeMirror integration (diff-decorations, language-detection)
+  codemirror/            — CodeMirror integration (diff-decorations, conflict-decorations, language-detection, search-match-counter)
   components/            — Vue components
     file-manager/        — File tree panel, context menu, drag-drop, path/status utils
     changes/             — Git changes panel (diff viewer)
     git-graph/           — Git history graph visualization, commit details
     visual-config/       — Form field components (text, number, checkbox, color, select)
-  composables/           — Shared composables (git-status, theme, toolbar-shortcuts, resize, diff-navigation)
+  composables/           — Shared composables and stores (git-status, theme, toolbar-shortcuts, resize, diff-navigation, status-bar-store, agent-focus-redirect)
   config/                — Config management (config-store, use-config-management)
   defaults/              — Default JSON configs (agent-toolbar, git-toolbar, prompt-suffixes, terminal-toolbar)
   layout/                — Layout management (use-project-layout, zoom/font normalization)
   navigation/            — Navigation (navigation-store, use-app-navigation, use-file-navigation)
   prompt-suffix/         — Prompt suffix module (storage)
+  search/                — File search dialog (SearchDialog, search-dialog-store, use-file-search)
   session/               — Session management (use-app-runtime, use-project-session, use-recent-projects)
   settings/              — Settings storage (project-settings, terminal-history, todo, secrets)
   terminal/              — Terminal module (store, actions, view, submit, input history, keyboard, scenarios, bell)
@@ -75,7 +78,7 @@ src/
 ## Architecture
 
 - **IPC pattern**: Renderer → `ipcRenderer.invoke()` → Main process → `ipcMain.handle()`
-- **State management**: Vue 3 inject/provide stores (AppTerminalStore, AppTodoStore, AppConfigStore, AppNavigationStore, AppToastStore)
+- **State management**: Vue 3 inject/provide stores (AppTerminalStore, AppTodoStore, AppConfigStore, AppNavigationStore, AppToastStore, SearchDialogStore, StatusBarStore, DebugTodoStore)
 - **Channels**: defined in `electron/ipc-channels.cjs`, auto-synced to preload via `scripts/sync-preload-shared.mjs`
   - `project:open-folder/create-folder/open-in-new-window`
   - `settings:read/write/watch/unwatch`, `settings:file-changed`
@@ -84,10 +87,13 @@ src/
   - `filesystem:read-directory/read-file/delete-path/write-file/move-path/copy-paths/create-path`
   - `git:status/file-diff/revert-file/revert-all/log/commit-details/commit-file-diff`
   - `git:checkout/unmerged-files/create-branch/delete-branch/delete-remote-branch`
+  - `git:merge-state/resolve-file/accept-conflict-version/abort-merge`
   - `git:changed/watch/unwatch`
+  - `filesystem:search/search-content`
   - `shell:open-external/open-path`
   - `window:flash-frame`
   - `global:quick-key`
+  - `log:write`
 - **Per-project config** (in `.crime/` directory):
   - `agent-toolbar.json` — agent toolbar actions and dropdowns
   - `git-toolbar.json` — git operations toolbar
