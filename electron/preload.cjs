@@ -36,6 +36,10 @@ const IPC_CHANNELS = Object.freeze({
   "gitCreateBranch": "git:create-branch",
   "gitDeleteBranch": "git:delete-branch",
   "gitDeleteRemoteBranch": "git:delete-remote-branch",
+  "gitMergeState": "git:merge-state",
+  "gitResolveFile": "git:resolve-file",
+  "gitAcceptConflictVersion": "git:accept-conflict-version",
+  "gitAbortMerge": "git:abort-merge",
   "gitChanged": "git:changed",
   "gitWatch": "git:watch",
   "gitUnwatch": "git:unwatch",
@@ -262,6 +266,14 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.invoke(IPC_CHANNELS.gitDeleteBranch, projectPath, branchName),
     deleteRemoteBranch: (projectPath, remoteName, branchName) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitDeleteRemoteBranch, projectPath, remoteName, branchName),
+    getMergeState: (projectPath) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitMergeState, projectPath),
+    resolveFile: (projectPath, filePath) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitResolveFile, projectPath, filePath),
+    acceptConflictVersion: (projectPath, filePath, version) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitAcceptConflictVersion, projectPath, filePath, version),
+    abortMerge: (projectPath) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitAbortMerge, projectPath),
     watch: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitWatch, projectPath),
     unwatch: () => ipcRenderer.invoke(IPC_CHANNELS.gitUnwatch),
     onChanged: (listener) => {

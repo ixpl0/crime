@@ -17,6 +17,8 @@
           {{ tab.label }}
           <span v-if="tab.id === 'terminal' && terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
           <span v-if="tab.id === 'changes' && changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
+          <span v-if="tab.id === 'changes' && conflictCount > 0" class="badge badge-xs badge-warning ml-1">C</span>
+          <span v-if="tab.id === 'git' && conflictCount > 0" class="badge badge-xs badge-warning ml-1">{{ conflictCount }}</span>
         </button>
       </template>
     <div
@@ -81,6 +83,7 @@ const MAIN_TABS = [
 defineProps<{
   changesCount: number;
   terminalSessionCount: number;
+  conflictCount: number;
 }>();
 
 const {

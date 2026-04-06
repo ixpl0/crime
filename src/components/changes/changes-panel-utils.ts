@@ -1,4 +1,5 @@
 const STATUS_PRIORITY: Record<GitFileStatus, number> = {
+  conflict: -1,
   modified: 0,
   added: 1,
   deleted: 2
@@ -34,6 +35,10 @@ export function entryPathDisplayForProject(projectPath: string, path: string) {
 }
 
 export function nameClasses(status: GitFileStatus) {
+  if (status === "conflict") {
+    return "text-amber-400";
+  }
+
   if (status === "added") {
     return "text-emerald-400";
   }
@@ -46,6 +51,10 @@ export function nameClasses(status: GitFileStatus) {
 }
 
 export function statusLabel(status: GitFileStatus) {
+  if (status === "conflict") {
+    return "C";
+  }
+
   if (status === "added") {
     return "A";
   }
@@ -58,6 +67,10 @@ export function statusLabel(status: GitFileStatus) {
 }
 
 export function statusBadgeClasses(status: GitFileStatus) {
+  if (status === "conflict") {
+    return "bg-amber-400/10 text-amber-400";
+  }
+
   if (status === "added") {
     return "bg-emerald-400/10 text-emerald-400";
   }

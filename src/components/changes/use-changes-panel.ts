@@ -53,7 +53,7 @@ export function useChangesPanel({
   const hasChanges = computed(() => changeEntries.value.length > 0);
   const isActionInProgress = computed(() => isRevertingAll.value || revertingPath.value !== null);
   const statusCounts = computed<Record<GitFileStatus, number>>(() => {
-    const counts: Record<GitFileStatus, number> = { modified: 0, added: 0, deleted: 0 };
+    const counts: Record<GitFileStatus, number> = { conflict: 0, modified: 0, added: 0, deleted: 0 };
     for (const entry of changeEntries.value) {
       counts[entry.status] += 1;
     }

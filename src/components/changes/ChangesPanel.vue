@@ -7,6 +7,12 @@
         </span>
         <div v-if="hasChanges" class="ml-auto flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold tracking-wide">
           <span
+            v-if="statusCounts.conflict > 0"
+            class="rounded-full bg-amber-400/10 px-2 py-0.5 text-amber-400"
+          >
+            C {{ statusCounts.conflict }}
+          </span>
+          <span
             v-if="statusCounts.modified > 0"
             class="rounded-full bg-sky-400/10 px-2 py-0.5 text-sky-400"
           >
@@ -98,6 +104,39 @@
         :style="{ left: `${String(contextMenu.x)}px`, top: `${String(contextMenu.y)}px` }"
         @contextmenu.prevent
       >
+        <template v-if="contextMenu.status === 'conflict'">
+          <button
+            type="button"
+            class="context-menu-item"
+            tabindex="-1"
+            :disabled="isActionInProgress"
+            @click="handleResolveConflict"
+          >
+            <Check :size="14" />
+            Пометить как разрешённый
+          </button>
+          <button
+            type="button"
+            class="context-menu-item"
+            tabindex="-1"
+            :disabled="isActionInProgress"
+            @click="handleAcceptOurs"
+          >
+            <ArrowLeft :size="14" />
+            Принять текущую (ours)
+          </button>
+          <button
+            type="button"
+            class="context-menu-item"
+            tabindex="-1"
+            :disabled="isActionInProgress"
+            @click="handleAcceptTheirs"
+          >
+            <ArrowRight :size="14" />
+            Принять входящую (theirs)
+          </button>
+          <div class="my-0.5 border-t border-base-300/60" />
+        </template>
         <button
           type="button"
           class="context-menu-item"
@@ -138,7 +177,7 @@
 
 <script setup lang="ts">
 import { toRef, watch } from "vue";
-import { ExternalLink, FolderOpen, RotateCcw } from "lucide-vue-next";
+import { ArrowLeft, ArrowRight, Check, ExternalLink, FolderOpen, RotateCcw } from "lucide-vue-next";
 import { useConfirmDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import { useChangesPanel } from "./use-changes-panel";
@@ -197,6 +236,48 @@ watch(loadError, (message) => {
     pushError(message);
   }
 });
+
+const handleConflictAction = async (
+  action: () => Promise<GitMutateResponse>
+) => {
+  try {
+    const response = await action();
+    if (!response.ok) {
+      pushError(response.error ?? "Не удалось выполнить действие.");
+    } else {
+      await props.refreshGitStatus();
+    }
+  } catch {
+    pushError("Не удалось выполнить действие.");
+  }
+};
+
+const handleResolveConflict = () => {
+  const path = contextMenu.value?.path;
+  if (path) {
+    void handleConflictAction(() =>
+      window.projectApi.git.resolveFile(props.projectPath, path)
+    );
+  }
+};
+
+const handleAcceptOurs = () => {
+  const path = contextMenu.value?.path;
+  if (path) {
+    void handleConflictAction(() =>
+      window.projectApi.git.acceptConflictVersion(props.projectPath, path, "ours")
+    );
+  }
+};
+
+const handleAcceptTheirs = () => {
+  const path = contextMenu.value?.path;
+  if (path) {
+    void handleConflictAction(() =>
+      window.projectApi.git.acceptConflictVersion(props.projectPath, path, "theirs")
+    );
+  }
+};
 
 function handleEntryPathClick(path: string) {
   emit("open-path", path);

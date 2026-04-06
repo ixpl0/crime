@@ -18,7 +18,16 @@ import {
   targetLineHighlightField,
   diffViewerTheme,
 } from "../codemirror/diff-decorations";
+import {
+  conflictDecorationsField,
+  conflictTheme,
+  hasConflictMarkers,
+  parseConflictRegions,
+  type ConflictRegion
+} from "../codemirror/conflict-decorations";
 import { searchMatchCounter } from "../codemirror/search-match-counter";
+
+type ConflictActionKind = "accept-current" | "accept-incoming" | "accept-both";
 
 const props = defineProps<{
   filePath: string;
@@ -28,9 +37,14 @@ const props = defineProps<{
   searchRequestToken?: number;
 }>();
 
+const emit = defineEmits<{
+  "conflict-action": [action: ConflictActionKind, region: ConflictRegion];
+}>();
+
 const container = ref<HTMLElement | null>(null);
 let editorView: EditorView | null = null;
 let clearHighlightTimeoutId: number | null = null;
+let currentConflictRegions: readonly ConflictRegion[] = [];
 
 const hasDiffContent = (lines: readonly GitDiffLine[]): boolean =>
   lines.some((line) => line.type !== "context");
@@ -42,8 +56,20 @@ const clearHighlightTimer = () => {
   }
 };
 
+const handleConflictEvent = (event: Event) => {
+  const detail = (event as CustomEvent).detail as { action: ConflictActionKind; regionIndex: number } | undefined;
+  if (!detail) {
+    return;
+  }
+  const region = currentConflictRegions[detail.regionIndex] as ConflictRegion | undefined;
+  if (region) {
+    emit("conflict-action", detail.action, region);
+  }
+};
+
 const destroyEditor = () => {
   if (editorView) {
+    editorView.dom.removeEventListener("conflict-action", handleConflictEvent);
     editorView.destroy();
     editorView = null;
   }
@@ -61,6 +87,26 @@ const buildDiffExtensions = (lines: readonly GitDiffLine[]): Extension[] => {
   ];
 };
 
+const buildEditorExtensions = (
+  isDiff: boolean,
+  diffExtensions: Extension[],
+  conflictExtensions: Extension[],
+  languageExtensions: Extension[]
+): Extension[] => [
+  ...(isDiff ? [] : [lineNumbers()]),
+  EditorView.editable.of(false),
+  EditorState.readOnly.of(true),
+  syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+  oneDark,
+  ...languageExtensions,
+  ...diffExtensions,
+  ...conflictExtensions,
+  targetLineHighlightField,
+  search({ top: true }),
+  searchMatchCounter,
+  diffViewerTheme,
+];
+
 const createEditor = async () => {
   const element = container.value;
   if (!element) { return; }
@@ -72,25 +118,17 @@ const createEditor = async () => {
   const languageExtensions = isLargeFile ? [] : await loadLanguageExtension(props.filePath);
   const isDiff = hasDiffContent(props.displayLines);
   const diffExtensions = isDiff ? buildDiffExtensions(props.displayLines) : [];
+  const hasConflicts = hasConflictMarkers(document);
+  const conflictExtensions = hasConflicts ? [conflictDecorationsField, conflictTheme] : [];
+  currentConflictRegions = hasConflicts ? parseConflictRegions(document) : [];
 
   const state = EditorState.create({
     doc: document,
-    extensions: [
-      ...(isDiff ? [] : [lineNumbers()]),
-      EditorView.editable.of(false),
-      EditorState.readOnly.of(true),
-      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-      oneDark,
-      ...languageExtensions,
-      ...diffExtensions,
-      targetLineHighlightField,
-      search({ top: true }),
-      searchMatchCounter,
-      diffViewerTheme,
-    ],
+    extensions: buildEditorExtensions(isDiff, diffExtensions, conflictExtensions, languageExtensions),
   });
 
   editorView = new EditorView({ state, parent: element });
+  editorView.dom.addEventListener("conflict-action", handleConflictEvent);
 };
 
 const scrollToLineWithHighlight = (lineNumber: number) => {

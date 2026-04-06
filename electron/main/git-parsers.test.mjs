@@ -88,6 +88,63 @@ describe("parseGitStatusPorcelain", () => {
       { path: resolve(cwd, "file.ts"), status: "deleted" }
     ]);
   });
+
+  it("parses UU (both modified) as conflict", () => {
+    const output = "UU conflicted.ts\0";
+    const result = parseGitStatusPorcelain(output, cwd);
+    expect(result).toEqual([
+      { path: resolve(cwd, "conflicted.ts"), status: "conflict" }
+    ]);
+  });
+
+  it("parses AA (both added) as conflict", () => {
+    const output = "AA both-added.ts\0";
+    const result = parseGitStatusPorcelain(output, cwd);
+    expect(result).toEqual([
+      { path: resolve(cwd, "both-added.ts"), status: "conflict" }
+    ]);
+  });
+
+  it("parses DD (both deleted) as conflict", () => {
+    const output = "DD both-deleted.ts\0";
+    const result = parseGitStatusPorcelain(output, cwd);
+    expect(result).toEqual([
+      { path: resolve(cwd, "both-deleted.ts"), status: "conflict" }
+    ]);
+  });
+
+  it("parses DU (deleted by us) as conflict", () => {
+    const output = "DU deleted-by-us.ts\0";
+    const result = parseGitStatusPorcelain(output, cwd);
+    expect(result).toEqual([
+      { path: resolve(cwd, "deleted-by-us.ts"), status: "conflict" }
+    ]);
+  });
+
+  it("parses AU (added by us, modified by them) as conflict", () => {
+    const output = "AU added-us.ts\0";
+    const result = parseGitStatusPorcelain(output, cwd);
+    expect(result).toEqual([
+      { path: resolve(cwd, "added-us.ts"), status: "conflict" }
+    ]);
+  });
+
+  it("conflict status has highest priority", () => {
+    const output = "UU file.ts\0 M file.ts\0";
+    const result = parseGitStatusPorcelain(output, cwd);
+    expect(result).toEqual([
+      { path: resolve(cwd, "file.ts"), status: "conflict" }
+    ]);
+  });
+
+  it("mixed conflict and normal entries", () => {
+    const output = "UU conflict.ts\0 M modified.ts\0A  added.ts\0";
+    const result = parseGitStatusPorcelain(output, cwd);
+    expect(result).toHaveLength(3);
+    expect(result.find(e => e.path.endsWith("conflict.ts")).status).toBe("conflict");
+    expect(result.find(e => e.path.endsWith("modified.ts")).status).toBe("modified");
+    expect(result.find(e => e.path.endsWith("added.ts")).status).toBe("added");
+  });
 });
 
 describe("parseGitDiffLines", () => {

@@ -59,6 +59,7 @@
         :target-line="targetLine"
         :target-request-token="targetRequestToken"
         :search-request-token="isActive ? searchRequestToken : undefined"
+        @conflict-action="handleConflictAction"
       />
     </div>
     <div v-if="isTruncated && !isEditing" class="flex items-center gap-2 border-t border-base-300/80 bg-base-100/40 px-3 py-2 text-xs text-base-content/60">
@@ -77,6 +78,7 @@ import { ChevronDown, ChevronUp, Eye, Pencil, X } from "lucide-vue-next";
 import { toErrorMessage } from "../utils/fail-fast";
 import { useAppToastStore } from "../toast/toast-store";
 import { LARGE_FILE_LINE_THRESHOLD } from "../codemirror/language-detection";
+import { type ConflictRegion } from "../codemirror/conflict-decorations";
 import { toContextDiffLines } from "./file-content-viewer-utils";
 import FileEditor from "./FileEditor.vue";
 import CodeMirrorDiffViewer from "./CodeMirrorDiffViewer.vue";
@@ -92,7 +94,12 @@ const props = defineProps<{
   searchRequestToken?: number;
 }>();
 
-const emit = defineEmits<{ "file-not-found": [filePath: string]; "file-saved": []; close: [] }>();
+const emit = defineEmits<{
+  "file-not-found": [filePath: string];
+  "file-saved": [];
+  close: [];
+  "conflict-action": [action: string, filePath: string, region: { oursStartLine: number; separatorLine: number; theirsEndLine: number }];
+}>();
 
 const isEditing = ref(false);
 const { pushError } = useAppToastStore();
@@ -275,6 +282,12 @@ const goToNextChange = () => {
 const goToPrevChange = () => {
   const line = goToPrevious();
   if (line !== null) { diffViewerRef.value?.scrollToLine(line); }
+};
+
+const handleConflictAction = (action: string, region: ConflictRegion) => {
+  if (props.filePath) {
+    emit("conflict-action", action, props.filePath, region);
+  }
 };
 
 watch(loadError, (message) => {

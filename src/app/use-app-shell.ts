@@ -472,7 +472,10 @@ export function useAppShell() {
     reportUiError,
     subscribeGlobalQuickKey: (listener) => window.projectApi.onGlobalQuickKey(listener),
     findQuickKeyByInput,
-    sendQuickKey,
+    sendQuickKey: (quickKey: QuickKeyBinding) => {
+      sendQuickKey(quickKey);
+      acknowledgeBellReminder();
+    },
     resizeTerminalInputTextareaElement,
     openLastProjectOnStartup,
     handleTodoPanelCollapsedChanged,

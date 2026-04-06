@@ -52,6 +52,7 @@
           >
             <GitGraph :size="14" class="text-base-content/40" />
             Гит
+            <span v-if="conflictCount > 0" class="badge badge-xs badge-warning ml-1">{{ conflictCount }}</span>
           </button>
       </div>
 
@@ -68,6 +69,7 @@ import { useAppNavigationStore } from "../navigation/navigation-store";
 defineProps<{
   changesCount: number;
   terminalSessionCount: number;
+  conflictCount: number;
 }>();
 
 const { activeTab, setActiveTab, dockAgent } = useAppNavigationStore();

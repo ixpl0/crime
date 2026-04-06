@@ -12,7 +12,7 @@
     >
       <div ref="cardBody" class="card-body flex min-h-0 flex-col gap-2 p-3">
 
-        <MainPanelHeader :changes-count="changesCount" :terminal-session-count="terminalSessionCount" />
+        <MainPanelHeader :changes-count="changesCount" :terminal-session-count="terminalSessionCount" :conflict-count="gitConflictCount" />
 
         <ToolbarConfigEditor
           :current-config="toolbarConfig"
@@ -117,6 +117,7 @@
                 :search-request-token="inFileSearchRequestToken"
                 @file-not-found="resetSelectedFile"
                 @close="resetSelectedFile"
+                @conflict-action="handleConflictAction"
               />
             </div>
           </div>
@@ -150,6 +151,7 @@
                 :search-request-token="inFileSearchRequestToken"
                 @file-not-found="resetChangesSelectedFile"
                 @close="resetChangesSelectedFile"
+                @conflict-action="handleConflictAction"
               />
             </div>
           </div>
@@ -162,7 +164,7 @@
               @open-config-editor="openGitToolbarConfigEditor"
             />
             <div class="min-h-0 flex-1 overflow-y-auto">
-              <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" :branch-highlight-request-token="gitBranchHighlightRequestToken" @open-file="handleChangesPathOpen" />
+              <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" :branch-highlight-request-token="gitBranchHighlightRequestToken" :merge-state="gitMergeState" :conflict-count="gitConflictCount" @open-file="handleChangesPathOpen" />
             </div>
           </div>
         </div>
@@ -180,6 +182,7 @@
       class="min-w-0"
       :changes-count="changesCount"
       :terminal-session-count="terminalSessionCount"
+      :conflict-count="gitConflictCount"
     />
   </div>
 </template>
@@ -196,6 +199,7 @@ import { defaultGitToolbarConfig } from "../toolbar/git-toolbar-storage";
 import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { useGitStatus } from "../composables/use-git-status";
 import { useStatusBarStore } from "../composables/status-bar-store";
+import { useAppToastStore } from "../toast/toast-store";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
 import ConfirmDialog from "./ConfirmDialog.vue";
@@ -358,6 +362,10 @@ const {
 } = useGitStatus(projectPath, activeTab);
 
 const changesCount = computed(() => gitStatusResponse.value?.entries?.length ?? 0);
+const gitMergeState = computed<GitMergeStateKind>(() => gitStatusResponse.value?.mergeState ?? "none");
+const gitConflictCount = computed(() =>
+  (gitStatusResponse.value?.entries ?? []).filter((entry) => entry.status === "conflict").length
+);
 const terminalSessionCount = ref(0);
 
 const statusBarStore = useStatusBarStore();
@@ -385,4 +393,41 @@ const projectSettingsFilePath = computed(
 const secretsConfigFilePath = computed(
   () => `${projectPath.value}/${settingsDirectoryName}/${secretsFilename}`
 );
+
+const { pushError: pushConflictError, pushToast: pushConflictToast } = useAppToastStore();
+
+type ConflictRegionInfo = { oursStartLine: number; separatorLine: number; theirsEndLine: number };
+
+const pickConflictReplacement = (
+  lines: string[],
+  region: ConflictRegionInfo,
+  mode: "current" | "incoming" | "both"
+): string[] => {
+  const ours = lines.slice(region.oursStartLine + 1, region.separatorLine);
+  const theirs = lines.slice(region.separatorLine + 1, region.theirsEndLine);
+  if (mode === "current") { return ours; }
+  if (mode === "incoming") { return theirs; }
+  return [...ours, ...theirs];
+};
+
+const resolveConflictInFile = async (filePath: string, region: ConflictRegionInfo, mode: "current" | "incoming" | "both") => {
+  const fileResponse = await window.projectApi.filesystem.readFile(projectPath.value, filePath);
+  if (!fileResponse.ok || typeof fileResponse.content !== "string") { pushConflictError("Не удалось прочитать файл."); return; }
+  const lines = fileResponse.content.split("\n");
+  const replacement = pickConflictReplacement(lines, region, mode);
+  const newContent = [...lines.slice(0, region.oursStartLine), ...replacement, ...lines.slice(region.theirsEndLine + 1)].join("\n");
+  const writeResponse = await window.projectApi.filesystem.writeFile(projectPath.value, filePath, newContent);
+  if (!writeResponse.ok) { pushConflictError("Не удалось записать файл."); return; }
+  pushConflictToast("Конфликт разрешён", { tone: "success" });
+  void refreshGitStatus();
+};
+
+const MODE_MAP: Partial<Record<string, "current" | "incoming" | "both">> = {
+  "accept-current": "current", "accept-incoming": "incoming", "accept-both": "both"
+};
+
+const handleConflictAction = (action: string, filePath: string, region: ConflictRegionInfo) => {
+  const mode = MODE_MAP[action];
+  if (mode) { void resolveConflictInFile(filePath, region, mode); }
+};
 </script>

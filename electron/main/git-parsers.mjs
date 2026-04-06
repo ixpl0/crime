@@ -3,10 +3,23 @@ import { resolve } from "node:path";
 const GIT_STATUS_PRIORITY = {
   modified: 1,
   added: 2,
-  deleted: 3
+  deleted: 3,
+  conflict: 4
 };
 
+function isUnmergedStatus(x, y) {
+  return (
+    (x === "U" || y === "U") ||
+    (x === "A" && y === "A") ||
+    (x === "D" && y === "D")
+  );
+}
+
 function getGitStatusKind(x, y) {
+  if (isUnmergedStatus(x, y)) {
+    return "conflict";
+  }
+
   if (x === "D" || y === "D") {
     return "deleted";
   }

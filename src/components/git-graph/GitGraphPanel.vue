@@ -1,18 +1,14 @@
 <template>
   <div ref="panelContainer" class="flex h-full min-h-0 flex-col rounded-box border border-base-300 bg-base-200">
-    <div
-      v-if="conflictFiles.length > 0"
-      class="flex flex-col gap-1 border-b border-warning/30 bg-warning/10 px-3 py-2"
-    >
-      <span class="text-xs font-medium text-warning">Конфликты stash</span>
-      <button
-        v-for="file in conflictFiles"
-        :key="file"
-        type="button"
-        class="cursor-pointer truncate text-left text-xs text-warning/80 underline decoration-warning/30 hover:text-warning"
-        tabindex="-1"
-        @click="emit('openFile', file)"
-      >{{ file }}</button>
+    <div v-if="mergeState !== 'none' || conflictFiles.length > 0" class="flex flex-col gap-1 border-b border-warning/30 bg-warning/10 px-3 py-2">
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-xs font-medium text-warning">{{ mergeStateLabel }}</span>
+        <div class="flex items-center gap-1">
+          <span v-if="conflictCount > 0" class="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">{{ conflictCount }} {{ conflictCountWord }}</span>
+          <button v-if="mergeState !== 'none'" type="button" class="cursor-pointer rounded px-2 py-0.5 text-[10px] font-medium text-error hover:bg-error/10" tabindex="-1" @click="handleAbortMerge">Отменить</button>
+        </div>
+      </div>
+      <button v-for="file in conflictFiles" :key="file" type="button" class="cursor-pointer truncate text-left text-xs text-warning/80 underline decoration-warning/30 hover:text-warning" tabindex="-1" @click="emit('openFile', file)">{{ file }}</button>
     </div>
     <div
       class="min-h-0 overflow-y-auto"
@@ -150,6 +146,7 @@
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import { ArrowRightLeft, GitBranch, Trash2 } from "lucide-vue-next";
 import { isBranchRef } from "./git-graph-format";
+import { getMergeStateLabel, getConflictCountWord, getMergeAbortCommand } from "./git-merge-state-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import { useConfirmDialog, usePromptDialog } from "../../utils/dialog-utils";
 import { usePanelHeightResize } from "../../composables/use-panel-height-resize";
@@ -168,6 +165,8 @@ const props = defineProps<{
   projectPath: string;
   gitRefreshToken: number;
   branchHighlightRequestToken: number;
+  mergeState?: GitMergeStateKind;
+  conflictCount?: number;
 }>();
 
 const emit = defineEmits<{
@@ -178,6 +177,13 @@ const panelContainer = ref<HTMLElement | null>(null);
 const scrollContainer = ref<HTMLElement | null>(null);
 const conflictFiles = ref<string[]>([]);
 const highlightedRowIndex = ref<number | null>(null);
+
+const mergeState = computed(() => props.mergeState ?? "none");
+const conflictCount = computed(() => props.conflictCount ?? conflictFiles.value.length);
+const mergeStateLabel = computed(() =>
+  getMergeStateLabel(mergeState.value, conflictFiles.value.length > 0)
+);
+const conflictCountWord = computed(() => getConflictCountWord(conflictCount.value));
 
 const {
   ROW_HEIGHT, COMMIT_RADIUS,
@@ -217,59 +223,43 @@ const handleDetailsResize = (event: PointerEvent) => {
 };
 
 const handleCheckout = async () => {
-  if (!contextMenu.value) {
-    return;
-  }
+  if (!contextMenu.value) { return; }
   const branch = contextMenu.value.targetBranch;
   const target = branch ? branch.branchName : contextMenu.value.hash;
   const label = branch ? branch.displayName : formatShortHash(contextMenu.value.hash);
   const result = await checkout(target, branch?.remote);
-  if (result.ok && result.stashConflict) {
-    conflictFiles.value = result.conflictFiles ?? [];
-    pushToast(`Переключено на ${label}, но stash pop вызвал конфликты`, { tone: "warning" });
-  } else if (result.ok) {
-    conflictFiles.value = [];
-    pushToast(`Переключено на ${label}`, { tone: "success" });
-  } else if (result.error) {
-    pushError(result.error);
-  }
+  if (result.ok && result.stashConflict) { conflictFiles.value = result.conflictFiles ?? []; pushToast(`Переключено на ${label}, но stash pop вызвал конфликты`, { tone: "warning" }); }
+  else if (result.ok) { conflictFiles.value = []; pushToast(`Переключено на ${label}`, { tone: "success" }); }
+  else if (result.error) { pushError(result.error); }
+};
+
+const handleAbortMerge = async () => {
+  const command = getMergeAbortCommand(mergeState.value);
+  const confirmed = await requestConfirm({ title: "Отменить текущую операцию?", body: `Будет выполнена отмена ${command}.` });
+  if (!confirmed) { return; }
+  try {
+    const result = await window.projectApi.git.abortMerge(props.projectPath);
+    if (result.ok) { conflictFiles.value = []; pushToast("Операция отменена", { tone: "success" }); }
+    else if (result.error) { pushError(result.error); }
+  } catch { pushError("Не удалось отменить операцию."); }
 };
 
 const handleDeleteBranch = async () => {
   const branch = contextMenu.value?.targetBranch;
-  if (!branch) {
-    return;
-  }
+  if (!branch) { return; }
   const name = escapeHtml(branch.displayName);
-  const title = branch.remote
-    ? `Удалить УДАЛЁННУЮ ветку <strong>${name}</strong>?`
-    : `Удалить ветку <strong>${name}</strong>?`;
-  const body = branch.remote
-    ? `Ветка будет удалена на <strong>${escapeHtml(branch.remote)}</strong>. Это действие нельзя отменить.`
-    : undefined;
-  const result = await deleteBranch(branch, () =>
-    requestConfirm({ title, body })
-  );
-  if (result.ok) {
-    pushToast(`Ветка «${branch.displayName}» удалена`, { tone: "success" });
-  } else if (result.error) {
-    pushError(result.error);
-  }
+  const title = branch.remote ? `Удалить УДАЛЁННУЮ ветку <strong>${name}</strong>?` : `Удалить ветку <strong>${name}</strong>?`;
+  const body = branch.remote ? `Ветка будет удалена на <strong>${escapeHtml(branch.remote)}</strong>. Это действие нельзя отменить.` : undefined;
+  const result = await deleteBranch(branch, () => requestConfirm({ title, body }));
+  if (result.ok) { pushToast(`Ветка «${branch.displayName}» удалена`, { tone: "success" }); }
+  else if (result.error) { pushError(result.error); }
 };
 
 const handleCreateBranch = async () => {
-  if (!contextMenu.value) {
-    return;
-  }
-  const hash = contextMenu.value.hash;
-  const result = await createBranch(hash, () =>
-    requestPrompt({ title: "Создать ветку", placeholder: "Имя ветки" })
-  );
-  if (result.ok) {
-    pushToast("Ветка создана", { tone: "success" });
-  } else if (result.error) {
-    pushError(result.error);
-  }
+  if (!contextMenu.value) { return; }
+  const result = await createBranch(contextMenu.value.hash, () => requestPrompt({ title: "Создать ветку", placeholder: "Имя ветки" }));
+  if (result.ok) { pushToast("Ветка создана", { tone: "success" }); }
+  else if (result.error) { pushError(result.error); }
 };
 
 watch(loadError, (message) => { if (message) { pushError(message); } });
@@ -278,41 +268,21 @@ watch(detailsError, (message) => { if (message) { pushError(message); } });
 watch(() => props.projectPath, () => { conflictFiles.value = []; });
 
 watch(() => props.gitRefreshToken, async () => {
-  if (conflictFiles.value.length === 0) {
-    return;
-  }
-  const unmerged = await window.projectApi.git.getUnmergedFiles(props.projectPath);
-  conflictFiles.value = unmerged;
+  if (conflictFiles.value.length === 0) { return; }
+  conflictFiles.value = await window.projectApi.git.getUnmergedFiles(props.projectPath);
 });
 
 let highlightTimer: ReturnType<typeof setTimeout> | null = null;
-
 watch(() => props.branchHighlightRequestToken, () => {
-  const headRowIndex = graphRows.value.findIndex((row) =>
-    row.commit.refs.some((r) => r.startsWith("HEAD -> "))
-  );
-  if (headRowIndex < 0) {
-    return;
-  }
-
+  const headRowIndex = graphRows.value.findIndex((row) => row.commit.refs.some((r) => r.startsWith("HEAD -> ")));
+  if (headRowIndex < 0) { return; }
   highlightedRowIndex.value = headRowIndex;
-
   void nextTick(() => {
-    const container = scrollContainer.value;
-    if (container) {
-      const rowTop = headRowIndex * ROW_HEIGHT;
-      const containerHeight = container.clientHeight;
-      container.scrollTop = rowTop - containerHeight / 2 + ROW_HEIGHT / 2;
-    }
+    const el = scrollContainer.value;
+    if (el) { el.scrollTop = headRowIndex * ROW_HEIGHT - el.clientHeight / 2 + ROW_HEIGHT / 2; }
   });
-
-  if (highlightTimer !== null) {
-    clearTimeout(highlightTimer);
-  }
-  highlightTimer = setTimeout(() => {
-    highlightedRowIndex.value = null;
-    highlightTimer = null;
-  }, 1500);
+  if (highlightTimer !== null) { clearTimeout(highlightTimer); }
+  highlightTimer = setTimeout(() => { highlightedRowIndex.value = null; highlightTimer = null; }, 1500);
 });
 </script>
 

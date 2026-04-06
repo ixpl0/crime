@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { access, readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 import {
   parseCommitFileStats,
@@ -151,7 +151,7 @@ export function createGitService(runCommand) {
     }
 
     try {
-      const [statusResult, branch] = await Promise.all([
+      const [statusResult, branch, mergeState] = await Promise.all([
         runCommand(
           "git",
           [
@@ -166,7 +166,8 @@ export function createGitService(runCommand) {
           ],
           projectPath
         ),
-        getCurrentBranch(projectPath)
+        getCurrentBranch(projectPath),
+        getMergeState(projectPath)
       ]);
       if (statusResult.code !== 0) {
         const stderr = statusResult.stderr.toString("utf-8").trim();
@@ -177,6 +178,7 @@ export function createGitService(runCommand) {
         ok: true,
         available: true,
         branch,
+        mergeState: mergeState.state,
         entries: parseGitStatusPorcelain(statusResult.stdout.toString("utf-8"), projectPath)
       };
     } catch (error) {
@@ -709,6 +711,101 @@ export function createGitService(runCommand) {
     return { ok: true, available: true };
   }
 
+  async function getMergeState(projectPath) {
+    const repositoryRoot = await getRepositoryRoot(resolve(projectPath));
+    if (!repositoryRoot) {
+      return { ok: true, state: "none" };
+    }
+
+    const gitDir = join(repositoryRoot, ".git");
+    const checks = [
+      { file: "MERGE_HEAD", state: "merge" },
+      { file: "REBASE_HEAD", state: "rebase" },
+      { file: "rebase-merge", state: "rebase" },
+      { file: "rebase-apply", state: "rebase" },
+      { file: "CHERRY_PICK_HEAD", state: "cherry-pick" }
+    ];
+
+    for (const check of checks) {
+      try {
+        await access(join(gitDir, check.file));
+        return { ok: true, state: check.state };
+      } catch {
+        // file doesn't exist, continue checking
+      }
+    }
+
+    return { ok: true, state: "none" };
+  }
+
+  async function resolveConflictFile(projectPath, relativePath) {
+    const response = await runGitCommandSafe(
+      projectPath,
+      ["add", "--", relativePath],
+      "Failed to mark file as resolved."
+    );
+    if (!response.ok || !response.available) {
+      return response;
+    }
+
+    if (response.result.code !== 0) {
+      return {
+        ok: false,
+        error: getGitCommandError(response.result, "Failed to mark file as resolved.")
+      };
+    }
+
+    return { ok: true, available: true };
+  }
+
+  async function acceptConflictVersion(projectPath, relativePath, version) {
+    const flag = version === "ours" ? "--ours" : "--theirs";
+    const checkoutResponse = await runGitCommandSafe(
+      projectPath,
+      ["checkout", flag, "--", relativePath],
+      `Failed to accept ${version} version.`
+    );
+    if (!checkoutResponse.ok || !checkoutResponse.available) {
+      return checkoutResponse;
+    }
+
+    if (checkoutResponse.result.code !== 0) {
+      return {
+        ok: false,
+        error: getGitCommandError(checkoutResponse.result, `Failed to accept ${version} version.`)
+      };
+    }
+
+    return resolveConflictFile(projectPath, relativePath);
+  }
+
+  async function abortMerge(projectPath) {
+    const mergeState = await getMergeState(projectPath);
+    if (!mergeState.ok || mergeState.state === "none") {
+      return { ok: false, error: "No merge/rebase in progress." };
+    }
+
+    const command = mergeState.state === "rebase"
+      ? ["rebase", "--abort"]
+      : mergeState.state === "cherry-pick"
+        ? ["cherry-pick", "--abort"]
+        : ["merge", "--abort"];
+
+    const response = await runGitCommandSafe(projectPath, command, "Failed to abort merge.");
+    if (!response.ok || !response.available) {
+      return response;
+    }
+
+    if (response.result.code !== 0) {
+      return {
+        ok: false,
+        error: getGitCommandError(response.result, "Failed to abort merge.")
+      };
+    }
+
+    return { ok: true, available: true };
+  }
+
   return {
     toPathKey,
     getIgnoredEntryPathKeySet,
@@ -722,6 +819,10 @@ export function createGitService(runCommand) {
     getCommitFileDiff,
     checkout,
     getUnmergedFiles,
+    getMergeState,
+    resolveConflictFile,
+    acceptConflictVersion,
+    abortMerge,
     createBranch,
     deleteBranch,
     deleteRemoteBranch,

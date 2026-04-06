@@ -150,7 +150,9 @@ interface FilesystemApi {
   searchContent: (projectPath: string, query: string, maxResults?: number, includeIgnored?: boolean) => Promise<ContentSearchResponse>;
 }
 
-type GitFileStatus = "added" | "modified" | "deleted";
+type GitFileStatus = "added" | "modified" | "deleted" | "conflict";
+
+type GitMergeStateKind = "none" | "merge" | "rebase" | "cherry-pick";
 
 interface GitStatusEntry {
   path: string;
@@ -162,8 +164,14 @@ interface GitStatusResponse {
   available?: boolean;
   reason?: "git-not-installed" | "not-a-repository";
   branch?: string | null;
+  mergeState?: GitMergeStateKind;
   entries?: GitStatusEntry[];
   error?: string;
+}
+
+interface GitMergeStateResponse {
+  ok: boolean;
+  state: GitMergeStateKind;
 }
 
 interface GitMutateResponse {
@@ -251,6 +259,10 @@ interface GitApi {
   getCommitFileDiff: (projectPath: string, hash: string, filePath: string) => Promise<GitFileDiffResponse>;
   checkout: (projectPath: string, target: string, remote?: string) => Promise<GitMutateResponse & { stashConflict?: boolean; conflictFiles?: string[] }>;
   getUnmergedFiles: (projectPath: string) => Promise<string[]>;
+  getMergeState: (projectPath: string) => Promise<GitMergeStateResponse>;
+  resolveFile: (projectPath: string, filePath: string) => Promise<GitMutateResponse>;
+  acceptConflictVersion: (projectPath: string, filePath: string, version: "ours" | "theirs") => Promise<GitMutateResponse>;
+  abortMerge: (projectPath: string) => Promise<GitMutateResponse>;
   createBranch: (projectPath: string, branchName: string, startPoint?: string) => Promise<GitMutateResponse>;
   deleteBranch: (projectPath: string, branchName: string) => Promise<GitMutateResponse>;
   deleteRemoteBranch: (projectPath: string, remoteName: string, branchName: string) => Promise<GitMutateResponse>;
