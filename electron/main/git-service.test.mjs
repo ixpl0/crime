@@ -1,5 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { access, readFile } from "node:fs/promises";
 import { createGitService } from "./git-service.mjs";
+
+vi.mock("node:fs/promises", () => ({
+  access: vi.fn(),
+  readFile: vi.fn(),
+  unlink: vi.fn()
+}));
 
 function makeCommandResult(code, stdout = "", stderr = "") {
   return {
@@ -251,6 +258,445 @@ describe("createGitService", () => {
       const result = await service.restorePath("/project", "file.ts");
       expect(result.ok).toBe(false);
       expect(result.error).toBe("fatal: some other error");
+    });
+  });
+
+  describe("getMergeState", () => {
+    function setupGitDir(runCommand) {
+      // Mock getGitDir to return a known path
+      runCommand.mockImplementation(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        return makeCommandResult(0);
+      });
+    }
+
+    function mockFileExists(paths) {
+      access.mockImplementation(async (filePath) => {
+        const normalized = filePath.replaceAll("\\", "/");
+        if (paths.some((p) => normalized.endsWith(p))) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+    }
+
+    beforeEach(() => {
+      vi.mocked(access).mockRejectedValue(new Error("ENOENT"));
+      vi.mocked(readFile).mockRejectedValue(new Error("ENOENT"));
+    });
+
+    it("returns none when git dir is not available", async () => {
+      const runCommand = vi.fn(async () => makeCommandResult(128, "", "fatal: not a git repo"));
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "none" });
+    });
+
+    it("detects merge via MERGE_HEAD", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["MERGE_HEAD"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "merge" });
+    });
+
+    it("detects rebase via rebase-merge with head-name", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["rebase-merge", "rebase-merge/head-name"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "rebase" });
+    });
+
+    it("skips stale rebase-merge without head-name", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      // rebase-merge exists but head-name does not
+      mockFileExists(["rebase-merge"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "none" });
+    });
+
+    it("detects am via rebase-apply with applying", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["rebase-apply", "rebase-apply/applying"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "am" });
+    });
+
+    it("detects rebase-apply without applying as rebase", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["rebase-apply", "rebase-apply/next"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "rebase" });
+    });
+
+    it("detects cherry-pick via CHERRY_PICK_HEAD", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["CHERRY_PICK_HEAD"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "cherry-pick" });
+    });
+
+    it("detects revert via REVERT_HEAD", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["REVERT_HEAD"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "revert" });
+    });
+
+    it("detects multi cherry-pick via sequencer/todo", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists([]);
+      readFile.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("sequencer/todo")) {
+          return "pick abc123 First commit\npick def456 Second commit\n";
+        }
+        throw new Error("ENOENT");
+      });
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "cherry-pick" });
+    });
+
+    it("detects multi revert via sequencer/todo", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists([]);
+      readFile.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("sequencer/todo")) {
+          return "revert abc123 Revert commit\n";
+        }
+        throw new Error("ENOENT");
+      });
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "revert" });
+    });
+
+    it("detects squash-merge via SQUASH_MSG", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["SQUASH_MSG"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "squash-merge" });
+    });
+
+    it("detects bisect via BISECT_LOG", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["BISECT_LOG"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "bisect" });
+    });
+
+    it("MERGE_HEAD takes priority over REBASE_HEAD", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["MERGE_HEAD", "REBASE_HEAD"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "merge" });
+    });
+
+    it("REBASE_HEAD is fallback when rebase-merge is stale", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      // rebase-merge exists but no head-name, REBASE_HEAD exists
+      mockFileExists(["rebase-merge", "REBASE_HEAD"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "rebase" });
+    });
+
+    it("detects am over rebase when both applying and next exist", async () => {
+      const runCommand = vi.fn();
+      setupGitDir(runCommand);
+      mockFileExists(["rebase-apply", "rebase-apply/applying", "rebase-apply/next"]);
+      const service = createGitService(runCommand);
+      const result = await service.getMergeState("/project");
+      expect(result).toEqual({ ok: true, state: "am" });
+    });
+  });
+
+  describe("abortMerge", () => {
+    function setupMergeState(runCommand, state, fileHits) {
+      const callTracker = [];
+      runCommand.mockImplementation(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        callTracker.push(args[0] === "-c" ? args[2] : args[0]);
+        return makeCommandResult(0);
+      });
+      // Mock fs to detect the right state
+      access.mockImplementation(async (filePath) => {
+        const normalized = filePath.replaceAll("\\", "/");
+        if ((fileHits ?? []).some((p) => normalized.endsWith(p))) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      return callTracker;
+    }
+
+    beforeEach(() => {
+      vi.mocked(access).mockRejectedValue(new Error("ENOENT"));
+      vi.mocked(readFile).mockRejectedValue(new Error("ENOENT"));
+    });
+
+    it("returns ok when no operation is in progress (race condition)", async () => {
+      const runCommand = vi.fn(async () => makeCommandResult(128, "", "fatal"));
+      access.mockRejectedValue(new Error("ENOENT"));
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      const result = await service.abortMerge("/project");
+      expect(result.ok).toBe(true);
+    });
+
+    it("runs git merge --abort for merge state", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "merge", ["MERGE_HEAD"]);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("merge");
+    });
+
+    it("runs git rebase --abort for rebase state", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "rebase", ["rebase-merge", "rebase-merge/head-name"]);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("rebase");
+    });
+
+    it("runs git cherry-pick --abort for cherry-pick state", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "cherry-pick", ["CHERRY_PICK_HEAD"]);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("cherry-pick");
+    });
+
+    it("runs git revert --abort for revert state", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "revert", ["REVERT_HEAD"]);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("revert");
+    });
+
+    it("runs git bisect reset for bisect state", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "bisect", ["BISECT_LOG"]);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("bisect");
+    });
+
+    it("treats 'no rebase in progress' stderr as success", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        if (args.includes("--abort")) {
+          return makeCommandResult(128, "", "fatal: No rebase in progress?");
+        }
+        return makeCommandResult(0);
+      });
+      access.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("REBASE_HEAD")) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      const result = await service.abortMerge("/project");
+      expect(result.ok).toBe(true);
+    });
+
+    it("treats 'no merge to abort' stderr as success", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        if (args.includes("--abort")) {
+          return makeCommandResult(128, "", "fatal: There is no merge to abort (MERGE_HEAD missing).");
+        }
+        return makeCommandResult(0);
+      });
+      access.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("MERGE_HEAD")) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      const result = await service.abortMerge("/project");
+      expect(result.ok).toBe(true);
+    });
+
+    it("runs git reset --merge for squash-merge state", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "squash-merge", ["SQUASH_MSG"]);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("reset");
+    });
+
+    it("runs git am --abort for am state", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "am", ["rebase-apply", "rebase-apply/applying"]);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("am");
+    });
+  });
+
+  describe("continueMerge", () => {
+    beforeEach(() => {
+      vi.mocked(access).mockRejectedValue(new Error("ENOENT"));
+      vi.mocked(readFile).mockRejectedValue(new Error("ENOENT"));
+    });
+
+    it("returns error when no operation is in progress", async () => {
+      const runCommand = vi.fn(async () => makeCommandResult(128, "", "fatal"));
+      const service = createGitService(runCommand);
+      const result = await service.continueMerge("/project");
+      expect(result.ok).toBe(false);
+    });
+
+    it("runs git -c core.editor=true rebase --continue for rebase", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        return makeCommandResult(0);
+      });
+      access.mockImplementation(async (filePath) => {
+        const p = filePath.replaceAll("\\", "/");
+        if (p.endsWith("rebase-merge") || p.endsWith("rebase-merge/head-name")) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      await service.continueMerge("/project");
+      const continueCall = runCommand.mock.calls.find(
+        ([, args]) => args.includes("--continue")
+      );
+      expect(continueCall).toBeDefined();
+      expect(continueCall[1]).toContain("core.editor=true");
+      expect(continueCall[1]).toContain("rebase");
+    });
+
+    it("runs git commit --no-edit for squash-merge continue", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        return makeCommandResult(0);
+      });
+      access.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("SQUASH_MSG")) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      await service.continueMerge("/project");
+      const commitCall = runCommand.mock.calls.find(
+        ([, args]) => args.includes("commit")
+      );
+      expect(commitCall).toBeDefined();
+      expect(commitCall[1]).toContain("--no-edit");
+    });
+
+    it("runs git cherry-pick --continue for cherry-pick", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        return makeCommandResult(0);
+      });
+      access.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("CHERRY_PICK_HEAD")) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      await service.continueMerge("/project");
+      const continueCall = runCommand.mock.calls.find(
+        ([, args]) => args.includes("--continue")
+      );
+      expect(continueCall).toBeDefined();
+      expect(continueCall[1]).toContain("cherry-pick");
+    });
+
+    it("returns error for bisect (no continue support)", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        return makeCommandResult(0);
+      });
+      access.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("BISECT_LOG")) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      const result = await service.continueMerge("/project");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("не поддерживает продолжение");
+    });
+
+    it("passes through git error when continue fails", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--absolute-git-dir")) {
+          return makeCommandResult(0, "/project/.git\n");
+        }
+        if (args.includes("--continue")) {
+          return makeCommandResult(128, "", "error: could not apply abc123");
+        }
+        return makeCommandResult(0);
+      });
+      access.mockImplementation(async (filePath) => {
+        if (filePath.replaceAll("\\", "/").endsWith("MERGE_HEAD")) {
+          return undefined;
+        }
+        throw new Error("ENOENT");
+      });
+      readFile.mockRejectedValue(new Error("ENOENT"));
+      const service = createGitService(runCommand);
+      const result = await service.continueMerge("/project");
+      expect(result.ok).toBe(false);
+      expect(result.error).toContain("could not apply");
     });
   });
 });

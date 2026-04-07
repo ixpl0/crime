@@ -1,8 +1,12 @@
 const MERGE_STATE_LABELS: Record<GitMergeStateKind, string> = {
   none: "",
   merge: "Слияние (merge)",
+  "squash-merge": "Слияние squash",
   rebase: "Перебазирование (rebase)",
-  "cherry-pick": "Cherry-pick"
+  "cherry-pick": "Cherry-pick",
+  revert: "Отмена коммита (revert)",
+  am: "Применение патчей (am)",
+  bisect: "Бисект (bisect)"
 };
 
 export const getMergeStateLabel = (
@@ -25,12 +29,23 @@ export const getConflictCountWord = (count: number): string => {
   return "конфликтов";
 };
 
-export const getMergeAbortCommand = (state: GitMergeStateKind): string => {
-  if (state === "rebase") {
-    return "rebase";
-  }
-  if (state === "cherry-pick") {
-    return "cherry-pick";
-  }
-  return "merge";
+const ABORT_COMMANDS: Record<GitMergeStateKind, string> = {
+  none: "merge",
+  merge: "merge",
+  "squash-merge": "reset --merge",
+  rebase: "rebase",
+  "cherry-pick": "cherry-pick",
+  revert: "revert",
+  am: "am",
+  bisect: "bisect reset"
 };
+
+export const getMergeAbortCommand = (state: GitMergeStateKind): string =>
+  ABORT_COMMANDS[state];
+
+const CONTINUABLE_STATES: ReadonlySet<GitMergeStateKind> = new Set([
+  "merge", "squash-merge", "rebase", "cherry-pick", "revert", "am"
+]);
+
+export const canContinueState = (state: GitMergeStateKind): boolean =>
+  CONTINUABLE_STATES.has(state);

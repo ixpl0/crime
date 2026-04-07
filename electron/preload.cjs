@@ -40,6 +40,7 @@ const IPC_CHANNELS = Object.freeze({
   "gitResolveFile": "git:resolve-file",
   "gitAcceptConflictVersion": "git:accept-conflict-version",
   "gitAbortMerge": "git:abort-merge",
+  "gitContinueMerge": "git:continue-merge",
   "gitChanged": "git:changed",
   "gitWatch": "git:watch",
   "gitUnwatch": "git:unwatch",
@@ -274,6 +275,8 @@ contextBridge.exposeInMainWorld("projectApi", {
       ipcRenderer.invoke(IPC_CHANNELS.gitAcceptConflictVersion, projectPath, filePath, version),
     abortMerge: (projectPath) =>
       ipcRenderer.invoke(IPC_CHANNELS.gitAbortMerge, projectPath),
+    continueMerge: (projectPath) =>
+      ipcRenderer.invoke(IPC_CHANNELS.gitContinueMerge, projectPath),
     watch: (projectPath) => ipcRenderer.invoke(IPC_CHANNELS.gitWatch, projectPath),
     unwatch: () => ipcRenderer.invoke(IPC_CHANNELS.gitUnwatch),
     onChanged: (listener) => {

@@ -5,7 +5,8 @@
         <span class="text-xs font-medium text-warning">{{ mergeStateLabel }}</span>
         <div class="flex items-center gap-1">
           <span v-if="conflictCount > 0" class="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">{{ conflictCount }} {{ conflictCountWord }}</span>
-          <button v-if="mergeState !== 'none'" type="button" class="cursor-pointer rounded px-2 py-0.5 text-[10px] font-medium text-error hover:bg-error/10" tabindex="-1" @click="handleAbortMerge">Отменить</button>
+          <button v-if="showContinueButton" type="button" class="cursor-pointer rounded px-2 py-0.5 text-[10px] font-medium text-success hover:bg-success/10" :class="{ 'opacity-50 pointer-events-none': isMergeActionInProgress }" tabindex="-1" @click="handleContinueMerge">Продолжить</button>
+          <button v-if="mergeState !== 'none'" type="button" class="cursor-pointer rounded px-2 py-0.5 text-[10px] font-medium text-error hover:bg-error/10" :class="{ 'opacity-50 pointer-events-none': isMergeActionInProgress }" tabindex="-1" @click="handleAbortMerge">Отменить</button>
         </div>
       </div>
       <button v-for="file in conflictFiles" :key="file" type="button" class="cursor-pointer truncate text-left text-xs text-warning/80 underline decoration-warning/30 hover:text-warning" tabindex="-1" @click="emit('openFile', file)">{{ file }}</button>
@@ -146,7 +147,7 @@
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import { ArrowRightLeft, GitBranch, Trash2 } from "lucide-vue-next";
 import { isBranchRef } from "./git-graph-format";
-import { getMergeStateLabel, getConflictCountWord, getMergeAbortCommand } from "./git-merge-state-utils";
+import { getMergeStateLabel, getConflictCountWord, getMergeAbortCommand, canContinueState } from "./git-merge-state-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import { useConfirmDialog, usePromptDialog } from "../../utils/dialog-utils";
 import { usePanelHeightResize } from "../../composables/use-panel-height-resize";
@@ -177,6 +178,7 @@ const panelContainer = ref<HTMLElement | null>(null);
 const scrollContainer = ref<HTMLElement | null>(null);
 const conflictFiles = ref<string[]>([]);
 const highlightedRowIndex = ref<number | null>(null);
+const isMergeActionInProgress = ref(false);
 
 const mergeState = computed(() => props.mergeState ?? "none");
 const conflictCount = computed(() => props.conflictCount ?? conflictFiles.value.length);
@@ -184,6 +186,7 @@ const mergeStateLabel = computed(() =>
   getMergeStateLabel(mergeState.value, conflictFiles.value.length > 0)
 );
 const conflictCountWord = computed(() => getConflictCountWord(conflictCount.value));
+const showContinueButton = computed(() => canContinueState(mergeState.value) && conflictCount.value === 0);
 
 const {
   ROW_HEIGHT, COMMIT_RADIUS,
@@ -234,14 +237,30 @@ const handleCheckout = async () => {
 };
 
 const handleAbortMerge = async () => {
+  if (isMergeActionInProgress.value) { return; }
   const command = getMergeAbortCommand(mergeState.value);
   const confirmed = await requestConfirm({ title: "Отменить текущую операцию?", body: `Будет выполнена отмена ${command}.` });
   if (!confirmed) { return; }
+  isMergeActionInProgress.value = true;
   try {
     const result = await window.projectApi.git.abortMerge(props.projectPath);
     if (result.ok) { conflictFiles.value = []; pushToast("Операция отменена", { tone: "success" }); }
     else if (result.error) { pushError(result.error); }
   } catch { pushError("Не удалось отменить операцию."); }
+  finally { isMergeActionInProgress.value = false; }
+};
+
+const handleContinueMerge = async () => {
+  if (isMergeActionInProgress.value) { return; }
+  const confirmed = await requestConfirm({ title: "Продолжить операцию?", body: "Текущая операция будет продолжена." });
+  if (!confirmed) { return; }
+  isMergeActionInProgress.value = true;
+  try {
+    const result = await window.projectApi.git.continueMerge(props.projectPath);
+    if (result.ok) { conflictFiles.value = []; pushToast("Операция продолжена", { tone: "success" }); }
+    else if (result.error) { pushError(result.error); }
+  } catch { pushError("Не удалось продолжить операцию."); }
+  finally { isMergeActionInProgress.value = false; }
 };
 
 const handleDeleteBranch = async () => {

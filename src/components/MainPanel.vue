@@ -413,9 +413,19 @@ const pickConflictReplacement = (
 const resolveConflictInFile = async (filePath: string, region: ConflictRegionInfo, mode: "current" | "incoming" | "both") => {
   const fileResponse = await window.projectApi.filesystem.readFile(projectPath.value, filePath);
   if (!fileResponse.ok || typeof fileResponse.content !== "string") { pushConflictError("Не удалось прочитать файл."); return; }
-  const lines = fileResponse.content.split("\n");
+  const eol = fileResponse.content.includes("\r\n") ? "\r\n" : "\n";
+  const lines = fileResponse.content.split(eol);
+  // Validate conflict markers are still at expected positions (TOCTOU guard).
+  // Use trimStart() to match the parser in conflict-decorations.ts
+  const oursLine = (lines[region.oursStartLine] ?? "").trimStart();
+  const separatorLine = (lines[region.separatorLine] ?? "").trimStart();
+  const theirsLine = (lines[region.theirsEndLine] ?? "").trimStart();
+  if (!oursLine.startsWith("<<<<<<<") || !separatorLine.startsWith("=======") || !theirsLine.startsWith(">>>>>>>")) {
+    pushConflictError("Файл изменился — конфликтные маркеры не найдены на ожидаемых позициях.");
+    return;
+  }
   const replacement = pickConflictReplacement(lines, region, mode);
-  const newContent = [...lines.slice(0, region.oursStartLine), ...replacement, ...lines.slice(region.theirsEndLine + 1)].join("\n");
+  const newContent = [...lines.slice(0, region.oursStartLine), ...replacement, ...lines.slice(region.theirsEndLine + 1)].join(eol);
   const writeResponse = await window.projectApi.filesystem.writeFile(projectPath.value, filePath, newContent);
   if (!writeResponse.ok) { pushConflictError("Не удалось записать файл."); return; }
   pushConflictToast("Конфликт разрешён", { tone: "success" });

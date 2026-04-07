@@ -152,7 +152,7 @@ interface FilesystemApi {
 
 type GitFileStatus = "added" | "modified" | "deleted" | "conflict";
 
-type GitMergeStateKind = "none" | "merge" | "rebase" | "cherry-pick";
+type GitMergeStateKind = "none" | "merge" | "squash-merge" | "rebase" | "cherry-pick" | "revert" | "am" | "bisect";
 
 interface GitStatusEntry {
   path: string;
@@ -263,6 +263,7 @@ interface GitApi {
   resolveFile: (projectPath: string, filePath: string) => Promise<GitMutateResponse>;
   acceptConflictVersion: (projectPath: string, filePath: string, version: "ours" | "theirs") => Promise<GitMutateResponse>;
   abortMerge: (projectPath: string) => Promise<GitMutateResponse>;
+  continueMerge: (projectPath: string) => Promise<GitMutateResponse>;
   createBranch: (projectPath: string, branchName: string, startPoint?: string) => Promise<GitMutateResponse>;
   deleteBranch: (projectPath: string, branchName: string) => Promise<GitMutateResponse>;
   deleteRemoteBranch: (projectPath: string, remoteName: string, branchName: string) => Promise<GitMutateResponse>;

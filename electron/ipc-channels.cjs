@@ -35,6 +35,7 @@ const IPC_CHANNELS = Object.freeze({
   gitResolveFile: "git:resolve-file",
   gitAcceptConflictVersion: "git:accept-conflict-version",
   gitAbortMerge: "git:abort-merge",
+  gitContinueMerge: "git:continue-merge",
   gitChanged: "git:changed",
   gitWatch: "git:watch",
   gitUnwatch: "git:unwatch",

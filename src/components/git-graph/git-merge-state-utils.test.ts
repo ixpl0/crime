@@ -1,23 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { getMergeStateLabel, getConflictCountWord, getMergeAbortCommand } from "./git-merge-state-utils";
+import { getMergeStateLabel, getConflictCountWord, getMergeAbortCommand, canContinueState } from "./git-merge-state-utils";
+
+const ALL_STATES: GitMergeStateKind[] = ["merge", "squash-merge", "rebase", "cherry-pick", "revert", "am", "bisect"];
 
 describe("getMergeStateLabel", () => {
-  it("returns non-empty label for merge state", () => {
-    const label = getMergeStateLabel("merge", false);
-    expect(label.length).toBeGreaterThan(0);
-    expect(label.toLowerCase()).toContain("merge");
-  });
-
-  it("returns non-empty label for rebase state", () => {
-    const label = getMergeStateLabel("rebase", false);
-    expect(label.length).toBeGreaterThan(0);
-    expect(label.toLowerCase()).toContain("rebase");
-  });
-
-  it("returns non-empty label for cherry-pick state", () => {
-    const label = getMergeStateLabel("cherry-pick", false);
-    expect(label.length).toBeGreaterThan(0);
-    expect(label.toLowerCase()).toContain("cherry-pick");
+  it.each(ALL_STATES)("returns non-empty label for %s state", (state) => {
+    expect(getMergeStateLabel(state, false).length).toBeGreaterThan(0);
   });
 
   it("returns non-empty label when state is none and has stash conflicts", () => {
@@ -28,13 +16,9 @@ describe("getMergeStateLabel", () => {
     expect(getMergeStateLabel("none", false)).toBe("");
   });
 
-  it("returns different labels for different states", () => {
-    const mergeLabel = getMergeStateLabel("merge", false);
-    const rebaseLabel = getMergeStateLabel("rebase", false);
-    const cherryPickLabel = getMergeStateLabel("cherry-pick", false);
-    expect(mergeLabel).not.toBe(rebaseLabel);
-    expect(mergeLabel).not.toBe(cherryPickLabel);
-    expect(rebaseLabel).not.toBe(cherryPickLabel);
+  it("returns unique labels for all non-none states", () => {
+    const labels = ALL_STATES.map((state) => getMergeStateLabel(state, false));
+    expect(new Set(labels).size).toBe(ALL_STATES.length);
   });
 });
 
@@ -82,19 +66,35 @@ describe("getConflictCountWord", () => {
 });
 
 describe("getMergeAbortCommand", () => {
-  it("returns rebase for rebase state", () => {
-    expect(getMergeAbortCommand("rebase")).toBe("rebase");
-  });
-
-  it("returns cherry-pick for cherry-pick state", () => {
-    expect(getMergeAbortCommand("cherry-pick")).toBe("cherry-pick");
-  });
-
-  it("returns merge for merge state", () => {
-    expect(getMergeAbortCommand("merge")).toBe("merge");
+  it.each([
+    ["rebase", "rebase"],
+    ["cherry-pick", "cherry-pick"],
+    ["merge", "merge"],
+    ["revert", "revert"],
+    ["am", "am"],
+    ["squash-merge", "reset --merge"],
+    ["bisect", "bisect reset"]
+  ] as const)("returns correct command for %s state", (state, expected) => {
+    expect(getMergeAbortCommand(state as GitMergeStateKind)).toBe(expected);
   });
 
   it("returns merge for none state", () => {
     expect(getMergeAbortCommand("none")).toBe("merge");
   });
+});
+
+describe("canContinueState", () => {
+  it.each(["merge", "squash-merge", "rebase", "cherry-pick", "revert", "am"] as const)(
+    "returns true for %s",
+    (state) => {
+      expect(canContinueState(state)).toBe(true);
+    }
+  );
+
+  it.each(["none", "bisect"] as const)(
+    "returns false for %s",
+    (state) => {
+      expect(canContinueState(state)).toBe(false);
+    }
+  );
 });

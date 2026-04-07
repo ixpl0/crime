@@ -1,6 +1,9 @@
 import { ipcMain } from "electron";
 import { existsSync, watch } from "node:fs";
-import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const GIT_WATCH_DEBOUNCE_MS = 300;
 const WATCHER_RESTART_DELAY_MS = 1500;
@@ -11,6 +14,11 @@ const WATCHED_PATHS = new Set([
   "HEAD",
   "ORIG_HEAD",
   "MERGE_HEAD",
+  "CHERRY_PICK_HEAD",
+  "REVERT_HEAD",
+  "REBASE_HEAD",
+  "SQUASH_MSG",
+  "BISECT_LOG",
   "COMMIT_EDITMSG",
   "packed-refs",
   "logs/HEAD"
@@ -26,7 +34,32 @@ function isRelevantGitChange(filename) {
     return true;
   }
 
+  // Track rebase state directories and sequencer.
+  // Bare directory names (without "/") are emitted by non-recursive fs.watch
+  // when the directory is created or removed — e.g. "rebase-merge".
+  // Paths with "/" are emitted by recursive fs.watch for files inside — e.g. "rebase-merge/head-name".
+  if (normalizedPath === "rebase-merge" || normalizedPath.startsWith("rebase-merge/") ||
+      normalizedPath === "rebase-apply" || normalizedPath.startsWith("rebase-apply/") ||
+      normalizedPath === "sequencer" || normalizedPath.startsWith("sequencer/")) {
+    return true;
+  }
+
   return normalizedPath.startsWith("refs/") || normalizedPath.startsWith("logs/refs/");
+}
+
+async function resolveGitDir(projectPath) {
+  try {
+    const { stdout } = await execFileAsync("git", ["rev-parse", "--absolute-git-dir"], {
+      cwd: projectPath,
+      encoding: "utf-8",
+      windowsHide: true,
+      timeout: 5000
+    });
+    const gitDir = stdout.trim();
+    return gitDir.length > 0 ? gitDir : null;
+  } catch {
+    return null;
+  }
 }
 
 function isRecursiveWatchUnsupportedError(error) {
@@ -152,16 +185,29 @@ export function registerGitWatcherIpcHandlers({
 }) {
   removeGitWatcherHandlers(IPC_CHANNELS);
 
-  ipcMain.handle(IPC_CHANNELS.gitWatch, (event, projectPath) => {
+  // Generation counter per webContentsId — guards against race conditions
+  // when gitWatch is called twice in quick succession (e.g. rapid project switch).
+  // After the async resolveGitDir, we verify the generation is still current
+  // before creating the watcher, so a stale request becomes a no-op.
+  const watchGeneration = new Map();
+
+  ipcMain.handle(IPC_CHANNELS.gitWatch, async (event, projectPath) => {
     if (typeof projectPath !== "string") {
       return { ok: false, error: "Project path is required." };
     }
 
-    const gitDirPath = join(projectPath, ".git");
     const webContentsId = event.sender.id;
+    const generation = (watchGeneration.get(webContentsId) ?? 0) + 1;
+    watchGeneration.set(webContentsId, generation);
     stopGitWatcher(webContentsId);
 
-    if (!existsSync(gitDirPath)) {
+    const gitDirPath = await resolveGitDir(projectPath);
+
+    if (watchGeneration.get(webContentsId) !== generation || event.sender.isDestroyed()) {
+      return { ok: true };
+    }
+
+    if (!gitDirPath || !existsSync(gitDirPath)) {
       return { ok: true };
     }
 

@@ -19,6 +19,7 @@ function removeGitHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.gitResolveFile);
   ipcMain.removeHandler(IPC_CHANNELS.gitAcceptConflictVersion);
   ipcMain.removeHandler(IPC_CHANNELS.gitAbortMerge);
+  ipcMain.removeHandler(IPC_CHANNELS.gitContinueMerge);
 }
 
 function toProjectRelativeFilePath(projectPath, filePath, allowCurrentDirectory = false) {
@@ -250,5 +251,13 @@ export function registerGitIpcHandlers({ IPC_CHANNELS, gitService }) {
     }
 
     return gitService.abortMerge(projectPath);
+  });
+
+  ipcMain.handle(IPC_CHANNELS.gitContinueMerge, async (_event, projectPath) => {
+    if (!projectPath || typeof projectPath !== "string") {
+      return { ok: false, error: "Project path is required." };
+    }
+
+    return gitService.continueMerge(projectPath);
   });
 }

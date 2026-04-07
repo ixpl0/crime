@@ -1,4 +1,4 @@
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, unlink } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import {
@@ -29,6 +29,20 @@ export function createGitService(runCommand) {
 
       const repositoryRoot = result.stdout.toString("utf-8").trim();
       return repositoryRoot.length > 0 ? repositoryRoot : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function getGitDir(path) {
+    try {
+      const result = await runCommand("git", ["rev-parse", "--absolute-git-dir"], path);
+      if (result.code !== 0) {
+        return null;
+      }
+
+      const gitDir = result.stdout.toString("utf-8").trim();
+      return gitDir.length > 0 ? gitDir : null;
     } catch {
       return null;
     }
@@ -712,27 +726,69 @@ export function createGitService(runCommand) {
   }
 
   async function getMergeState(projectPath) {
-    const repositoryRoot = await getRepositoryRoot(resolve(projectPath));
-    if (!repositoryRoot) {
+    // Use --absolute-git-dir instead of hardcoding ".git" to support
+    // worktrees (where .git is a file) and submodules
+    const gitDir = await getGitDir(resolve(projectPath));
+    if (!gitDir) {
       return { ok: true, state: "none" };
     }
-
-    const gitDir = join(repositoryRoot, ".git");
+    // Check order matches git's own wt_status_get_state() priority (wt-status.c):
+    // 1. MERGE_HEAD  2. rebase dirs  3. REBASE_HEAD (fallback)
+    // 4. CHERRY_PICK_HEAD  5. REVERT_HEAD  6. sequencer/todo (multi cherry-pick/revert)
     const checks = [
       { file: "MERGE_HEAD", state: "merge" },
+      { file: "rebase-merge", state: "rebase", verifyFile: "head-name" },
+      { file: "rebase-apply", state: "am", verifyFile: "applying" },
+      { file: "rebase-apply", state: "rebase", verifyFile: "next" },
       { file: "REBASE_HEAD", state: "rebase" },
-      { file: "rebase-merge", state: "rebase" },
-      { file: "rebase-apply", state: "rebase" },
-      { file: "CHERRY_PICK_HEAD", state: "cherry-pick" }
+      { file: "CHERRY_PICK_HEAD", state: "cherry-pick" },
+      { file: "REVERT_HEAD", state: "revert" }
     ];
 
     for (const check of checks) {
       try {
         await access(join(gitDir, check.file));
+        // For directories (rebase-merge, rebase-apply), verify a key file exists
+        // inside to avoid false positives from stale/empty directories
+        if (check.verifyFile) {
+          await access(join(gitDir, check.file, check.verifyFile));
+        }
         return { ok: true, state: check.state };
       } catch {
-        // file doesn't exist, continue checking
+        // file doesn't exist or directory is stale, continue checking
       }
+    }
+
+    // Multi cherry-pick/revert: CHERRY_PICK_HEAD/REVERT_HEAD is absent between
+    // commits, but sequencer/todo tracks remaining operations (sequencer.c)
+    try {
+      const todoPath = join(gitDir, "sequencer", "todo");
+      const todoContent = await readFile(todoPath, "utf-8");
+      const firstLine = todoContent.trim().split("\n")[0] ?? "";
+      if (firstLine.startsWith("pick")) {
+        return { ok: true, state: "cherry-pick" };
+      }
+      if (firstLine.startsWith("revert")) {
+        return { ok: true, state: "revert" };
+      }
+    } catch {
+      // no sequencer directory or todo file
+    }
+
+    // Squash merge: no MERGE_HEAD but SQUASH_MSG indicates pending squash commit
+    try {
+      await access(join(gitDir, "SQUASH_MSG"));
+      return { ok: true, state: "squash-merge" };
+    } catch {
+      // no squash merge
+    }
+
+    // Bisect session: BISECT_LOG tracks bisect progress
+    try {
+      await access(join(gitDir, "BISECT_LOG"));
+      return { ok: true, state: "bisect" };
+    } catch {
+      // no bisect
     }
 
     return { ok: true, state: "none" };
@@ -781,17 +837,93 @@ export function createGitService(runCommand) {
 
   async function abortMerge(projectPath) {
     const mergeState = await getMergeState(projectPath);
-    if (!mergeState.ok || mergeState.state === "none") {
-      return { ok: false, error: "No merge/rebase in progress." };
+    if (!mergeState.ok) {
+      return { ok: false, error: "Не удалось определить состояние операции." };
+    }
+    // If no operation is detected, treat as already resolved
+    // (covers race condition: rebase finished between UI render and abort click)
+    if (mergeState.state === "none") {
+      return { ok: true, available: true };
     }
 
-    const command = mergeState.state === "rebase"
-      ? ["rebase", "--abort"]
-      : mergeState.state === "cherry-pick"
-        ? ["cherry-pick", "--abort"]
-        : ["merge", "--abort"];
+    const abortCommands = {
+      merge: ["merge", "--abort"],
+      "squash-merge": ["reset", "--merge"],
+      rebase: ["rebase", "--abort"],
+      "cherry-pick": ["cherry-pick", "--abort"],
+      revert: ["revert", "--abort"],
+      am: ["am", "--abort"],
+      bisect: ["bisect", "reset"]
+    };
+    const command = abortCommands[mergeState.state] ?? ["merge", "--abort"];
 
-    const response = await runGitCommandSafe(projectPath, command, "Failed to abort merge.");
+    const response = await runGitCommandSafe(projectPath, command, "Не удалось отменить операцию.");
+    if (!response.ok || !response.available) {
+      return response;
+    }
+
+    if (response.result.code !== 0) {
+      const stderr = getGitCommandError(response.result, "Не удалось отменить операцию.");
+      const lower = stderr.toLowerCase();
+      // If git says the operation is not in progress, treat as successful abort
+      // (handles race conditions and stale .git state)
+      // Error messages verified against git source:
+      //   builtin/rebase.c:  "No rebase in progress?"
+      //   builtin/merge.c:   "There is no merge to abort (MERGE_HEAD missing)."
+      //   sequencer.c:       "no cherry-pick or revert in progress"
+      //   builtin/am.c:      "There is no am session in progress"
+      //   builtin/bisect.c:  "We are not bisecting."
+      const isAlreadyAborted = lower.includes("no rebase in progress") ||
+        lower.includes("no merge to abort") ||
+        lower.includes("no cherry-pick or revert in progress") ||
+        lower.includes("no am session in progress") ||
+        lower.includes("we are not bisecting");
+      if (isAlreadyAborted) {
+        return { ok: true, available: true };
+      }
+      return { ok: false, error: stderr };
+    }
+
+    // git reset --merge does not remove SQUASH_MSG — clean it up manually
+    if (mergeState.state === "squash-merge") {
+      const gitDir = await getGitDir(resolve(projectPath));
+      if (gitDir) {
+        try { await unlink(join(gitDir, "SQUASH_MSG")); } catch { /* already removed */ }
+      }
+    }
+
+    return { ok: true, available: true };
+  }
+
+  async function continueMerge(projectPath) {
+    const mergeState = await getMergeState(projectPath);
+    if (!mergeState.ok) {
+      return { ok: false, error: "Не удалось определить состояние операции." };
+    }
+    if (mergeState.state === "none") {
+      return { ok: false, error: "Нет активной операции." };
+    }
+
+    const continueCommands = {
+      merge: ["merge", "--continue"],
+      "squash-merge": ["commit", "--no-edit"],
+      rebase: ["rebase", "--continue"],
+      "cherry-pick": ["cherry-pick", "--continue"],
+      revert: ["revert", "--continue"],
+      am: ["am", "--continue"]
+    };
+    const baseCommand = continueCommands[mergeState.state];
+    if (!baseCommand) {
+      return { ok: false, error: "Эта операция не поддерживает продолжение." };
+    }
+
+    // Prevent git from opening an interactive editor (e.g. during rebase reword/edit)
+    // since we run in a non-TTY IPC context with stdin closed.
+    // "true" is a no-op command (exits 0) — git keeps the message file as-is.
+    // Empty string would NOT work: git falls back to GIT_EDITOR/VISUAL/EDITOR/vi.
+    const command = ["-c", "core.editor=true", ...baseCommand];
+
+    const response = await runGitCommandSafe(projectPath, command, "Не удалось продолжить операцию.");
     if (!response.ok || !response.available) {
       return response;
     }
@@ -799,7 +931,7 @@ export function createGitService(runCommand) {
     if (response.result.code !== 0) {
       return {
         ok: false,
-        error: getGitCommandError(response.result, "Failed to abort merge.")
+        error: getGitCommandError(response.result, "Не удалось продолжить операцию.")
       };
     }
 
@@ -823,6 +955,7 @@ export function createGitService(runCommand) {
     resolveConflictFile,
     acceptConflictVersion,
     abortMerge,
+    continueMerge,
     createBranch,
     deleteBranch,
     deleteRemoteBranch,
