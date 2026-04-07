@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, unlink } from "node:fs/promises";
 import { createGitService } from "./git-service.mjs";
 
 vi.mock("node:fs/promises", () => ({
@@ -460,6 +460,7 @@ describe("createGitService", () => {
     beforeEach(() => {
       vi.mocked(access).mockRejectedValue(new Error("ENOENT"));
       vi.mocked(readFile).mockRejectedValue(new Error("ENOENT"));
+      vi.mocked(unlink).mockResolvedValue(undefined);
     });
 
     it("returns ok when no operation is in progress (race condition)", async () => {
@@ -511,7 +512,7 @@ describe("createGitService", () => {
       expect(calls).toContain("bisect");
     });
 
-    it("treats 'no rebase in progress' stderr as success", async () => {
+    it("treats 'no rebase in progress' stderr as success and cleans up stale REBASE_HEAD", async () => {
       const runCommand = vi.fn(async (_cmd, args) => {
         if (args.includes("--absolute-git-dir")) {
           return makeCommandResult(0, "/project/.git\n");
@@ -528,12 +529,15 @@ describe("createGitService", () => {
         throw new Error("ENOENT");
       });
       readFile.mockRejectedValue(new Error("ENOENT"));
+      unlink.mockResolvedValue(undefined);
       const service = createGitService(runCommand);
       const result = await service.abortMerge("/project");
       expect(result.ok).toBe(true);
+      const unlinkCalls = unlink.mock.calls.map(([p]) => p.replaceAll("\\", "/"));
+      expect(unlinkCalls.some((p) => p.endsWith("/REBASE_HEAD"))).toBe(true);
     });
 
-    it("treats 'no merge to abort' stderr as success", async () => {
+    it("treats 'no merge to abort' stderr as success and cleans up stale MERGE_HEAD", async () => {
       const runCommand = vi.fn(async (_cmd, args) => {
         if (args.includes("--absolute-git-dir")) {
           return makeCommandResult(0, "/project/.git\n");
@@ -550,9 +554,23 @@ describe("createGitService", () => {
         throw new Error("ENOENT");
       });
       readFile.mockRejectedValue(new Error("ENOENT"));
+      unlink.mockResolvedValue(undefined);
       const service = createGitService(runCommand);
       const result = await service.abortMerge("/project");
       expect(result.ok).toBe(true);
+      const unlinkCalls = unlink.mock.calls.map(([p]) => p.replaceAll("\\", "/"));
+      expect(unlinkCalls.some((p) => p.endsWith("/MERGE_HEAD"))).toBe(true);
+    });
+
+    it("cleans up stale state files after successful abort", async () => {
+      const runCommand = vi.fn();
+      const calls = setupMergeState(runCommand, "cherry-pick", ["CHERRY_PICK_HEAD"]);
+      unlink.mockResolvedValue(undefined);
+      const service = createGitService(runCommand);
+      await service.abortMerge("/project");
+      expect(calls).toContain("cherry-pick");
+      const unlinkCalls = unlink.mock.calls.map(([p]) => p.replaceAll("\\", "/"));
+      expect(unlinkCalls.some((p) => p.endsWith("/CHERRY_PICK_HEAD"))).toBe(true);
     });
 
     it("runs git reset --merge for squash-merge state", async () => {

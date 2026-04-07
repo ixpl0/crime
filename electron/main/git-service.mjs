@@ -835,6 +835,32 @@ export function createGitService(runCommand) {
     return resolveConflictFile(projectPath, relativePath);
   }
 
+  // Stale state files that git may leave behind after abort or when an operation
+  // ends abnormally. Keyed by detected state; values are files to remove from gitDir.
+  const STALE_STATE_FILES = {
+    merge: ["MERGE_HEAD", "MERGE_MSG", "MERGE_MODE"],
+    "squash-merge": ["SQUASH_MSG"],
+    rebase: ["REBASE_HEAD"],
+    "cherry-pick": ["CHERRY_PICK_HEAD"],
+    revert: ["REVERT_HEAD"]
+  };
+
+  async function cleanupStaleStateFiles(projectPath, state) {
+    const files = STALE_STATE_FILES[state];
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    const gitDir = await getGitDir(resolve(projectPath));
+    if (!gitDir) {
+      return;
+    }
+
+    await Promise.all(
+      files.map((file) => unlink(join(gitDir, file)).catch(() => { /* already removed */ }))
+    );
+  }
+
   async function abortMerge(projectPath) {
     const mergeState = await getMergeState(projectPath);
     if (!mergeState.ok) {
@@ -879,18 +905,14 @@ export function createGitService(runCommand) {
         lower.includes("no am session in progress") ||
         lower.includes("we are not bisecting");
       if (isAlreadyAborted) {
+        await cleanupStaleStateFiles(projectPath, mergeState.state);
         return { ok: true, available: true };
       }
       return { ok: false, error: stderr };
     }
 
-    // git reset --merge does not remove SQUASH_MSG — clean it up manually
-    if (mergeState.state === "squash-merge") {
-      const gitDir = await getGitDir(resolve(projectPath));
-      if (gitDir) {
-        try { await unlink(join(gitDir, "SQUASH_MSG")); } catch { /* already removed */ }
-      }
-    }
+    // Clean up stale state files that git may not remove on its own
+    await cleanupStaleStateFiles(projectPath, mergeState.state);
 
     return { ok: true, available: true };
   }
