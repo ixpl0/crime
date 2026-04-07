@@ -371,6 +371,22 @@ export function createGitService(runCommand) {
     };
   }
 
+  async function getRemoteNames(repositoryRoot) {
+    try {
+      const result = await runCommand("git", ["remote"], repositoryRoot);
+      if (result.code !== 0) {
+        return [];
+      }
+      return result.stdout
+        .toString("utf-8")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    } catch {
+      return [];
+    }
+  }
+
   async function getLog(projectPath, maxCount) {
     const repositoryRoot = await getRepositoryRoot(resolve(projectPath));
     if (repositoryRoot === null) {
@@ -384,15 +400,18 @@ export function createGitService(runCommand) {
     const format = `${formatFields}${recordSeparator}`;
 
     try {
-      const result = await runCommand(
-        "git",
-        ["log", "--all", "--date-order", `--max-count=${String(limit)}`, `--format=${format}`],
-        repositoryRoot
-      );
+      const [result, remotes] = await Promise.all([
+        runCommand(
+          "git",
+          ["log", "--all", "--date-order", `--max-count=${String(limit)}`, `--format=${format}`],
+          repositoryRoot
+        ),
+        getRemoteNames(repositoryRoot)
+      ]);
       if (result.code !== 0) {
         const stderr = result.stderr.toString("utf-8").trim();
         if (stderr.includes("does not have any commits")) {
-          return { ok: true, available: true, entries: [] };
+          return { ok: true, available: true, entries: [], remotes };
         }
 
         return { ok: false, error: stderr || "git log failed." };
@@ -400,7 +419,7 @@ export function createGitService(runCommand) {
 
       const raw = result.stdout.toString("utf-8");
       const entries = parseGitLogEntries(raw, recordSeparator, fieldSeparator);
-      return { ok: true, available: true, entries };
+      return { ok: true, available: true, entries, remotes };
     } catch (error) {
       if (isCommandNotFoundError(error)) {
         return { ok: true, available: false, reason: "git-not-installed", entries: [] };

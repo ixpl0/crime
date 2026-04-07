@@ -212,6 +212,7 @@ interface GitLogResponse {
   available?: boolean;
   reason?: "git-not-installed" | "not-a-repository";
   entries?: GitLogEntry[];
+  remotes?: string[];
   error?: string;
 }
 

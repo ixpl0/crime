@@ -64,10 +64,11 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
   const detailsError = ref("");
   const maxLaneCount = ref(0);
   const graphSvgWidth = computed(() => LANE_OFFSET + maxLaneCount.value * LANE_WIDTH + LANE_OFFSET);
+  const remotes = ref<readonly string[]>([]);
 
   const {
     contextMenu, contextMenuElement, openContextMenu, checkout, createBranch, deleteBranch
-  } = useGitGraphContextMenu(projectPath);
+  } = useGitGraphContextMenu(projectPath, remotes);
 
   const { fileDiff, selectFile, clearFileDiff } = useCommitFileDiff(projectPath, selectedCommitDetails);
 
@@ -177,6 +178,17 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
     maxLaneCount.value = 0;
   }
 
+  function applyAvailableLog(response: GitLogResponse) {
+    remotes.value = response.remotes ?? [];
+    const entries = response.entries ?? [];
+    const snapshot = entries.map((e) => `${e.hash}:${e.refs.join(";")}`).join(",");
+    if (snapshot === lastCommitsSnapshot) {
+      return;
+    }
+    lastCommitsSnapshot = snapshot;
+    applyGraphRows(entries);
+  }
+
   async function requestGitLog(requestId: number): Promise<GitLogResponse | null> {
     try {
       const response = await window.projectApi.git.getLog(projectPath.value, MAX_COMMITS);
@@ -216,13 +228,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
       return;
     }
 
-    const entries = response.entries ?? [];
-    const snapshot = entries.map((e) => `${e.hash}:${e.refs.join(";")}`).join(",");
-    if (snapshot === lastCommitsSnapshot) {
-      return;
-    }
-    lastCommitsSnapshot = snapshot;
-    applyGraphRows(entries);
+    applyAvailableLog(response);
   };
 
   onMounted(() => {
@@ -237,6 +243,7 @@ export function useGitGraphPanel(projectPath: Ref<string>, gitRefreshToken: Ref<
 
   watch(projectPath, () => {
     graphRows.value = [];
+    remotes.value = [];
     infoMessage.value = "";
     maxLaneCount.value = 0;
     lastCommitsSnapshot = "";

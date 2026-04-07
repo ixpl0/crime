@@ -16,7 +16,7 @@ export interface GitGraphContextMenuState {
   targetBranch: ContextMenuTargetBranch | null;
 }
 
-function parseBranchRef(refName: string): ContextMenuTargetBranch | null {
+export function parseBranchRef(refName: string, remotes: readonly string[]): ContextMenuTargetBranch | null {
   if (refName === "HEAD" || refName.startsWith("tag: ")) {
     return null;
   }
@@ -26,20 +26,22 @@ function parseBranchRef(refName: string): ContextMenuTargetBranch | null {
     return { displayName: name, branchName: name, remote: null };
   }
 
-  const slashIndex = refName.indexOf("/");
-  if (slashIndex > 0) {
-    return {
-      displayName: refName,
-      branchName: refName.slice(slashIndex + 1),
-      remote: refName.slice(0, slashIndex)
-    };
+  for (const remote of remotes) {
+    const prefix = `${remote}/`;
+    if (refName.startsWith(prefix)) {
+      return {
+        displayName: refName,
+        branchName: refName.slice(prefix.length),
+        remote
+      };
+    }
   }
 
   return { displayName: refName, branchName: refName, remote: null };
 }
 
 // eslint-disable-next-line max-lines-per-function
-export function useGitGraphContextMenu(projectPath: Ref<string>) {
+export function useGitGraphContextMenu(projectPath: Ref<string>, remotes: Ref<readonly string[]>) {
   const contextMenu = ref<GitGraphContextMenuState | null>(null);
   const contextMenuElement = ref<HTMLElement | null>(null);
 
@@ -55,7 +57,7 @@ export function useGitGraphContextMenu(projectPath: Ref<string>) {
       x: clampContextMenuX(event.clientX),
       y: clampContextMenuY(event.clientY),
       hash,
-      targetBranch: targetRef ? parseBranchRef(targetRef) : null
+      targetBranch: targetRef ? parseBranchRef(targetRef, remotes.value) : null
     };
     void nextTick(() => {
       contextMenuElement.value?.focus();
