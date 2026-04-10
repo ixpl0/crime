@@ -1,5 +1,5 @@
 <template>
-  <div class="pointer-events-none fixed inset-x-0 top-0 z-[100] flex justify-end p-4">
+  <div class="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-start p-4">
     <TransitionGroup name="toast-list" tag="div" class="flex w-full max-w-sm flex-col gap-2">
       <div
         v-for="toast in toasts"
@@ -69,7 +69,7 @@ function toneIcon(tone: ToastTone) {
 .toast-list-enter-from,
 .toast-list-leave-to {
   opacity: 0;
-  transform: translateY(-10px) scale(0.98);
+  transform: translateY(10px) scale(0.98);
 }
 
 .toast-list-move {

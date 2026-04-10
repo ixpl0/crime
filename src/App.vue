@@ -97,6 +97,7 @@ const {
 
 onMounted(() => {
   window.addEventListener("mousedown", acknowledgeBellReminder, true);
+  window.addEventListener("mousemove", acknowledgeBellReminder, true);
   window.addEventListener("wheel", acknowledgeBellReminder, true);
   window.addEventListener("keydown", acknowledgeBellReminder, true);
   window.addEventListener("focus", acknowledgeBellReminder);
@@ -104,6 +105,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener("mousedown", acknowledgeBellReminder, true);
+  window.removeEventListener("mousemove", acknowledgeBellReminder, true);
   window.removeEventListener("wheel", acknowledgeBellReminder, true);
   window.removeEventListener("keydown", acknowledgeBellReminder, true);
   window.removeEventListener("focus", acknowledgeBellReminder);
