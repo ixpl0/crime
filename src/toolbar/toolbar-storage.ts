@@ -336,3 +336,4 @@ export const saveToolbarConfig = async (projectPath: string, config: ToolbarConf
     "agent toolbar config"
   );
 };
+

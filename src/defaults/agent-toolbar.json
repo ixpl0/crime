@@ -280,6 +280,13 @@
       "icon": "Clapperboard",
       "items": [
         {
+          "label": "Claude продолжить",
+          "icon": "MessageSquare",
+          "value": "claude -c",
+          "type": "command",
+          "resetTerminal": true
+        },
+        {
           "label": "Claude → /resume → 1",
           "icon": "Repeat",
           "type": "scenario",

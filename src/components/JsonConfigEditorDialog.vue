@@ -84,6 +84,7 @@ const props = withDefaults(
     defaultValue: unknown;
     parser: (value: unknown) => object | null;
     serializer?: (value: unknown) => unknown;
+    buildResetValue?: (defaultValue: unknown, currentValue: unknown) => unknown;
     invalidStructureMessage: string;
     invalidJsonMessage?: string;
     validJsonMessage?: string;
@@ -94,6 +95,7 @@ const props = withDefaults(
   {
     description: "",
     serializer: undefined,
+    buildResetValue: undefined,
     invalidJsonMessage: "Некорректный JSON",
     validJsonMessage: "JSON корректен",
     resetLabel: "Сброс",
@@ -221,8 +223,12 @@ function save() {
 }
 
 function resetToDefault() {
+  const resetValue = props.buildResetValue
+    ? props.buildResetValue(props.defaultValue, props.currentValue)
+    : props.defaultValue;
+
   if (hasVisualSlot.value && editorMode.value === "visual") {
-    const parsed = props.parser(props.defaultValue);
+    const parsed = props.parser(resetValue);
     if (parsed) {
       visualModel.value = parsed;
       isDirty.value = true;
@@ -233,7 +239,7 @@ function resetToDefault() {
     editorMode.value = "json";
   }
 
-  jsonText.value = JSON.stringify(props.defaultValue, null, 2);
+  jsonText.value = JSON.stringify(resetValue, null, 2);
   validationError.value = "";
   isDirty.value = true;
 }
