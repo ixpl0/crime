@@ -272,13 +272,14 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     const windowDisplay = screen.getDisplayMatching(bounds);
     logger.info(`Window shown: ${bounds.width}x${bounds.height} at (${bounds.x},${bounds.y}), maximized=${mainWindow.isMaximized()}, display=${windowDisplay.id}`);
 
-    // When the window lands on a different display than saved (e.g. the saved
-    // monitor was disconnected, or WM overrode placement), Chromium's
-    // compositor can target the wrong display surface — especially across
-    // monitors with different DPI scales — producing a blank window.
+    // With hardware acceleration disabled, Chromium's software compositor
+    // may fail to render on non-primary displays (especially with different
+    // DPI scales), producing a blank window where even DevTools won't open.
     // Hide+show forces a full compositor reset on the correct surface.
-    if (windowDisplay.id !== savedDisplay.id) {
-      logger.warn(`Display mismatch: saved=${savedDisplay.id}, actual=${windowDisplay.id}. Forcing compositor reset.`);
+    const isNonPrimaryDisplay = windowDisplay.id !== primaryDisplay.id;
+    const isDisplayMismatch = windowDisplay.id !== savedDisplay.id;
+    if (isNonPrimaryDisplay || isDisplayMismatch) {
+      logger.warn(`Forcing compositor reset: nonPrimary=${isNonPrimaryDisplay}, displayMismatch=${isDisplayMismatch}`);
       mainWindow.hide();
       mainWindow.show();
       logger.info("Compositor reset applied (hide/show)");

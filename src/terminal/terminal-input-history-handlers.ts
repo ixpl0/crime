@@ -1,4 +1,5 @@
 import type { Ref } from "vue";
+import { playImagePasteSound } from "./play-image-paste-sound";
 import {
   getCtrlKeyInput,
   getEmptyTextareaPassthroughInput,
@@ -205,6 +206,7 @@ function createHandleTextareaPaste(options: TerminalInputHistoryHandlersOptions)
     }
 
     event.preventDefault();
+    playImagePasteSound();
     try {
       await options.sendAltVShortcut();
     } finally {
