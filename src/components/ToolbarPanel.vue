@@ -57,6 +57,7 @@
                     tabindex="-1"
                     :title="getActionTitle(subItem)"
                     class="flex justify-between whitespace-nowrap"
+                    :class="getPendingClass(subItem)"
                     @click="handleDropdownActionClick(subItem)"
                   >
                     <span class="flex min-w-0 items-center gap-1.5">
@@ -81,6 +82,7 @@
                 tabindex="-1"
                 :title="getActionTitle(item)"
                 class="flex justify-between whitespace-nowrap"
+                :class="getPendingClass(item)"
                 @click="handleDropdownActionClick(item)"
               >
                 <span class="flex min-w-0 items-center gap-1.5">
@@ -104,7 +106,7 @@
         v-else
         class="btn btn-sm"
         tabindex="-1"
-        :class="getToolbarButtonColorClass(element.color)"
+        :class="[getToolbarButtonColorClass(element.color), getPendingClass(element)]"
         :style="getToolbarButtonCustomStyle(element.color)"
         :disabled="isActionDisabled(element, isTerminalReady)"
         :title="getActionTitle(element)"
@@ -153,6 +155,10 @@ const props = defineProps<{
 
 function isActionPending(action: ToolbarAction): boolean {
   return props.pendingActions ? props.pendingActions.has(action) : false;
+}
+
+function getPendingClass(action: ToolbarAction): string {
+  return isActionPending(action) ? "pointer-events-none cursor-default" : "";
 }
 
 const emit = defineEmits<{
