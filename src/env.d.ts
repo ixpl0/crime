@@ -282,6 +282,18 @@ interface WindowApi {
   flashFrame: () => Promise<void>;
 }
 
+interface CommandRunSilentResponse {
+  ok: boolean;
+  code?: number;
+  stdout?: string;
+  stderr?: string;
+  error?: string;
+}
+
+interface CommandApi {
+  runSilent: (commandLine: string, cwd: string) => Promise<CommandRunSilentResponse>;
+}
+
 type LogLevel = "info" | "warn" | "error";
 
 interface LogApi {
@@ -301,6 +313,7 @@ interface ProjectApi {
   git: GitApi;
   zoom: ZoomApi;
   window: WindowApi;
+  command: CommandApi;
   log: LogApi;
   onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }

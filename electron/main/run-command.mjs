@@ -18,53 +18,73 @@ function attachStderrCollector(child, chunks) {
 }
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 15_000;
+const DEFAULT_SHELL_COMMAND_TIMEOUT_MS = 60_000;
+
+function collectChildProcessResult(child, description, timeoutMs) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        child.kill();
+        rejectPromise(new Error(`Command timed out after ${timeoutMs}ms: ${description}`));
+      }
+    }, timeoutMs);
+
+    const stdoutChunks = [];
+    const stderrChunks = [];
+    attachStdoutCollector(child, stdoutChunks);
+    attachStderrCollector(child, stderrChunks);
+
+    child.on("error", (error) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        rejectPromise(error);
+      }
+    });
+
+    child.on("close", (code) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timer);
+        resolvePromise({
+          code: typeof code === "number" ? code : -1,
+          stdout: Buffer.concat(stdoutChunks),
+          stderr: Buffer.concat(stderrChunks)
+        });
+      }
+    });
+  });
+}
 
 export function createCommandRunner(ideNodeModulesBinPath) {
   return function runCommand(command, args, cwd, options) {
     const timeoutMs = options?.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS;
-
-    return new Promise((resolvePromise, rejectPromise) => {
-      const env = buildChildProcessEnv(cwd, ideNodeModulesBinPath);
-      const child = spawn(command, args, {
-        cwd,
-        env,
-        windowsHide: true,
-        stdio: ["ignore", "pipe", "pipe"]
-      });
-
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          child.kill();
-          rejectPromise(new Error(`Command timed out after ${timeoutMs}ms: ${command} ${args.join(" ")}`));
-        }
-      }, timeoutMs);
-
-      const stdoutChunks = [];
-      const stderrChunks = [];
-      attachStdoutCollector(child, stdoutChunks);
-      attachStderrCollector(child, stderrChunks);
-
-      child.on("error", (error) => {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timer);
-          rejectPromise(error);
-        }
-      });
-
-      child.on("close", (code) => {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timer);
-          resolvePromise({
-            code: typeof code === "number" ? code : -1,
-            stdout: Buffer.concat(stdoutChunks),
-            stderr: Buffer.concat(stderrChunks)
-          });
-        }
-      });
+    const env = buildChildProcessEnv(cwd, ideNodeModulesBinPath);
+    const child = spawn(command, args, {
+      cwd,
+      env,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"]
     });
+
+    return collectChildProcessResult(child, `${command} ${args.join(" ")}`, timeoutMs);
+  };
+}
+
+export function createShellCommandRunner(ideNodeModulesBinPath) {
+  return function runShellCommand(commandLine, cwd, options) {
+    const timeoutMs = options?.timeoutMs ?? DEFAULT_SHELL_COMMAND_TIMEOUT_MS;
+    const env = buildChildProcessEnv(cwd, ideNodeModulesBinPath);
+    const child = spawn(commandLine, {
+      cwd,
+      env,
+      windowsHide: true,
+      shell: true,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+
+    return collectChildProcessResult(child, commandLine, timeoutMs);
   };
 }

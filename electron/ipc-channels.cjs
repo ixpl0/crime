@@ -47,6 +47,7 @@ const IPC_CHANNELS = Object.freeze({
   projectCreateFolder: "project:create-folder",
   filesystemSearch: "filesystem:search",
   filesystemSearchContent: "filesystem:search-content",
+  commandRunSilent: "command:run-silent",
   logWrite: "log:write"
 });
 

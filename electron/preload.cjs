@@ -52,6 +52,7 @@ const IPC_CHANNELS = Object.freeze({
   "projectCreateFolder": "project:create-folder",
   "filesystemSearch": "filesystem:search",
   "filesystemSearchContent": "filesystem:search-content",
+  "commandRunSilent": "command:run-silent",
   "logWrite": "log:write"
 });
 
@@ -299,6 +300,10 @@ contextBridge.exposeInMainWorld("projectApi", {
   },
   window: {
     flashFrame: () => ipcRenderer.invoke(IPC_CHANNELS.windowFlashFrame)
+  },
+  command: {
+    runSilent: (commandLine, cwd) =>
+      ipcRenderer.invoke(IPC_CHANNELS.commandRunSilent, commandLine, cwd)
   },
   onGlobalQuickKey: (listener) => {
     const handler = (_event, input) => listener(input);

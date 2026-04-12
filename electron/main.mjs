@@ -5,7 +5,7 @@ import ipcChannelsModule from "./ipc-channels.cjs";
 import settingsConstantsModule from "./settings-constants.cjs";
 import quickKeyBindingsModule from "./quick-key-bindings.cjs";
 import { buildChildProcessEnv } from "./main/child-process-env.mjs";
-import { createCommandRunner } from "./main/run-command.mjs";
+import { createCommandRunner, createShellCommandRunner } from "./main/run-command.mjs";
 import { createGitService } from "./main/git-service.mjs";
 import { attachWindowStatePersistence, getInitialWindowState } from "./main/window-state.mjs";
 import { registerClipboardIpcHandlers } from "./main/ipc/register-clipboard-ipc.mjs";
@@ -17,6 +17,7 @@ import { registerSettingsIpcHandlers } from "./main/ipc/register-settings-ipc.mj
 import { registerTerminalIpcHandlers } from "./main/ipc/register-terminal-ipc.mjs";
 import { registerGitWatcherIpcHandlers } from "./main/ipc/register-git-watcher-ipc.mjs";
 import { registerSearchIpcHandlers } from "./main/ipc/register-search-ipc.mjs";
+import { registerCommandIpcHandlers } from "./main/ipc/register-command-ipc.mjs";
 import { toErrorMessage, toIpcErrorResponse } from "./main/error-utils.mjs";
 import { logger } from "./main/logger.mjs";
 
@@ -46,6 +47,7 @@ const IS_FAIL_FAST = !app.isPackaged;
 const DEFAULT_TERMINAL_SESSION_ID = "primary";
 
 const runCommand = createCommandRunner(IDE_NODE_MODULES_BIN_PATH);
+const runShellCommand = createShellCommandRunner(IDE_NODE_MODULES_BIN_PATH);
 const gitService = createGitService(runCommand);
 
 function toIpcFailure(error, fallbackMessage) {
@@ -361,6 +363,7 @@ function registerIpcHandlers() {
     stopGitWatcher
   });
   registerSearchIpcHandlers({ IPC_CHANNELS, runCommand });
+  registerCommandIpcHandlers({ IPC_CHANNELS, runShellCommand });
 
   ipcMain.handle(IPC_CHANNELS.windowFlashFrame, (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);

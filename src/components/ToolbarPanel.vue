@@ -60,7 +60,8 @@
                     @click="handleDropdownActionClick(subItem)"
                   >
                     <span class="flex min-w-0 items-center gap-1.5">
-                      <CircleAlert v-if="isTrackingAlert(subItem)" :size="14" class="shrink-0 text-error" />
+                      <Loader2 v-if="isActionPending(subItem)" :size="14" class="shrink-0 animate-spin" />
+                      <CircleAlert v-else-if="isTrackingAlert(subItem)" :size="14" class="shrink-0 text-error" />
                       <CircleCheck v-else-if="isTrackingSuccess(subItem)" :size="14" class="shrink-0 text-success" />
                       <span v-else-if="getTrackingDaysLabel(subItem)" class="shrink-0 text-xs font-semibold text-warning">
                         {{ getTrackingDaysLabel(subItem) }}
@@ -83,7 +84,8 @@
                 @click="handleDropdownActionClick(item)"
               >
                 <span class="flex min-w-0 items-center gap-1.5">
-                  <CircleAlert v-if="isTrackingAlert(item)" :size="14" class="shrink-0 text-error" />
+                  <Loader2 v-if="isActionPending(item)" :size="14" class="shrink-0 animate-spin" />
+                  <CircleAlert v-else-if="isTrackingAlert(item)" :size="14" class="shrink-0 text-error" />
                   <CircleCheck v-else-if="isTrackingSuccess(item)" :size="14" class="shrink-0 text-success" />
                   <span v-else-if="getTrackingDaysLabel(item)" class="shrink-0 text-xs font-semibold text-warning">
                     {{ getTrackingDaysLabel(item) }}
@@ -108,7 +110,8 @@
         :title="getActionTitle(element)"
         @click="$emit('execute-action', element)"
       >
-        <component v-if="resolveLucideIcon(element.icon)" :is="resolveLucideIcon(element.icon)" :size="14" class="shrink-0" />
+        <Loader2 v-if="isActionPending(element)" :size="14" class="shrink-0 animate-spin" />
+        <component v-else-if="resolveLucideIcon(element.icon)" :is="resolveLucideIcon(element.icon)" :size="14" class="shrink-0" />
         {{ element.label }}
         <kbd v-if="element.shortcut" class="kbd kbd-xs ml-1">{{ formatShortcut(element.shortcut) }}</kbd>
       </button>
@@ -140,12 +143,17 @@ import { formatShortcut } from "../toolbar/toolbar-shortcuts";
 import { resolveLucideIcon } from "../toolbar/toolbar-icons";
 import { computeDaysSinceLastUsed, isLastUsedWithinOneDay } from "../toolbar/toolbar-tracking";
 import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, positionFixedDropdown, useDropdownClickOutside } from "../utils/dropdown-utils";
-import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, Pencil } from "lucide-vue-next";
+import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, Loader2, Pencil } from "lucide-vue-next";
 
-defineProps<{
+const props = defineProps<{
   toolbarConfig: ToolbarConfig;
   isTerminalReady: boolean;
+  pendingActions?: ReadonlySet<ToolbarAction>;
 }>();
+
+function isActionPending(action: ToolbarAction): boolean {
+  return props.pendingActions ? props.pendingActions.has(action) : false;
+}
 
 const emit = defineEmits<{
   "execute-action": [action: ToolbarAction];
@@ -232,6 +240,10 @@ function handleDropdownActionClick(action: ToolbarAction) {
 }
 
 function isActionDisabled(action: ToolbarAction, isTerminalReady: boolean) {
+  if (isActionPending(action)) {
+    return true;
+  }
+
   return !isTerminalReady && !action.resetTerminal;
 }
 

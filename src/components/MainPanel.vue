@@ -160,6 +160,7 @@
             <ToolbarPanel
               :toolbar-config="gitToolbarConfig"
               :is-terminal-ready="isTerminalReady"
+              :pending-actions="gitSilentPendingActions"
               @execute-action="executeGitToolbarAction"
               @open-config-editor="openGitToolbarConfigEditor"
             />
@@ -200,6 +201,8 @@ import { defaultTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storag
 import { useGitStatus } from "../composables/use-git-status";
 import { useStatusBarStore } from "../composables/status-bar-store";
 import { useAppToastStore } from "../toast/toast-store";
+import { useSilentToolbarCommand } from "../toolbar/use-silent-toolbar-command";
+import { type ToolbarAction } from "../types/toolbar";
 import AgentPanel from "./AgentPanel.vue";
 import ChangesPanel from "./changes/ChangesPanel.vue";
 import ConfirmDialog from "./ConfirmDialog.vue";
@@ -274,7 +277,6 @@ const {
 } = navigationStore;
 
 const { isTerminalReady, executeToolbarAction } = useAppTerminalStore();
-const executeGitToolbarAction = executeToolbarAction;
 
 const mainContainer = ref<HTMLElement | null>(null);
 const cardBody = ref<HTMLElement | null>(null);
@@ -360,6 +362,18 @@ const {
   repositoryRefreshToken: gitRepositoryRefreshToken,
   refresh: refreshGitStatus
 } = useGitStatus(projectPath, activeTab);
+
+const { pendingActions: gitSilentPendingActions, runSilentCommand: runSilentGitCommand } =
+  useSilentToolbarCommand({ projectPath });
+
+const executeGitToolbarAction = (action: ToolbarAction) => {
+  if (action.type === "command") {
+    void runSilentGitCommand(action);
+    return;
+  }
+
+  executeToolbarAction(action);
+};
 
 const changesCount = computed(() => gitStatusResponse.value?.entries?.length ?? 0);
 const gitMergeState = computed<GitMergeStateKind>(() => gitStatusResponse.value?.mergeState ?? "none");
