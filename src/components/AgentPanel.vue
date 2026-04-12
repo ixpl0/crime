@@ -18,17 +18,25 @@
 
     <form class="flex shrink-0 min-w-0 gap-3" @submit.prevent="sendTextareaToTerminal">
       <div class="flex min-w-0 flex-1 flex-col gap-2">
-        <textarea
-          :ref="setTerminalInputTextarea"
-          :value="terminalInputText"
-          class="textarea textarea-bordered w-full resize-none overflow-y-auto"
-          rows="4"
-          :disabled="!isTerminalReady"
-          placeholder="Введите текст для отправки в терминал"
-          @keydown="handleTextareaKeydown"
-          @input="handleTerminalInput"
-          @paste="handleTextareaPaste"
-        />
+        <div class="relative min-w-0">
+          <textarea
+            :ref="setTerminalInputTextarea"
+            :value="terminalInputText"
+            class="textarea textarea-bordered w-full resize-none overflow-y-auto"
+            rows="4"
+            :disabled="!isTerminalReady"
+            placeholder="Введите текст для отправки в терминал"
+            @keydown="handleTextareaKeydown"
+            @input="handleTerminalInput"
+            @paste="handleTextareaPaste"
+          />
+          <div
+            class="pointer-events-none absolute bottom-1.5 right-2.5 rounded bg-base-100/80 px-1 text-xs tabular-nums leading-none"
+            :class="characterCountColorClass"
+          >
+            {{ terminalInputText.length }}
+          </div>
+        </div>
         <div class="flex min-w-0 items-start gap-2">
           <PromptSuffixPanel
             class="min-w-0 flex-1"
@@ -82,10 +90,14 @@ import {
   ArrowUp,
   CornerDownLeft
 } from "lucide-vue-next";
+import { computed } from "vue";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppTerminalStore } from "../terminal/terminal-store";
 import PromptSuffixPanel from "./PromptSuffixPanel.vue";
 import ToolbarPanel from "./ToolbarPanel.vue";
+
+const characterCountWarningThreshold = 2000;
+const characterCountErrorThreshold = 8000;
 
 const {
   toolbarConfig,
@@ -111,6 +123,17 @@ const {
   sendTextareaToTerminal,
   sendQuickKey
 } = useAppTerminalStore();
+
+const characterCountColorClass = computed(() => {
+  const length = terminalInputText.value.length;
+  if (length >= characterCountErrorThreshold) {
+    return "text-error";
+  }
+  if (length >= characterCountWarningThreshold) {
+    return "text-warning";
+  }
+  return "text-base-content/50";
+});
 
 function handleTerminalInput(event: Event) {
   const target = event.currentTarget;
