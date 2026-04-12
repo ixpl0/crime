@@ -126,7 +126,15 @@ interface WorkspaceSession {
   disposeTerminalView: () => void;
 }
 
+interface ClosedSessionConfig {
+  title: string;
+  initialCommandText: string;
+  initialShouldSubmit: boolean;
+  repeatButtonColor?: ToolbarButtonColor;
+}
+
 const PRIMARY_TERMINAL_SESSION_ID = "primary";
+const MAX_CLOSED_SESSIONS_HISTORY = 20;
 
 const props = defineProps<{
   projectPath: string;
@@ -145,6 +153,7 @@ const {
 
 const { pushError } = useAppToastStore();
 const sessions = shallowRef<WorkspaceSession[]>([]);
+const closedSessionConfigs = ref<ClosedSessionConfig[]>([]);
 const projectPathRef = computed<string | null>(() => props.projectPath);
 const terminalFontSize = computed(() =>
   normalizeTerminalFontSize(projectSettings.value.zoom.terminalFontSize)
@@ -204,6 +213,7 @@ watch(
     }
 
     void closeAllSessions();
+    closedSessionConfigs.value = [];
   }
 );
 
@@ -218,6 +228,7 @@ watch(terminalFontSize, (fontSize) => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleReopenShortcut, true);
   stopTerminalDataSubscription();
   stopTerminalExitSubscription();
   void disposeAllSessions();
@@ -387,12 +398,24 @@ function handleSessionCopyEvent(sessionId: string, event: MouseEvent) {
   getSessionById(sessionId)?.handleTerminalCopyEvent(event);
 }
 
+function rememberClosedSession(session: WorkspaceSession) {
+  const closedConfig: ClosedSessionConfig = {
+    title: session.title,
+    initialCommandText: session.initialCommandText,
+    initialShouldSubmit: session.initialShouldSubmit,
+    repeatButtonColor: session.repeatButtonColor
+  };
+  const nextHistory = [...closedSessionConfigs.value, closedConfig];
+  closedSessionConfigs.value = nextHistory.slice(-MAX_CLOSED_SESSIONS_HISTORY);
+}
+
 async function closeSession(sessionId: string) {
   const session = getSessionById(sessionId);
   if (!session) {
     return;
   }
 
+  rememberClosedSession(session);
   sessions.value = sessions.value.filter((item) => item.id !== sessionId);
   session.disposeTerminalView();
 
@@ -402,6 +425,62 @@ async function closeSession(sessionId: string) {
     reportPanelError("Mini terminal stop", error, "Не удалось остановить мини-терминал.");
   }
 }
+
+async function reopenLastClosedSession() {
+  const history = closedSessionConfigs.value;
+  if (history.length === 0) {
+    return;
+  }
+
+  const lastConfig = history[history.length - 1];
+  closedSessionConfigs.value = history.slice(0, -1);
+
+  const session = createWorkspaceSession(lastConfig.title, lastConfig.initialCommandText);
+  session.initialShouldSubmit = lastConfig.initialShouldSubmit;
+  session.repeatButtonColor = lastConfig.repeatButtonColor;
+  sessions.value = [...sessions.value, session];
+  await nextTick();
+
+  try {
+    await session.startTerminal(props.projectPath);
+    if (props.isActive) {
+      await session.resizeTerminalBackend();
+    }
+  } catch (error) {
+    session.writeTerminalNotice("\r\n[restore failed]");
+    reportPanelError("Mini terminal restore", error, "Не удалось восстановить мини-терминал.");
+  }
+}
+
+function handleReopenShortcut(event: KeyboardEvent) {
+  if (!props.isActive) {
+    return;
+  }
+
+  if (closedSessionConfigs.value.length === 0) {
+    return;
+  }
+
+  const isCtrlShiftT = event.ctrlKey && event.shiftKey && !event.altKey && !event.metaKey && event.code === "KeyT";
+  const isCtrlZ = event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey && event.code === "KeyZ";
+
+  if (!isCtrlShiftT && !isCtrlZ) {
+    return;
+  }
+
+  if (isCtrlZ) {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && activeElement.closest(".terminal-host")) {
+      return;
+    }
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  void reopenLastClosedSession();
+}
+
+window.addEventListener("keydown", handleReopenShortcut, true);
 
 async function restartSession(sessionId: string) {
   const session = getSessionById(sessionId);
