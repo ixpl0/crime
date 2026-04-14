@@ -1,6 +1,8 @@
 <template>
+  <template v-if="label">
+    <span class="self-center text-right text-sm">{{ label }}</span>
+  </template>
   <div class="flex items-center gap-2">
-    <span v-if="label" class="text-sm whitespace-nowrap">{{ label }}</span>
     <select
       class="select select-bordered select-sm"
       :value="selectValue"

@@ -3,7 +3,7 @@
     <div
       v-for="(item, index) in config.items"
       :key="index"
-      class="rounded-lg border border-base-300 p-3 space-y-2"
+      class="rounded-lg border border-base-300 bg-base-content/2 p-3 space-y-2"
     >
       <div class="flex items-center gap-2">
         <input

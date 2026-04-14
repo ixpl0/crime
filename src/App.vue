@@ -184,7 +184,7 @@ const handleGlobalMousedown = (event: MouseEvent) => {
     return;
   }
 
-  if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
+  if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement || target instanceof HTMLSelectElement) {
     return;
   }
 

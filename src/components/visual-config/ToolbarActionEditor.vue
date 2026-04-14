@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-2">
     <FieldText label="Название" :model-value="action.label" @update:model-value="updateField('label', $event)" />
     <FieldSelect label="Тип" :model-value="action.type" :options="ACTION_TYPE_OPTIONS" @update:model-value="handleTypeChange" />
 
@@ -20,7 +20,7 @@
     <FieldCheckbox v-if="action.done !== undefined" label="Готово" :model-value="action.done ?? false" @update:model-value="updateOptionalBool('done', $event)" />
 
     <!-- Scenario steps -->
-    <div v-if="action.type === 'scenario' && action.steps" class="mt-3">
+    <div v-if="action.type === 'scenario' && action.steps" class="col-span-2 mt-3">
       <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/60">Шаги</div>
       <div
         v-for="(step, stepIndex) in action.steps"

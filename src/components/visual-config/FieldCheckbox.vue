@@ -1,9 +1,9 @@
 <template>
-  <label class="flex items-center justify-between gap-4">
-    <span class="text-sm whitespace-nowrap">{{ label }}</span>
+  <label class="contents">
+    <span class="self-center text-right text-sm">{{ label }}</span>
     <input
       type="checkbox"
-      class="toggle toggle-sm"
+      class="toggle toggle-sm justify-self-start"
       :checked="modelValue"
       tabindex="-1"
       @change="handleChange"

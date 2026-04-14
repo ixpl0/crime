@@ -1,9 +1,13 @@
 <template>
-  <label class="flex" :class="multiline ? 'flex-col gap-1' : 'items-center justify-between gap-4'">
-    <span v-if="label" class="text-sm whitespace-nowrap">{{ label }}</span>
+  <label class="contents">
+    <span
+      v-if="label"
+      class="text-right text-sm"
+      :class="multiline ? 'self-start pt-2' : 'self-center'"
+    >{{ label }}</span>
     <textarea
       v-if="multiline"
-      class="textarea textarea-bordered textarea-sm min-w-0 flex-1 font-mono text-sm"
+      class="textarea textarea-bordered textarea-sm min-w-0 font-mono text-sm"
       :value="modelValue"
       :rows="rows"
       :placeholder="placeholder"
@@ -13,7 +17,7 @@
     <input
       v-else
       type="text"
-      class="input input-bordered input-sm min-w-0 flex-1 font-mono"
+      class="input input-bordered input-sm min-w-0 font-mono"
       :value="modelValue"
       :placeholder="placeholder"
       tabindex="-1"

@@ -3,7 +3,7 @@
     <div
       v-for="(element, elementIndex) in config.elements"
       :key="elementIndex"
-      class="rounded-lg border border-base-300"
+      class="rounded-lg border border-base-300 bg-base-content/2"
     >
       <!-- Element header -->
       <div
@@ -15,10 +15,7 @@
           class="shrink-0 transition-transform"
           :class="{ 'rotate-90': isExpanded(elementIndex) }"
         />
-        <span
-          class="badge badge-xs"
-          :class="isDropdown(element) ? 'badge-info' : 'badge-ghost'"
-        >
+        <span class="badge badge-xs badge-ghost">
           {{ isDropdown(element) ? "group" : (element as ToolbarAction).type }}
         </span>
         <span class="flex-1 truncate text-sm font-medium">{{ element.label }}</span>
@@ -38,95 +35,92 @@
       </div>
 
       <!-- Expanded content -->
-      <div v-if="isExpanded(elementIndex)" class="space-y-3 border-t border-base-300 p-3">
+      <div v-if="isExpanded(elementIndex)" class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-3 border-t border-base-300 p-3">
         <FieldText label="Название" :model-value="element.label" @update:model-value="updateElementLabel(elementIndex, $event)" />
         <FieldIcon label="Иконка" :model-value="element.icon" @update:model-value="updateElementIcon(elementIndex, $event)" />
         <FieldColor label="Цвет" :model-value="element.color" @update:model-value="updateElementColor(elementIndex, $event)" />
 
         <!-- Dropdown: nested items -->
         <template v-if="isDropdown(element)">
-          <div class="mt-3">
-            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-base-content/60">
+          <div class="col-span-2 mt-3 space-y-2">
+            <div class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
               Элементы ({{ (element as ToolbarDropdown).items.length }})
             </div>
             <div
               v-for="(item, itemIndex) in (element as ToolbarDropdown).items"
               :key="itemIndex"
-              class="mb-2 ml-2 border-l-2 border-base-300 pl-3"
+              class="rounded-lg border border-base-300 bg-base-content/2"
             >
               <!-- Item header -->
               <div
-                class="flex cursor-pointer items-center gap-2"
+                class="flex cursor-pointer items-center gap-2 p-2"
                 @click="toggleExpandItem(elementIndex, itemIndex)"
               >
                 <ChevronRight
-                  :size="12"
+                  :size="14"
                   class="shrink-0 transition-transform"
                   :class="{ 'rotate-90': isExpandedItem(elementIndex, itemIndex) }"
                 />
-                <span
-                  class="badge badge-xs"
-                  :class="isDropdown(item) ? 'badge-info' : 'badge-ghost'"
-                >
+                <span class="badge badge-xs badge-ghost">
                   {{ isDropdown(item) ? "group" : (item as ToolbarAction).type }}
                 </span>
-                <span class="flex-1 truncate text-sm">{{ item.label }}</span>
+                <span class="flex-1 truncate text-sm font-medium">{{ item.label }}</span>
                 <div class="flex gap-1" @click.stop>
-                  <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="itemIndex === 0" @click="handleMoveItem(elementIndex, itemIndex, -1)">
-                    <ArrowUp :size="10" />
+                  <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="itemIndex === 0" title="Вверх" @click="handleMoveItem(elementIndex, itemIndex, -1)">
+                    <ArrowUp :size="12" />
                   </button>
-                  <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="itemIndex === (element as ToolbarDropdown).items.length - 1" @click="handleMoveItem(elementIndex, itemIndex, 1)">
-                    <ArrowDown :size="10" />
+                  <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="itemIndex === (element as ToolbarDropdown).items.length - 1" title="Вниз" @click="handleMoveItem(elementIndex, itemIndex, 1)">
+                    <ArrowDown :size="12" />
                   </button>
-                  <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" @click="handleRemoveItem(elementIndex, itemIndex)">
-                    <X :size="10" />
+                  <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" title="Удалить" @click="handleRemoveItem(elementIndex, itemIndex)">
+                    <X :size="12" />
                   </button>
                 </div>
               </div>
 
               <!-- Sub-dropdown items (expanded) -->
-              <div v-if="isExpandedItem(elementIndex, itemIndex) && isDropdown(item)" class="mt-2 ml-4 space-y-2">
+              <div v-if="isExpandedItem(elementIndex, itemIndex) && isDropdown(item)" class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-3 border-t border-base-300 p-3">
                 <FieldText label="Название" :model-value="item.label" @update:model-value="updateItemLabel(elementIndex, itemIndex, $event)" />
-                <div class="mt-2">
-                  <div class="mb-1 text-xs font-semibold uppercase tracking-wide text-base-content/60">
+                <div class="col-span-2 mt-3 space-y-2">
+                  <div class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
                     Подэлементы ({{ (item as ToolbarDropdown).items.length }})
                   </div>
                   <div
                     v-for="(subItem, subIndex) in (item as ToolbarDropdown).items"
                     :key="subIndex"
-                    class="mb-2 ml-2 border-l-2 border-base-300 pl-3"
+                    class="rounded-lg border border-base-300 bg-base-content/2"
                   >
                     <div
-                      class="flex cursor-pointer items-center gap-2"
+                      class="flex cursor-pointer items-center gap-2 p-2"
                       @click="toggleExpandSubItem(elementIndex, itemIndex, subIndex)"
                     >
                       <ChevronRight
-                        :size="12"
+                        :size="14"
                         class="shrink-0 transition-transform"
                         :class="{ 'rotate-90': isExpandedSubItem(elementIndex, itemIndex, subIndex) }"
                       />
                       <span class="badge badge-xs badge-ghost">{{ (subItem as ToolbarAction).type }}</span>
-                      <span class="flex-1 truncate text-sm">{{ subItem.label }}</span>
+                      <span class="flex-1 truncate text-sm font-medium">{{ subItem.label }}</span>
                       <div class="flex gap-1" @click.stop>
-                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === 0" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, -1)">
-                          <ArrowUp :size="10" />
+                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === 0" title="Вверх" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, -1)">
+                          <ArrowUp :size="12" />
                         </button>
-                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === (item as ToolbarDropdown).items.length - 1" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, 1)">
-                          <ArrowDown :size="10" />
+                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === (item as ToolbarDropdown).items.length - 1" title="Вниз" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, 1)">
+                          <ArrowDown :size="12" />
                         </button>
-                        <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" @click="handleRemoveSubItem(elementIndex, itemIndex, subIndex)">
-                          <X :size="10" />
+                        <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" title="Удалить" @click="handleRemoveSubItem(elementIndex, itemIndex, subIndex)">
+                          <X :size="12" />
                         </button>
                       </div>
                     </div>
-                    <div v-if="isExpandedSubItem(elementIndex, itemIndex, subIndex)" class="mt-2 ml-4">
+                    <div v-if="isExpandedSubItem(elementIndex, itemIndex, subIndex)" class="border-t border-base-300 p-3">
                       <ToolbarActionEditor
                         :model-value="subItem"
                         @update:model-value="updateSubItem(elementIndex, itemIndex, subIndex, $event)"
                       />
                     </div>
                   </div>
-                  <button class="btn btn-ghost btn-xs ml-2 mt-1" tabindex="-1" @click="handleAddSubItem(elementIndex, itemIndex)">
+                  <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddSubItem(elementIndex, itemIndex)">
                     <Plus :size="12" />
                     Добавить
                   </button>
@@ -134,7 +128,7 @@
               </div>
 
               <!-- Action item fields (expanded) -->
-              <div v-else-if="isExpandedItem(elementIndex, itemIndex)" class="mt-2 ml-4">
+              <div v-else-if="isExpandedItem(elementIndex, itemIndex)" class="border-t border-base-300 p-3">
                 <ToolbarActionEditor
                   :model-value="item"
                   @update:model-value="updateItem(elementIndex, itemIndex, $event)"
@@ -142,7 +136,7 @@
               </div>
             </div>
 
-            <div class="ml-2 mt-1 flex gap-2">
+            <div class="flex gap-2">
               <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddItem(elementIndex)">
                 <Plus :size="12" />
                 Добавить
@@ -157,10 +151,12 @@
 
         <!-- Standalone action -->
         <template v-else>
-          <ToolbarActionEditor
-            :model-value="element"
-            @update:model-value="updateStandaloneAction(elementIndex, $event)"
-          />
+          <div class="col-span-2">
+            <ToolbarActionEditor
+              :model-value="element"
+              @update:model-value="updateStandaloneAction(elementIndex, $event)"
+            />
+          </div>
         </template>
       </div>
     </div>

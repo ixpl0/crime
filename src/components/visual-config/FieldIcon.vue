@@ -1,10 +1,12 @@
 <template>
-  <div class="flex items-center gap-2">
-    <span v-if="label" class="text-sm whitespace-nowrap">{{ label }}</span>
+  <template v-if="label">
+    <span class="self-center text-right text-sm">{{ label }}</span>
+  </template>
+  <div class="contents">
     <button
       ref="triggerRef"
       type="button"
-      class="btn btn-sm btn-ghost gap-1"
+      class="btn btn-sm btn-ghost gap-1 justify-self-start"
       tabindex="-1"
       @click="handleToggle"
     >

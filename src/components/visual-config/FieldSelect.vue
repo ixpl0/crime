@@ -1,8 +1,8 @@
 <template>
-  <label class="flex items-center justify-between gap-4">
-    <span v-if="label" class="text-sm whitespace-nowrap">{{ label }}</span>
+  <label class="contents">
+    <span v-if="label" class="self-center text-right text-sm">{{ label }}</span>
     <select
-      class="select select-bordered select-sm"
+      class="select select-bordered select-sm justify-self-start"
       :value="modelValue"
       tabindex="-1"
       @change="handleChange"

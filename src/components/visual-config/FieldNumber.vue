@@ -1,9 +1,9 @@
 <template>
-  <label class="flex items-center justify-between gap-4">
-    <span class="text-sm whitespace-nowrap">{{ label }}</span>
+  <label class="contents">
+    <span class="self-center text-right text-sm">{{ label }}</span>
     <input
       type="number"
-      class="input input-bordered input-sm w-28 text-right font-mono"
+      class="input input-bordered input-sm w-28 justify-self-start text-right font-mono"
       :value="modelValue"
       :min="min"
       :max="max"
