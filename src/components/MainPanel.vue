@@ -165,7 +165,7 @@
               @open-config-editor="openGitToolbarConfigEditor"
             />
             <div class="min-h-0 flex-1 overflow-y-auto">
-              <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" :branch-highlight-request-token="gitBranchHighlightRequestToken" :merge-state="gitMergeState" :conflict-count="gitConflictCount" @open-file="handleChangesPathOpen" />
+              <GitGraphPanel :project-path="projectPath" :git-refresh-token="gitRepositoryRefreshToken" :branch-highlight-request-token="gitBranchHighlightRequestToken" :merge-state="gitMergeState" :conflict-count="gitConflictCount" :is-active="activeTab === 'git'" @open-file="handleChangesPathOpen" />
             </div>
           </div>
         </div>

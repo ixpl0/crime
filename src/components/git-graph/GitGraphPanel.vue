@@ -152,6 +152,7 @@ import { useAppToastStore } from "../../toast/toast-store";
 import { useConfirmDialog, usePromptDialog } from "../../utils/dialog-utils";
 import { usePanelHeightResize } from "../../composables/use-panel-height-resize";
 import { useGitGraphPanel } from "./use-git-graph-panel";
+import { useGitGraphNavigation } from "./use-git-graph-navigation";
 import CommitDetailsPanel from "./CommitDetailsPanel.vue";
 import PanelHeightResizeHandle from "../PanelHeightResizeHandle.vue";
 
@@ -168,6 +169,7 @@ const props = defineProps<{
   branchHighlightRequestToken: number;
   mergeState?: GitMergeStateKind;
   conflictCount?: number;
+  isActive?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -289,6 +291,16 @@ watch(() => props.projectPath, () => { conflictFiles.value = []; });
 watch(() => props.gitRefreshToken, async () => {
   if (conflictFiles.value.length === 0) { return; }
   conflictFiles.value = await window.projectApi.git.getUnmergedFiles(props.projectPath);
+});
+
+const rowsLength = computed(() => graphRows.value.length);
+useGitGraphNavigation({
+  isActive: toRef(props, "isActive"),
+  rowsLength,
+  selectedRowIndex,
+  scrollContainer,
+  rowHeight: ROW_HEIGHT,
+  selectCommit
 });
 
 let highlightTimer: ReturnType<typeof setTimeout> | null = null;
