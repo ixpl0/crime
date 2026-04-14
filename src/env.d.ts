@@ -220,6 +220,7 @@ interface GitCommitFileChange {
   path: string;
   additions: number;
   deletions: number;
+  status?: GitFileStatus;
 }
 
 interface GitCommitDetails {

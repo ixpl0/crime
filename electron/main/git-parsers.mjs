@@ -179,3 +179,37 @@ export function parseCommitFileStats(statsOutput) {
 
   return files;
 }
+
+function mapNameStatusToGitFileStatus(code) {
+  const head = code.charAt(0).toUpperCase();
+  if (head === "A") {
+    return "added";
+  }
+
+  if (head === "D") {
+    return "deleted";
+  }
+
+  return "modified";
+}
+
+export function parseCommitFileNameStatus(nameStatusOutput) {
+  const statusByPath = new Map();
+  const trimmed = nameStatusOutput.trim();
+  if (trimmed.length === 0) {
+    return statusByPath;
+  }
+
+  for (const line of trimmed.split("\n")) {
+    const parts = line.split("\t");
+    if (parts.length < 2) {
+      continue;
+    }
+
+    const status = mapNameStatusToGitFileStatus(parts[0]);
+    const path = parts[parts.length - 1];
+    statusByPath.set(path, status);
+  }
+
+  return statusByPath;
+}

@@ -109,7 +109,10 @@
             >
               <span class="shrink-0 font-mono text-success">+{{ String(file.additions) }}</span>
               <span class="shrink-0 font-mono text-error">-{{ String(file.deletions) }}</span>
-              <span class="min-w-0 truncate font-mono text-base-content/70">{{ file.path }}</span>
+              <span
+                class="min-w-0 truncate font-mono"
+                :class="file.status ? nameClasses(file.status) : 'text-base-content/70'"
+              >{{ file.path }}</span>
             </div>
           </div>
         </div>
@@ -164,6 +167,7 @@ import { formatFullDate, formatRef, formatShortHash, refClasses } from "./git-gr
 import type { CommitFileDiffState } from "./use-commit-file-diff";
 import CodeMirrorDiffViewer from "../CodeMirrorDiffViewer.vue";
 import { useDiffChangeNavigation } from "../../composables/use-diff-change-navigation";
+import { nameClasses } from "../changes/changes-panel-utils";
 
 const props = defineProps<{
   details: GitCommitDetails;

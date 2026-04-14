@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 
 import {
   parseCommitFileStats,
+  parseCommitFileNameStatus,
   parseGitDiffLines,
   parseGitLogEntries,
   parseGitStatusPorcelain,
@@ -489,13 +490,27 @@ export function createGitService(runCommand) {
 
     let files = [];
     try {
-      const statsResult = await runCommand(
-        "git",
-        ["diff-tree", "--no-commit-id", "-r", "--numstat", hash],
-        repositoryRoot
-      );
+      const [statsResult, nameStatusResult] = await Promise.all([
+        runCommand(
+          "git",
+          ["diff-tree", "--no-commit-id", "-r", "--numstat", hash],
+          repositoryRoot
+        ),
+        runCommand(
+          "git",
+          ["diff-tree", "--no-commit-id", "-r", "--name-status", hash],
+          repositoryRoot
+        )
+      ]);
       if (statsResult.code === 0) {
-        files = parseCommitFileStats(statsResult.stdout.toString("utf-8"));
+        const parsedFiles = parseCommitFileStats(statsResult.stdout.toString("utf-8"));
+        const statusByPath = nameStatusResult.code === 0
+          ? parseCommitFileNameStatus(nameStatusResult.stdout.toString("utf-8"))
+          : new Map();
+        files = parsedFiles.map((file) => {
+          const status = statusByPath.get(file.path);
+          return status ? { ...file, status } : file;
+        });
       }
     } catch {
       files = [];
