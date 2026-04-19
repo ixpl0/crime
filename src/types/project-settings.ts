@@ -18,8 +18,13 @@ export interface BellReminderSettings {
   intervalDeltaSeconds: number;
 }
 
+export interface AppearanceSettings {
+  color?: string;
+}
+
 export interface ProjectSettings {
   slashCommand: SlashCommandSettings;
   zoom: ZoomSettings;
   bellReminder: BellReminderSettings;
+  appearance: AppearanceSettings;
 }

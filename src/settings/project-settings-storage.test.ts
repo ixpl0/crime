@@ -45,8 +45,53 @@ describe("parseProjectSettings", () => {
       expect(result).toEqual({
         slashCommand: validSlashCommand,
         zoom: validZoom,
-        bellReminder: defaultProjectSettings.bellReminder
+        bellReminder: defaultProjectSettings.bellReminder,
+        appearance: defaultProjectSettings.appearance
       });
+    });
+
+    it("parses appearance color preset", () => {
+      const result = parseProjectSettings({
+        ...validSettings,
+        appearance: { color: "primary" }
+      });
+      expect(result?.appearance.color).toBe("primary");
+    });
+
+    it("parses appearance color hex", () => {
+      const result = parseProjectSettings({
+        ...validSettings,
+        appearance: { color: "#ff00aa" }
+      });
+      expect(result?.appearance.color).toBe("#ff00aa");
+    });
+
+    it("parses appearance color oklch", () => {
+      const result = parseProjectSettings({
+        ...validSettings,
+        appearance: { color: "oklch(0.8 0.15 200)" }
+      });
+      expect(result?.appearance.color).toBe("oklch(0.8 0.15 200)");
+    });
+
+    it("uses empty appearance when absent", () => {
+      const result = parseProjectSettings(validSettings);
+      expect(result?.appearance).toEqual({});
+    });
+
+    it("accepts empty appearance string as no color", () => {
+      const result = parseProjectSettings({
+        ...validSettings,
+        appearance: { color: "" }
+      });
+      expect(result?.appearance).toEqual({});
+    });
+
+    it("returns null for invalid appearance color", () => {
+      expect(parseProjectSettings({
+        ...validSettings,
+        appearance: { color: "not-a-color" }
+      })).toBeNull();
     });
 
     it("parses settings without version field", () => {

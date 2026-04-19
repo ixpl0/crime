@@ -65,6 +65,17 @@
     </fieldset>
 
     <fieldset class="rounded-lg border border-base-300 bg-base-content/2 p-3">
+      <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Внешний вид</legend>
+      <div class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-2">
+        <FieldColor
+          label="Цвет проекта"
+          :model-value="settings.appearance.color"
+          @update:model-value="updateAppearanceColor"
+        />
+      </div>
+    </fieldset>
+
+    <fieldset class="rounded-lg border border-base-300 bg-base-content/2 p-3">
       <legend class="px-1 text-xs font-semibold uppercase tracking-wide">Напоминание о звонке</legend>
       <div class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-2">
         <FieldCheckbox
@@ -103,6 +114,7 @@ import {
   type ZoomSettings
 } from "../../types/project-settings";
 import FieldCheckbox from "./FieldCheckbox.vue";
+import FieldColor from "./FieldColor.vue";
 import FieldNumber from "./FieldNumber.vue";
 
 const props = defineProps<{
@@ -133,6 +145,13 @@ const updateBellReminder = (field: keyof BellReminderSettings, value: boolean | 
   emit("update:modelValue", {
     ...settings.value,
     bellReminder: { ...settings.value.bellReminder, [field]: value }
+  });
+};
+
+const updateAppearanceColor = (value: string | undefined) => {
+  emit("update:modelValue", {
+    ...settings.value,
+    appearance: value === undefined ? {} : { color: value }
   });
 };
 

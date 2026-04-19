@@ -1,4 +1,5 @@
 import {
+  type AppearanceSettings,
   type BellReminderSettings,
   type ProjectSettings,
   type SlashCommandSettings,
@@ -43,8 +44,22 @@ export const defaultProjectSettings: ProjectSettings = {
     enabled: true,
     intervalSeconds: DEFAULT_BELL_REMINDER_INTERVAL_SECONDS,
     intervalDeltaSeconds: DEFAULT_BELL_REMINDER_INTERVAL_DELTA_SECONDS
-  }
+  },
+  appearance: {}
 };
+
+const APPEARANCE_PRESET_COLORS = new Set<string>([
+  "primary", "secondary", "accent", "info", "success", "warning", "error", "neutral", "ghost"
+]);
+const HEX_COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+const OKLCH_COLOR_PATTERN = /^oklch\(\s*[\d.]+\s+[\d.]+\s+[\d.]+\s*\)$/;
+
+const isValidAppearanceColor = (value: unknown): value is string =>
+  typeof value === "string" && (
+    APPEARANCE_PRESET_COLORS.has(value) ||
+    HEX_COLOR_PATTERN.test(value) ||
+    OKLCH_COLOR_PATTERN.test(value)
+  );
 
 const isNonNegativeFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0;
@@ -142,10 +157,35 @@ function parseOptionalBellReminderSettings(value: Record<string, unknown>): Bell
   return parseBellReminderSettings(value.bellReminder);
 }
 
+const parseAppearanceSettings = (value: unknown): AppearanceSettings | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (!("color" in value) || value.color === undefined || value.color === "") {
+    return {};
+  }
+
+  if (!isValidAppearanceColor(value.color)) {
+    return null;
+  }
+
+  return { color: value.color };
+};
+
+function parseOptionalAppearanceSettings(value: Record<string, unknown>): AppearanceSettings | null {
+  if (!("appearance" in value)) {
+    return defaultProjectSettings.appearance;
+  }
+
+  return parseAppearanceSettings(value.appearance);
+}
+
 function toProjectSettings(
   slashCommand: SlashCommandSettings,
   zoom: ZoomSettings,
-  bellReminder: BellReminderSettings
+  bellReminder: BellReminderSettings,
+  appearance: AppearanceSettings
 ): ProjectSettings {
   return {
     slashCommand,
@@ -157,7 +197,8 @@ function toProjectSettings(
       enabled: bellReminder.enabled,
       intervalSeconds: bellReminder.intervalSeconds,
       intervalDeltaSeconds: bellReminder.intervalDeltaSeconds
-    }
+    },
+    appearance: appearance.color === undefined ? {} : { color: appearance.color }
   };
 }
 
@@ -185,7 +226,12 @@ export const parseProjectSettings = (value: unknown): ProjectSettings | null => 
     return null;
   }
 
-  return toProjectSettings(slashCommand, parsedZoom, parsedBellReminder);
+  const parsedAppearance = parseOptionalAppearanceSettings(value);
+  if (parsedAppearance === null) {
+    return null;
+  }
+
+  return toProjectSettings(slashCommand, parsedZoom, parsedBellReminder, parsedAppearance);
 };
 
 export const loadProjectSettings = async (projectPath: string): Promise<ProjectSettings> => {

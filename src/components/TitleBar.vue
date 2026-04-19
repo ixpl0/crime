@@ -7,13 +7,63 @@
       <button
         ref="dropdownTriggerRef"
         type="button"
-        class="cursor-pointer font-medium text-base-content/80 hover:text-base-content"
+        class="cursor-pointer rounded-md border border-transparent px-2 py-0.5 font-medium text-base-content transition-colors hover:brightness-110"
+        :style="projectNameStyle"
         tabindex="-1"
         :aria-expanded="isProjectDropdownOpen"
+        :title="isAutoColor ? 'Авто-цвет по имени (ПКМ — изменить)' : 'ПКМ — изменить цвет'"
         @click="handleProjectDropdownClick"
         @keydown="handleProjectDropdownKeydown"
+        @contextmenu="openColorMenuAt"
       >{{ projectName }}</button>
     </div>
+    <Teleport to="body">
+      <div
+        v-if="colorMenu"
+        ref="colorMenuElement"
+        class="fixed z-50 flex flex-col gap-2 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl"
+        :style="{ left: `${String(colorMenu.x)}px`, top: `${String(colorMenu.y)}px` }"
+        @mousedown.stop
+        @contextmenu.prevent
+      >
+        <button
+          type="button"
+          class="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-base-200"
+          tabindex="-1"
+          @click="handleSelectAutoColor"
+        >
+          <span
+            class="h-4 w-4 shrink-0 rounded-full border border-base-300"
+            :style="{ backgroundColor: autoColor }"
+          />
+          <span class="flex-1 text-left">Авто по имени</span>
+          <Check v-if="isAutoColor" :size="12" class="text-base-content/70" />
+        </button>
+        <div class="grid grid-cols-4 gap-1.5">
+          <button
+            v-for="preset in PROJECT_COLOR_PRESETS"
+            :key="preset"
+            type="button"
+            class="relative h-6 w-6 cursor-pointer rounded-full border-2 transition-transform hover:scale-110"
+            :class="storedColor === preset ? 'border-base-content' : 'border-base-300/60'"
+            :style="{ backgroundColor: `var(--color-${preset})` }"
+            :title="preset"
+            tabindex="-1"
+            @click="handleSelectPreset(preset)"
+          />
+        </div>
+        <div class="border-t border-base-300" />
+        <button
+          type="button"
+          class="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-base-200"
+          tabindex="-1"
+          @click="handleOpenSettingsForCustomColor"
+        >
+          <Settings :size="12" />
+          <span>Свой цвет в настройках...</span>
+        </button>
+      </div>
+    </Teleport>
     <Teleport to="body">
       <ul
         v-show="isProjectDropdownOpen"
@@ -163,12 +213,13 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { ExternalLink, FolderPlus, GitBranch, KeyRound, Moon, Pencil, Search, Settings, Sun, X } from "lucide-vue-next";
+import { Check, ExternalLink, FolderPlus, GitBranch, KeyRound, Moon, Pencil, Search, Settings, Sun, X } from "lucide-vue-next";
 import { useStatusBarStore } from "../composables/status-bar-store";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useSearchDialogStore } from "../search/search-dialog-store";
 import { useTheme } from "../composables/use-theme";
 import { useAppConfigStore } from "../config/config-store";
+import { PROJECT_COLOR_PRESETS, useProjectColorMenu } from "../composables/use-project-color-menu";
 
 const {
   projectPath,
@@ -193,7 +244,12 @@ const {
 const { gitBranch, gitChangesCount } = useStatusBarStore();
 const { openSearchDialog } = useSearchDialogStore();
 const { currentTheme, toggleTheme } = useTheme();
-const { openProjectSettingsEditor: openProjectSettings, openSecretsEditor } = useAppConfigStore();
+const {
+  openProjectSettingsEditor: openProjectSettings,
+  openSecretsEditor,
+  projectSettings,
+  handleProjectSettingsSave
+} = useAppConfigStore();
 
 const dropdownTriggerRef = ref<HTMLElement | null>(null);
 const dropdownContentRef = ref<HTMLElement | null>(null);
@@ -204,6 +260,25 @@ const projectName = computed(() => {
     return "";
   }
   return path.split(/[\\/]/).pop() ?? path;
+});
+
+const {
+  colorMenu,
+  colorMenuElement,
+  storedColor,
+  isAutoColor,
+  autoColor,
+  projectNameStyle,
+  openColorMenuAt,
+  handleSelectAutoColor,
+  handleSelectPreset,
+  handleOpenSettingsForCustomColor
+} = useProjectColorMenu({
+  projectName,
+  projectSettings,
+  saveProjectSettings: handleProjectSettingsSave,
+  closeProjectDropdown: () => { setProjectDropdownOpen(false); },
+  openSettingsEditor: openProjectSettings
 });
 
 const positionDropdownContent = () => {
