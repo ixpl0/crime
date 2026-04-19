@@ -1,200 +1,307 @@
 <template>
-  <div class="space-y-2">
+  <div class="space-y-3">
+    <!-- Preview -->
     <div
-      v-for="(element, elementIndex) in config.elements"
-      :key="elementIndex"
-      class="rounded-lg border border-base-300 bg-base-content/2"
+      class="min-h-16 overflow-visible rounded-lg border border-base-300 bg-base-100 p-3"
+      @click.self="clearSelection"
     >
-      <!-- Element header -->
-      <div
-        class="flex cursor-pointer items-center gap-2 p-2"
-        @click="toggleExpand(elementIndex)"
-      >
-        <ChevronRight
-          :size="14"
-          class="shrink-0 transition-transform"
-          :class="{ 'rotate-90': isExpanded(elementIndex) }"
+      <div class="flex flex-wrap items-start gap-2" @click.self="clearSelection">
+        <ToolbarPreviewElement
+          v-for="(element, elementIndex) in config.elements"
+          :key="elementIndex"
+          :element="element"
+          :path="[elementIndex]"
+          :selected-path="selectedPath"
+          variant="top"
+          @select="handleSelect"
         />
-        <span class="badge badge-xs badge-ghost">
-          {{ isDropdown(element) ? "group" : (element as ToolbarAction).type }}
-        </span>
-        <span class="flex-1 truncate text-sm font-medium">{{ element.label }}</span>
-        <span v-if="element.color" class="truncate text-xs opacity-50">{{ element.color }}</span>
-
-        <div class="flex gap-1" @click.stop>
-          <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="elementIndex === 0" title="Вверх" @click="handleMoveElementUp(elementIndex)">
-            <ArrowUp :size="12" />
-          </button>
-          <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="elementIndex === config.elements.length - 1" title="Вниз" @click="handleMoveElementDown(elementIndex)">
-            <ArrowDown :size="12" />
-          </button>
-          <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" title="Удалить" @click="handleRemoveElement(elementIndex)">
-            <X :size="12" />
-          </button>
+        <div v-if="config.elements.length === 0" class="text-sm italic opacity-60">
+          Пусто. Добавьте кнопку или группу ниже.
         </div>
-      </div>
-
-      <!-- Expanded content -->
-      <div v-if="isExpanded(elementIndex)" class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-3 border-t border-base-300 p-3">
-        <FieldText label="Название" :model-value="element.label" @update:model-value="updateElementLabel(elementIndex, $event)" />
-        <FieldIcon label="Иконка" :model-value="element.icon" @update:model-value="updateElementIcon(elementIndex, $event)" />
-        <FieldColor label="Цвет" :model-value="element.color" @update:model-value="updateElementColor(elementIndex, $event)" />
-
-        <!-- Dropdown: nested items -->
-        <template v-if="isDropdown(element)">
-          <div class="col-span-2 mt-3 space-y-2">
-            <div class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-              Элементы ({{ (element as ToolbarDropdown).items.length }})
-            </div>
-            <div
-              v-for="(item, itemIndex) in (element as ToolbarDropdown).items"
-              :key="itemIndex"
-              class="rounded-lg border border-base-300 bg-base-content/2"
-            >
-              <!-- Item header -->
-              <div
-                class="flex cursor-pointer items-center gap-2 p-2"
-                @click="toggleExpandItem(elementIndex, itemIndex)"
-              >
-                <ChevronRight
-                  :size="14"
-                  class="shrink-0 transition-transform"
-                  :class="{ 'rotate-90': isExpandedItem(elementIndex, itemIndex) }"
-                />
-                <span class="badge badge-xs badge-ghost">
-                  {{ isDropdown(item) ? "group" : (item as ToolbarAction).type }}
-                </span>
-                <span class="flex-1 truncate text-sm font-medium">{{ item.label }}</span>
-                <div class="flex gap-1" @click.stop>
-                  <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="itemIndex === 0" title="Вверх" @click="handleMoveItem(elementIndex, itemIndex, -1)">
-                    <ArrowUp :size="12" />
-                  </button>
-                  <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="itemIndex === (element as ToolbarDropdown).items.length - 1" title="Вниз" @click="handleMoveItem(elementIndex, itemIndex, 1)">
-                    <ArrowDown :size="12" />
-                  </button>
-                  <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" title="Удалить" @click="handleRemoveItem(elementIndex, itemIndex)">
-                    <X :size="12" />
-                  </button>
-                </div>
-              </div>
-
-              <!-- Sub-dropdown items (expanded) -->
-              <div v-if="isExpandedItem(elementIndex, itemIndex) && isDropdown(item)" class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-3 border-t border-base-300 p-3">
-                <FieldText label="Название" :model-value="item.label" @update:model-value="updateItemLabel(elementIndex, itemIndex, $event)" />
-                <div class="col-span-2 mt-3 space-y-2">
-                  <div class="text-xs font-semibold uppercase tracking-wide text-base-content/60">
-                    Подэлементы ({{ (item as ToolbarDropdown).items.length }})
-                  </div>
-                  <div
-                    v-for="(subItem, subIndex) in (item as ToolbarDropdown).items"
-                    :key="subIndex"
-                    class="rounded-lg border border-base-300 bg-base-content/2"
-                  >
-                    <div
-                      class="flex cursor-pointer items-center gap-2 p-2"
-                      @click="toggleExpandSubItem(elementIndex, itemIndex, subIndex)"
-                    >
-                      <ChevronRight
-                        :size="14"
-                        class="shrink-0 transition-transform"
-                        :class="{ 'rotate-90': isExpandedSubItem(elementIndex, itemIndex, subIndex) }"
-                      />
-                      <span class="badge badge-xs badge-ghost">{{ (subItem as ToolbarAction).type }}</span>
-                      <span class="flex-1 truncate text-sm font-medium">{{ subItem.label }}</span>
-                      <div class="flex gap-1" @click.stop>
-                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === 0" title="Вверх" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, -1)">
-                          <ArrowUp :size="12" />
-                        </button>
-                        <button class="btn btn-ghost btn-xs btn-square" tabindex="-1" :disabled="subIndex === (item as ToolbarDropdown).items.length - 1" title="Вниз" @click="handleMoveSubItem(elementIndex, itemIndex, subIndex, 1)">
-                          <ArrowDown :size="12" />
-                        </button>
-                        <button class="btn btn-ghost btn-xs btn-square text-error" tabindex="-1" title="Удалить" @click="handleRemoveSubItem(elementIndex, itemIndex, subIndex)">
-                          <X :size="12" />
-                        </button>
-                      </div>
-                    </div>
-                    <div v-if="isExpandedSubItem(elementIndex, itemIndex, subIndex)" class="border-t border-base-300 p-3">
-                      <ToolbarActionEditor
-                        :model-value="subItem"
-                        @update:model-value="updateSubItem(elementIndex, itemIndex, subIndex, $event)"
-                      />
-                    </div>
-                  </div>
-                  <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddSubItem(elementIndex, itemIndex)">
-                    <Plus :size="12" />
-                    Добавить
-                  </button>
-                </div>
-              </div>
-
-              <!-- Action item fields (expanded) -->
-              <div v-else-if="isExpandedItem(elementIndex, itemIndex)" class="border-t border-base-300 p-3">
-                <ToolbarActionEditor
-                  :model-value="item"
-                  @update:model-value="updateItem(elementIndex, itemIndex, $event)"
-                />
-              </div>
-            </div>
-
-            <div class="flex gap-2">
-              <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddItem(elementIndex)">
-                <Plus :size="12" />
-                Добавить
-              </button>
-              <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddSubDropdown(elementIndex)">
-                <Plus :size="12" />
-                Добавить подгруппу
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <!-- Standalone action -->
-        <template v-else>
-          <div class="col-span-2">
-            <ToolbarActionEditor
-              :model-value="element"
-              @update:model-value="updateStandaloneAction(elementIndex, $event)"
-            />
-          </div>
-        </template>
       </div>
     </div>
 
-    <!-- Add element buttons -->
-    <div class="flex gap-2 pt-1">
-      <button class="btn btn-ghost btn-sm" tabindex="-1" @click="handleAddDropdown">
-        <Plus :size="14" />
-        Добавить группу
-      </button>
-      <button class="btn btn-ghost btn-sm" tabindex="-1" @click="handleAddAction">
-        <Plus :size="14" />
-        Добавить кнопку
-      </button>
+    <!-- Action bar -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex min-w-0 items-center gap-2 text-xs">
+        <span class="opacity-60">Выбрано:</span>
+        <span v-if="breadcrumb" class="truncate font-medium">{{ breadcrumb }}</span>
+        <span v-else class="italic opacity-50">—</span>
+      </div>
+      <div class="ml-auto flex flex-wrap gap-1">
+        <template v-if="selectedPath.length > 0">
+          <button
+            class="btn btn-ghost btn-xs btn-square"
+            tabindex="-1"
+            title="Вверх"
+            :disabled="!canMoveUp"
+            @click="handleMoveSelected(-1)"
+          >
+            <ArrowUp :size="14" />
+          </button>
+          <button
+            class="btn btn-ghost btn-xs btn-square"
+            tabindex="-1"
+            title="Вниз"
+            :disabled="!canMoveDown"
+            @click="handleMoveSelected(1)"
+          >
+            <ArrowDown :size="14" />
+          </button>
+          <button
+            class="btn btn-ghost btn-xs btn-square text-error"
+            tabindex="-1"
+            title="Удалить"
+            @click="handleRemoveSelected"
+          >
+            <X :size="14" />
+          </button>
+          <button
+            class="btn btn-ghost btn-xs"
+            tabindex="-1"
+            title="Снять выбор"
+            @click="clearSelection"
+          >
+            Снять выбор
+          </button>
+        </template>
+        <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddAction">
+          <Plus :size="14" />
+          {{ addLabelAction }}
+        </button>
+        <button class="btn btn-ghost btn-xs" tabindex="-1" @click="handleAddDropdown">
+          <Plus :size="14" />
+          {{ addLabelDropdown }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Properties -->
+    <div
+      v-if="selectedElement"
+      class="rounded-lg border border-base-300 bg-base-content/2 p-4"
+    >
+      <div
+        v-if="isSelectedDropdown"
+        class="grid grid-cols-[fit-content(33%)_1fr] items-center gap-x-3 gap-y-3"
+      >
+        <FieldText
+          label="Название"
+          :model-value="selectedElement.label"
+          @update:model-value="updateSelectedLabel"
+        />
+        <FieldIcon
+          label="Иконка"
+          :model-value="selectedElement.icon"
+          @update:model-value="updateSelectedIcon"
+        />
+        <FieldColor
+          label="Цвет"
+          :model-value="selectedElement.color"
+          @update:model-value="updateSelectedColor"
+        />
+      </div>
+      <ToolbarActionEditor
+        v-else
+        :model-value="selectedElement"
+        @update:model-value="updateSelectedAction"
+      />
+    </div>
+    <div v-else class="text-sm italic opacity-60">
+      Выберите элемент панели, чтобы редактировать его свойства.
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import { ArrowDown, ArrowUp, ChevronRight, Plus, X } from "lucide-vue-next";
-import { type ToolbarAction, type ToolbarConfig, type ToolbarDropdown } from "../../types/toolbar";
+import { computed, ref, watch } from "vue";
+import { ArrowDown, ArrowUp, Plus, X } from "lucide-vue-next";
+import {
+  type ToolbarAction,
+  type ToolbarButtonColor,
+  type ToolbarConfig,
+  type ToolbarElement
+} from "../../types/toolbar";
 import FieldText from "./FieldText.vue";
 import FieldColor from "./FieldColor.vue";
 import FieldIcon from "./FieldIcon.vue";
 import ToolbarActionEditor from "./ToolbarActionEditor.vue";
-import { isDropdown, useExpandState, useElementMutations, useItemMutations, useSubItemMutations } from "./use-toolbar-editor";
+import ToolbarPreviewElement from "./ToolbarPreviewElement.vue";
+import {
+  appendInside,
+  createAction,
+  createDropdown,
+  getElementAt,
+  getSiblingsAt,
+  isDropdown,
+  lastIndex,
+  moveAt,
+  parentPath,
+  removeAt,
+  type ToolbarPath,
+  updateAt
+} from "./toolbar-path-utils";
 
 const props = defineProps<{ modelValue: unknown }>();
 const emit = defineEmits<{ "update:modelValue": [value: ToolbarConfig] }>();
+
 const config = computed(() => props.modelValue as ToolbarConfig);
 
-const { isExpanded, isExpandedItem, isExpandedSubItem,
-  toggleExpand, toggleExpandItem, toggleExpandSubItem } = useExpandState();
-const { updateElement, updateElementLabel, updateElementIcon, updateElementColor, updateStandaloneAction,
-  handleMoveElementUp, handleMoveElementDown, handleRemoveElement,
-  handleAddDropdown, handleAddAction } = useElementMutations(() => config.value, (c) => { emit("update:modelValue", c); });
-const { updateItem, updateItemLabel, handleMoveItem, handleRemoveItem,
-  handleAddItem, handleAddSubDropdown } = useItemMutations(updateElement);
-const { updateSubItem, handleMoveSubItem, handleRemoveSubItem, handleAddSubItem } = useSubItemMutations(updateElement);
+const selectedPath = ref<ToolbarPath>([]);
+
+const selectedElement = computed(() => getElementAt(config.value, selectedPath.value));
+const isSelectedDropdown = computed(
+  () => selectedElement.value !== null && isDropdown(selectedElement.value)
+);
+
+watch(
+  () => props.modelValue,
+  () => {
+    if (selectedPath.value.length > 0 && selectedElement.value === null) {
+      selectedPath.value = [];
+    }
+  }
+);
+
+const collectLabels = (
+  elements: readonly ToolbarElement[],
+  depth: number,
+  acc: readonly string[]
+): readonly string[] => {
+  if (depth >= selectedPath.value.length) {
+    return acc;
+  }
+  const index = selectedPath.value[depth];
+  if (index < 0 || index >= elements.length) {
+    return acc;
+  }
+  const element = elements[index];
+  const next = [...acc, element.label];
+  if (!isDropdown(element)) {
+    return next;
+  }
+  return collectLabels(element.items, depth + 1, next);
+};
+
+const breadcrumb = computed(() => {
+  if (selectedPath.value.length === 0) {
+    return "";
+  }
+  return collectLabels(config.value.elements, 0, []).join(" › ");
+});
+
+const canMoveUp = computed(() => {
+  if (selectedPath.value.length === 0) {
+    return false;
+  }
+  return lastIndex(selectedPath.value) > 0;
+});
+
+const canMoveDown = computed(() => {
+  if (selectedPath.value.length === 0) {
+    return false;
+  }
+  const siblings = getSiblingsAt(config.value, selectedPath.value);
+  return lastIndex(selectedPath.value) < siblings.length - 1;
+});
+
+const addTargetPath = computed<ToolbarPath>(() =>
+  isSelectedDropdown.value ? selectedPath.value : []
+);
+
+const addLabelAction = computed(() =>
+  addTargetPath.value.length === 0 ? "Кнопка" : "Кнопка внутрь"
+);
+
+const addLabelDropdown = computed(() =>
+  addTargetPath.value.length === 0 ? "Группа" : "Группа внутрь"
+);
+
+const emitConfig = (next: ToolbarConfig) => {
+  emit("update:modelValue", next);
+};
+
+const handleSelect = (path: ToolbarPath) => {
+  selectedPath.value = path;
+};
+
+const clearSelection = () => {
+  selectedPath.value = [];
+};
+
+const handleMoveSelected = (direction: -1 | 1) => {
+  if (selectedPath.value.length === 0) {
+    return;
+  }
+  const currentIndex = lastIndex(selectedPath.value);
+  const next = moveAt(config.value, selectedPath.value, direction);
+  emitConfig(next);
+  selectedPath.value = [...parentPath(selectedPath.value), currentIndex + direction];
+};
+
+const handleRemoveSelected = () => {
+  if (selectedPath.value.length === 0) {
+    return;
+  }
+  emitConfig(removeAt(config.value, selectedPath.value));
+  selectedPath.value = [];
+};
+
+const computeAppendedPath = (parent: ToolbarPath): ToolbarPath => {
+  if (parent.length === 0) {
+    return [config.value.elements.length];
+  }
+  const parentElement = getElementAt(config.value, parent);
+  if (!parentElement || !isDropdown(parentElement)) {
+    return parent;
+  }
+  return [...parent, parentElement.items.length];
+};
+
+const handleAddAction = () => {
+  const parent = addTargetPath.value;
+  const newPath = computeAppendedPath(parent);
+  emitConfig(appendInside(config.value, parent, createAction()));
+  selectedPath.value = newPath;
+};
+
+const handleAddDropdown = () => {
+  const parent = addTargetPath.value;
+  const newPath = computeAppendedPath(parent);
+  emitConfig(appendInside(config.value, parent, createDropdown()));
+  selectedPath.value = newPath;
+};
+
+const updateSelectedLabel = (label: string) => {
+  if (selectedPath.value.length === 0) {
+    return;
+  }
+  emitConfig(updateAt(config.value, selectedPath.value, (element) => ({ ...element, label })));
+};
+
+const updateSelectedIcon = (icon: string | undefined) => {
+  if (selectedPath.value.length === 0) {
+    return;
+  }
+  emitConfig(updateAt(config.value, selectedPath.value, (element) => ({ ...element, icon })));
+};
+
+const updateSelectedColor = (color: string | undefined) => {
+  if (selectedPath.value.length === 0) {
+    return;
+  }
+  emitConfig(
+    updateAt(config.value, selectedPath.value, (element) => ({
+      ...element,
+      color: color as ToolbarButtonColor | undefined
+    }))
+  );
+};
+
+const updateSelectedAction = (action: ToolbarAction) => {
+  if (selectedPath.value.length === 0) {
+    return;
+  }
+  emitConfig(updateAt(config.value, selectedPath.value, () => action));
+};
 </script>
