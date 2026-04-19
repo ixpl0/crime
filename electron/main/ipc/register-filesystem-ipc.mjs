@@ -1,6 +1,6 @@
 import { ipcMain } from "electron";
 import { access, cp, mkdir, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import { toIpcErrorResponse } from "../error-utils.mjs";
 import { isPathInsideBase } from "./path-utils.mjs";
 
@@ -14,6 +14,25 @@ async function pathExists(targetPath) {
 }
 
 const BINARY_CHECK_SIZE = 8192;
+const MAX_IMAGE_PREVIEW_BYTES = 20 * 1024 * 1024;
+
+const IMAGE_MIME_BY_EXTENSION = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".jfif": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".bmp": "image/bmp",
+  ".ico": "image/x-icon",
+  ".avif": "image/avif",
+  ".apng": "image/apng"
+};
+
+function getImageMimeType(filePath) {
+  const extension = extname(filePath).toLowerCase();
+  return IMAGE_MIME_BY_EXTENSION[extension] ?? null;
+}
 
 async function isBinaryFile(filePath) {
   let fileHandle;
@@ -30,6 +49,14 @@ async function isBinaryFile(filePath) {
   } finally {
     await fileHandle?.close();
   }
+}
+
+async function readImageDataUrl(filePath, mimeType) {
+  const buffer = await readFile(filePath);
+  if (buffer.byteLength > MAX_IMAGE_PREVIEW_BYTES) {
+    return null;
+  }
+  return `data:${mimeType};base64,${buffer.toString("base64")}`;
 }
 
 function removeFilesystemHandlers(IPC_CHANNELS) {
@@ -106,6 +133,13 @@ export function registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService }) {
 
     try {
       if (await isBinaryFile(resolvedFilePath)) {
+        const mimeType = getImageMimeType(resolvedFilePath);
+        if (mimeType) {
+          const imageDataUrl = await readImageDataUrl(resolvedFilePath, mimeType);
+          if (imageDataUrl) {
+            return { ok: true, content: null, binary: true, imageDataUrl };
+          }
+        }
         return { ok: true, content: null, binary: true };
       }
       const content = await readFile(resolvedFilePath, "utf-8");

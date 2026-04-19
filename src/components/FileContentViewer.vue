@@ -44,6 +44,9 @@
       </div>
       <div v-else-if="isLoading" class="flex h-full items-center justify-center"><span class="loading loading-spinner loading-md" /></div>
       <div v-else-if="loadError" class="flex h-full items-center justify-center px-4 text-sm text-base-content/55">Просмотр недоступен.</div>
+      <div v-else-if="imageDataUrl" class="flex h-full items-center justify-center overflow-auto p-4">
+        <img :src="imageDataUrl" :alt="fileName" class="max-h-full max-w-full object-contain" />
+      </div>
       <div v-else-if="isBinaryFile" class="flex h-full flex-col items-center justify-center gap-2 px-4 text-sm text-base-content/60">
         <span>Бинарный файл — просмотр невозможен.</span>
         <button class="btn btn-ghost btn-xs" tabindex="-1" @click="openFileExternally">Показать в папке</button>
@@ -131,6 +134,7 @@ type ViewerLine = GitDiffLine;
 const isLoading = ref(false);
 const loadError = ref("");
 const isBinaryFile = ref(false);
+const imageDataUrl = ref<string | null>(null);
 const diffInfoMessage = ref("");
 const displayLines = ref<ViewerLine[]>([]);
 let loadRequestId = 0;
@@ -152,6 +156,7 @@ function clearViewerContentState() {
   isLoading.value = false;
   loadError.value = "";
   isBinaryFile.value = false;
+  imageDataUrl.value = null;
   diffInfoMessage.value = "";
   displayLines.value = [];
   fileExistsOnDisk.value = false;
@@ -209,6 +214,7 @@ function prepareFilePreviewLoad() {
   isLoading.value = true;
   loadError.value = "";
   isBinaryFile.value = false;
+  imageDataUrl.value = null;
   diffInfoMessage.value = "";
 }
 
@@ -252,6 +258,7 @@ async function loadFilePreview() {
   isLoading.value = false;
   fileExistsOnDisk.value = responses.fileResponse.ok;
   isBinaryFile.value = responses.fileResponse.binary === true;
+  imageDataUrl.value = responses.fileResponse.imageDataUrl ?? null;
   if (!responses.fileResponse.ok && isEditing.value) {
     isEditing.value = false;
   }

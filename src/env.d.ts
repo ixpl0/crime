@@ -84,6 +84,7 @@ interface FilesystemReadFileResponse {
   ok: boolean;
   content?: string | null;
   binary?: boolean;
+  imageDataUrl?: string;
   error?: string;
 }
 
