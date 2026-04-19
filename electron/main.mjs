@@ -196,6 +196,17 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
   const webContentsId = mainWindow.webContents.id;
   attachWindowStatePersistence(mainWindow, WINDOW_STATE_SAVE_DEBOUNCE_MS);
 
+  // Suppress the Windows system menu that appears on right-click over the
+  // custom title bar overlay. WM_INITMENU fires right before the menu shows;
+  // toggling enabled cancels it without affecting window state.
+  if (process.platform === "win32") {
+    const WM_INITMENU = 0x0116;
+    mainWindow.hookWindowMessage(WM_INITMENU, () => {
+      mainWindow.setEnabled(false);
+      mainWindow.setEnabled(true);
+    });
+  }
+
   mainWindow.on("focus", () => {
     lastFocusedWindow = mainWindow;
   });
