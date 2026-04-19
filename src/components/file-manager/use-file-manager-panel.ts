@@ -3,6 +3,8 @@ import { type DeletedChildrenByParent } from "./file-tree-status-utils";
 import { toErrorMessage } from "../../utils/fail-fast";
 import { clampContextMenuX, clampContextMenuY } from "../../utils/context-menu-utils";
 import { useContextMenuDragRegionBackdrop } from "../../utils/dropdown-utils";
+import { getPathBasename, getPathRelativeToBase } from "../../utils/path-utils";
+import { useAppToastStore } from "../../toast/toast-store";
 import { buildNextTreeState, type NextTreeState } from "./file-manager-panel-utils";
 import type { FileManagerContextMenuPayload, FileManagerContextMenuState } from "./file-manager-context-menu-types";
 import { useFileDrag } from "./use-file-drag";
@@ -243,6 +245,37 @@ export function useFileManagerPanel({
     }
   }
 
+  const { pushToast } = useAppToastStore();
+
+  async function copyToClipboard(text: string, successMessage: string) {
+    closeContextMenu();
+    try {
+      await window.projectApi.clipboard.writeText(text);
+      pushToast(successMessage, { tone: "success" });
+    } catch (error) {
+      loadError.value = toErrorMessage(error, "Не удалось скопировать в буфер обмена.");
+    }
+  }
+
+  function handleContextMenuCopyName() {
+    if (contextMenu.value) {
+      void copyToClipboard(getPathBasename(contextMenu.value.path), "Имя скопировано");
+    }
+  }
+
+  function handleContextMenuCopyRelativePath() {
+    if (contextMenu.value) {
+      const relative = getPathRelativeToBase(projectPath.value, contextMenu.value.path);
+      void copyToClipboard(relative, "Путь от корня проекта скопирован");
+    }
+  }
+
+  function handleContextMenuCopyAbsolutePath() {
+    if (contextMenu.value) {
+      void copyToClipboard(contextMenu.value.path, "Абсолютный путь скопирован");
+    }
+  }
+
   return {
     isLoading,
     loadError,
@@ -263,6 +296,9 @@ export function useFileManagerPanel({
     handleContextMenuNewFileClick,
     handleContextMenuNewFolderClick,
     handleContextMenuShowInFolder,
+    handleContextMenuCopyName,
+    handleContextMenuCopyRelativePath,
+    handleContextMenuCopyAbsolutePath,
     handleRevertAllClick,
     fileDragContext
   };

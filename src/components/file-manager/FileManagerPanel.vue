@@ -106,6 +106,34 @@
           Показать в папке
         </button>
         <button
+          type="button"
+          class="context-menu-item"
+          tabindex="-1"
+          @click="handleContextMenuCopyName"
+        >
+          <Copy :size="14" />
+          {{ contextMenu.isDirectory ? "Копировать имя папки" : "Копировать имя файла" }}
+        </button>
+        <button
+          v-if="contextMenu.path !== props.projectPath"
+          type="button"
+          class="context-menu-item"
+          tabindex="-1"
+          @click="handleContextMenuCopyRelativePath"
+        >
+          <FolderTree :size="14" />
+          Копировать путь от корня проекта
+        </button>
+        <button
+          type="button"
+          class="context-menu-item"
+          tabindex="-1"
+          @click="handleContextMenuCopyAbsolutePath"
+        >
+          <Link2 :size="14" />
+          Копировать абсолютный путь
+        </button>
+        <button
           v-if="contextMenu.status !== 'deleted' && contextMenu.path !== props.projectPath"
           type="button"
           class="context-menu-item text-error"
@@ -136,7 +164,7 @@
 
 <script setup lang="ts">
 import { provide, toRef, watch } from "vue";
-import { FilePlus, FolderOpen, FolderPlus, RotateCcw, Trash2 } from "lucide-vue-next";
+import { Copy, FilePlus, FolderOpen, FolderPlus, FolderTree, Link2, RotateCcw, Trash2 } from "lucide-vue-next";
 import { useConfirmDialog, usePromptDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import FileTreeNode from "./FileTreeNode.vue";
@@ -188,6 +216,9 @@ const {
   handleContextMenuNewFileClick,
   handleContextMenuNewFolderClick,
   handleContextMenuShowInFolder,
+  handleContextMenuCopyName,
+  handleContextMenuCopyRelativePath,
+  handleContextMenuCopyAbsolutePath,
   handleRevertAllClick,
   fileDragContext
 } = useFileManagerPanel({
