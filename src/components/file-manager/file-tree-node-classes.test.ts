@@ -118,45 +118,4 @@ describe("useFileTreeNodeClasses", () => {
     });
   });
 
-  describe("folderIconClasses", () => {
-    it("returns warning color for non-deleted folders", () => {
-      const { folderIconClasses } = useFileTreeNodeClasses(createOptions());
-      expect(folderIconClasses.value).toContain("warning");
-    });
-
-    it("returns rose color for deleted folders", () => {
-      const options = createOptions();
-      options.entryStatus.value = "deleted";
-      const { folderIconClasses } = useFileTreeNodeClasses(options);
-      expect(folderIconClasses.value).toContain("rose");
-    });
-  });
-
-  describe("fileIconClasses", () => {
-    it("returns muted base color for files without git status", () => {
-      const { fileIconClasses } = useFileTreeNodeClasses(createOptions());
-      expect(fileIconClasses.value).toContain("base-content");
-    });
-
-    it("returns green color for added files", () => {
-      const options = createOptions();
-      options.entryStatus.value = "added";
-      const { fileIconClasses } = useFileTreeNodeClasses(options);
-      expect(fileIconClasses.value).toContain("emerald");
-    });
-
-    it("returns blue color for modified files", () => {
-      const options = createOptions();
-      options.entryStatus.value = "modified";
-      const { fileIconClasses } = useFileTreeNodeClasses(options);
-      expect(fileIconClasses.value).toContain("sky");
-    });
-
-    it("returns red color for deleted files", () => {
-      const options = createOptions();
-      options.entryStatus.value = "deleted";
-      const { fileIconClasses } = useFileTreeNodeClasses(options);
-      expect(fileIconClasses.value).toContain("rose");
-    });
-  });
 });

@@ -14,11 +14,7 @@
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
     >
-      <template v-if="entry.isDirectory">
-        <FolderOpen v-if="isExpanded" :size="16" class="shrink-0" :class="folderIconClasses" />
-        <Folder v-else :size="16" class="shrink-0" :class="folderIconClasses" />
-      </template>
-      <FileIcon v-else :size="16" class="shrink-0" :class="fileIconClasses" />
+      <Icon :icon="iconName" :width="16" :height="16" class="shrink-0" />
       <span class="truncate" :class="nameClasses">{{ entry.name }}</span>
     </button>
 
@@ -59,7 +55,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { Folder, FolderOpen, File as FileIcon } from "lucide-vue-next";
+import { Icon } from "@iconify/vue/offline";
 import {
   buildEntryListSnapshot,
   mergeDirectoryEntries,
@@ -70,6 +66,7 @@ import { useAppToastStore } from "../../toast/toast-store";
 import { toErrorMessage } from "../../utils/fail-fast";
 import { useFileTreeNodeDrag } from "./use-file-tree-node-drag";
 import { useFileTreeNodeClasses } from "./file-tree-node-classes";
+import { getFileIconName, getFolderIconName } from "./file-type-icon";
 
 const props = withDefaults(
   defineProps<{
@@ -140,9 +137,7 @@ const {
 
 const {
   buttonClasses,
-  nameClasses,
-  folderIconClasses,
-  fileIconClasses
+  nameClasses
 } = useFileTreeNodeClasses({
   entryStatus,
   isIgnoredEntry,
@@ -150,6 +145,14 @@ const {
   isSelectedEntry,
   isDragSource,
   isDropTarget
+});
+
+const iconName = computed(() => {
+  if (props.entry.isDirectory) {
+    return getFolderIconName(props.entry.name, isExpanded.value);
+  }
+
+  return getFileIconName(props.entry.name);
 });
 
 function setChildrenIfChanged(nextChildren: FileEntry[]) {

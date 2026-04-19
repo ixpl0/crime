@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   nameClasses,
-  statusLabel,
   statusBadgeClasses,
   sortEntries,
   buildSnapshot,
@@ -25,24 +24,6 @@ describe("nameClasses", () => {
 
   it("returns rose for deleted", () => {
     expect(nameClasses("deleted")).toBe("text-rose-400");
-  });
-});
-
-describe("statusLabel", () => {
-  it("returns C for conflict", () => {
-    expect(statusLabel("conflict")).toBe("C");
-  });
-
-  it("returns A for added", () => {
-    expect(statusLabel("added")).toBe("A");
-  });
-
-  it("returns M for modified", () => {
-    expect(statusLabel("modified")).toBe("M");
-  });
-
-  it("returns D for deleted", () => {
-    expect(statusLabel("deleted")).toBe("D");
   });
 });
 

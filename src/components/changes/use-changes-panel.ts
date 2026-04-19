@@ -8,8 +8,7 @@ import {
   entryPathDisplayForProject,
   nameClasses,
   sortEntries,
-  statusBadgeClasses,
-  statusLabel
+  statusBadgeClasses
 } from "./changes-panel-utils";
 
 export interface ChangesContextMenuState {
@@ -277,7 +276,6 @@ export function useChangesPanel({
     statusCounts,
     isActionInProgress,
     nameClasses,
-    statusLabel,
     statusBadgeClasses,
     entryDisplayName,
     entryPathDisplay,

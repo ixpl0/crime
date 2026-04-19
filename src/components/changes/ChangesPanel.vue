@@ -63,12 +63,12 @@
             @click="emit('select-file', entry.path)"
             @contextmenu="openContextMenu($event, entry)"
           >
-            <span
-              class="shrink-0 w-4 text-center text-[11px] font-bold leading-none"
-              :class="nameClasses(entry.status)"
-            >
-              {{ statusLabel(entry.status) }}
-            </span>
+            <Icon
+              :icon="getFileIconName(entryDisplayName(entry.path))"
+              :width="16"
+              :height="16"
+              class="shrink-0"
+            />
             <div class="min-w-0 flex-1">
               <div class="truncate font-medium" :class="nameClasses(entry.status)">
                 {{ entryDisplayName(entry.path) }}
@@ -178,9 +178,11 @@
 <script setup lang="ts">
 import { toRef, watch } from "vue";
 import { ArrowLeft, ArrowRight, Check, ExternalLink, FolderOpen, RotateCcw } from "lucide-vue-next";
+import { Icon } from "@iconify/vue/offline";
 import { useConfirmDialog } from "../../utils/dialog-utils";
 import { useAppToastStore } from "../../toast/toast-store";
 import { useChangesPanel } from "./use-changes-panel";
+import { getFileIconName } from "../file-manager/file-type-icon";
 
 const props = defineProps<{
   projectPath: string;
@@ -211,7 +213,6 @@ const {
   statusCounts,
   isActionInProgress,
   nameClasses,
-  statusLabel,
   entryDisplayName,
   entryPathDisplay,
   openContextMenu,

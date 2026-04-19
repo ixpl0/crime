@@ -36,21 +36,9 @@ const STATUS_TO_NAME_CLASS: Record<string, string> = {
   deleted: "text-rose-400"
 };
 
-const STATUS_TO_FILE_ICON_CLASS: Record<string, string> = {
-  added: "text-emerald-400/80",
-  modified: "text-sky-400/80",
-  deleted: "text-rose-400/80"
-};
-
 export function useFileTreeNodeClasses(options: FileTreeNodeClassesOptions) {
   return {
     buttonClasses: buildButtonClasses(options),
-    nameClasses: computed(() => STATUS_TO_NAME_CLASS[options.entryStatus.value ?? ""] ?? ""),
-    folderIconClasses: computed(() =>
-      options.entryStatus.value === "deleted" ? "text-rose-400/80" : "text-warning"
-    ),
-    fileIconClasses: computed(() =>
-      STATUS_TO_FILE_ICON_CLASS[options.entryStatus.value ?? ""] ?? "text-base-content/50"
-    )
+    nameClasses: computed(() => STATUS_TO_NAME_CLASS[options.entryStatus.value ?? ""] ?? "")
   };
 }

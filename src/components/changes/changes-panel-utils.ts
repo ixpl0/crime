@@ -50,22 +50,6 @@ export function nameClasses(status: GitFileStatus) {
   return "text-rose-400";
 }
 
-export function statusLabel(status: GitFileStatus) {
-  if (status === "conflict") {
-    return "C";
-  }
-
-  if (status === "added") {
-    return "A";
-  }
-
-  if (status === "modified") {
-    return "M";
-  }
-
-  return "D";
-}
-
 export function statusBadgeClasses(status: GitFileStatus) {
   if (status === "conflict") {
     return "bg-amber-400/10 text-amber-400";
