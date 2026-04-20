@@ -29,7 +29,7 @@
         Коммиты не найдены
       </div>
 
-      <div v-else class="grid" style="grid-template-columns: auto 1fr auto auto auto">
+      <div v-else class="grid" style="grid-template-columns: auto minmax(0, 1fr) auto auto auto">
         <div
           v-for="(row, rowIndex) in graphRows"
           :key="row.commit.hash"
@@ -56,14 +56,15 @@
               :stroke-width="row.commit.parentHashes.length > 1 ? 2.5 : 0"
             />
           </svg>
-          <div class="flex min-w-0 items-center gap-1">
+          <div class="flex min-w-0 items-center gap-1 overflow-hidden">
             <span
               v-for="ref in row.commit.refs" :key="ref"
-              class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-xs font-medium"
+              class="inline-block min-w-0 max-w-[200px] truncate rounded px-1.5 py-0.5 align-middle text-xs font-medium"
               :class="refClasses(ref)"
+              :title="formatRef(ref)"
               @contextmenu.stop="isBranchRef(ref) ? openContextMenu($event, row.commit.hash, ref) : undefined"
             >{{ formatRef(ref) }}</span>
-            <span class="min-w-0 truncate text-sm" :class="row.commit.parentHashes.length > 1 ? 'text-base-content/50' : ''">{{ row.commit.subject }}</span>
+            <span class="min-w-0 truncate text-sm [flex-shrink:9999]" :class="row.commit.parentHashes.length > 1 ? 'text-base-content/50' : ''">{{ row.commit.subject }}</span>
           </div>
           <button
             class="-mx-1 shrink-0 cursor-pointer justify-self-end rounded px-1 text-xs font-mono text-base-content/40 transition-colors hover:bg-base-content/10 hover:text-base-content/70"
