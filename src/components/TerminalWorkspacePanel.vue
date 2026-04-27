@@ -101,6 +101,7 @@ import {
   getToolbarButtonCustomStyle
 } from "../toolbar/toolbar-button-styles";
 import { useTerminalView } from "../terminal/use-terminal-view";
+import { useTerminalWorkspaceActionsStore } from "../terminal/terminal-workspace-actions-store";
 import {
   type ToolbarAction,
   type ToolbarButtonColor
@@ -152,6 +153,7 @@ const {
 } = useAppConfigStore();
 
 const { pushError } = useAppToastStore();
+const workspaceActionsStore = useTerminalWorkspaceActionsStore();
 const sessions = shallowRef<WorkspaceSession[]>([]);
 const closedSessionConfigs = ref<ClosedSessionConfig[]>([]);
 const projectPathRef = computed<string | null>(() => props.projectPath);
@@ -231,6 +233,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("keydown", handleReopenShortcut, true);
   stopTerminalDataSubscription();
   stopTerminalExitSubscription();
+  workspaceActionsStore.value = null;
   void disposeAllSessions();
 });
 
@@ -484,7 +487,7 @@ window.addEventListener("keydown", handleReopenShortcut, true);
 
 async function restartSession(sessionId: string) {
   const session = getSessionById(sessionId);
-  if (!session || session.initialCommandText.length === 0) {
+  if (!session) {
     return;
   }
 
@@ -507,12 +510,24 @@ async function restartSession(sessionId: string) {
   }
 }
 
+async function restartAllSessions() {
+  const sessionIds = sessions.value.map((session) => session.id);
+  for (const sessionId of sessionIds) {
+    await restartSession(sessionId);
+  }
+}
+
 async function closeAllSessions() {
   const sessionIds = sessions.value.map((session) => session.id);
   for (const sessionId of sessionIds) {
     await closeSession(sessionId);
   }
 }
+
+workspaceActionsStore.value = {
+  restartAllSessions,
+  closeAllSessions
+};
 
 async function resizeAllSessions() {
   for (const session of sessions.value) {

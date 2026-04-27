@@ -193,6 +193,7 @@
 import { computed, ref, watchEffect } from "vue";
 import { useAppConfigStore } from "../config/config-store";
 import { useAppTerminalStore } from "../terminal/terminal-store";
+import { provideTerminalWorkspaceActionsStore } from "../terminal/terminal-workspace-actions-store";
 import { usePanelWidthResize } from "../composables/use-panel-width-resize";
 import { defaultSecretsContent } from "../settings/secrets-storage";
 import { useAppNavigationStore } from "../navigation/navigation-store";
@@ -277,6 +278,7 @@ const {
 } = navigationStore;
 
 const { isTerminalReady, executeToolbarAction } = useAppTerminalStore();
+provideTerminalWorkspaceActionsStore();
 
 const mainContainer = ref<HTMLElement | null>(null);
 const cardBody = ref<HTMLElement | null>(null);

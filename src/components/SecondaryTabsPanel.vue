@@ -11,7 +11,7 @@
         >
           <PanelLeftClose :size="16" />
         </button>
-        <button
+        <div
             role="tab"
             class="tab gap-1"
             tabindex="-1"
@@ -21,7 +21,27 @@
             <Terminal :size="14" class="text-base-content/40" />
             Терминал
             <span v-if="terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
-          </button>
+            <template v-if="terminalSessionCount > 0">
+              <button
+                type="button"
+                class="icon-btn ml-1 text-base-content/40 hover:text-primary"
+                tabindex="-1"
+                title="Перезапустить все терминалы"
+                @click.stop="restartAllTerminals"
+              >
+                <RotateCw :size="14" />
+              </button>
+              <button
+                type="button"
+                class="icon-btn text-base-content/40 hover:text-error"
+                tabindex="-1"
+                title="Закрыть все терминалы"
+                @click.stop="closeAllTerminals"
+              >
+                <X :size="14" />
+              </button>
+            </template>
+          </div>
           <button
             role="tab"
             class="tab gap-1"
@@ -63,8 +83,9 @@
 </template>
 
 <script setup lang="ts">
-import { FolderOpen, GitCompareArrows, GitGraph, PanelLeftClose, Terminal } from "lucide-vue-next";
+import { FolderOpen, GitCompareArrows, GitGraph, PanelLeftClose, RotateCw, Terminal, X } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
+import { useTerminalWorkspaceActionsStore } from "../terminal/terminal-workspace-actions-store";
 
 defineProps<{
   changesCount: number;
@@ -73,4 +94,13 @@ defineProps<{
 }>();
 
 const { activeTab, setActiveTab, dockAgent } = useAppNavigationStore();
+const workspaceActionsStore = useTerminalWorkspaceActionsStore();
+
+const restartAllTerminals = () => {
+  void workspaceActionsStore.value?.restartAllSessions();
+};
+
+const closeAllTerminals = () => {
+  void workspaceActionsStore.value?.closeAllSessions();
+};
 </script>

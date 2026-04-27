@@ -4,7 +4,7 @@
         <span role="tab" class="tab tab-active gap-1"><Bot :size="14" class="text-base-content/40" /> Агент</span>
       </template>
       <template v-else>
-        <button
+        <div
           v-for="tab in MAIN_TABS"
           :key="tab.id"
           role="tab"
@@ -19,7 +19,27 @@
           <span v-if="tab.id === 'changes' && changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
           <span v-if="tab.id === 'changes' && conflictCount > 0" class="badge badge-xs badge-warning ml-1">C</span>
           <span v-if="tab.id === 'git' && conflictCount > 0" class="badge badge-xs badge-warning ml-1">{{ conflictCount }}</span>
-        </button>
+          <template v-if="tab.id === 'terminal' && terminalSessionCount > 0">
+            <button
+              type="button"
+              class="icon-btn ml-1 text-base-content/40 hover:text-primary"
+              tabindex="-1"
+              title="Перезапустить все терминалы"
+              @click.stop="restartAllTerminals"
+            >
+              <RotateCw :size="14" />
+            </button>
+            <button
+              type="button"
+              class="icon-btn text-base-content/40 hover:text-error"
+              tabindex="-1"
+              title="Закрыть все терминалы"
+              @click.stop="closeAllTerminals"
+            >
+              <X :size="14" />
+            </button>
+          </template>
+        </div>
       </template>
     <div
       v-if="hiddenPanelOptions.length > 0"
@@ -68,8 +88,9 @@
 </template>
 
 <script setup lang="ts">
-import { Bot, ChevronDown, Eye, FolderOpen, GitCompareArrows, GitGraph, PanelRightOpen, Terminal } from "lucide-vue-next";
+import { Bot, ChevronDown, Eye, FolderOpen, GitCompareArrows, GitGraph, PanelRightOpen, RotateCw, Terminal, X } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
+import { useTerminalWorkspaceActionsStore } from "../terminal/terminal-workspace-actions-store";
 import { positionFixedDropdown } from "../utils/dropdown-utils";
 
 const MAIN_TABS = [
@@ -98,6 +119,16 @@ const {
   setHiddenPanelsDropdownOpen,
   showHiddenPanel
 } = useAppNavigationStore();
+
+const workspaceActionsStore = useTerminalWorkspaceActionsStore();
+
+const restartAllTerminals = () => {
+  void workspaceActionsStore.value?.restartAllSessions();
+};
+
+const closeAllTerminals = () => {
+  void workspaceActionsStore.value?.closeAllSessions();
+};
 
 const handleHiddenPanelsDropdownClick = (event: MouseEvent) => {
   toggleHiddenPanelsDropdown();
