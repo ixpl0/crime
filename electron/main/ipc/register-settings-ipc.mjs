@@ -164,7 +164,18 @@ function registerSettingsWatcher({
         console.error(message, error);
       });
 
-      settingsWatchers.set(webContentsId, fsWatcher);
+      const handle = {
+        close: () => {
+          if (debounceState.timer) {
+            clearTimeout(debounceState.timer);
+            debounceState.timer = null;
+          }
+          debounceState.pendingFilenames.clear();
+          fsWatcher.close();
+        }
+      };
+
+      settingsWatchers.set(webContentsId, handle);
       return { ok: true };
     } catch (error) {
       return toIpcFailure(error, "Failed to start settings watcher.");

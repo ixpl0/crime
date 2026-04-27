@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import type { PromptSuffixConfig } from "../types/prompt-suffix";
 import type {
   SubmitTerminalTextAttemptOptions,
@@ -12,6 +13,7 @@ interface TerminalSubmitState {
   terminalDataVersion: number;
   terminalInputQueue: Promise<void>;
   readonly terminalDataListeners: Set<(data: string) => void>;
+  readonly terminalDataWaiterCancellers: Set<() => void>;
 }
 
 function createTerminalSubmitState(options: UseTerminalSubmitOptions): TerminalSubmitState {
@@ -19,7 +21,8 @@ function createTerminalSubmitState(options: UseTerminalSubmitOptions): TerminalS
     options,
     terminalDataVersion: 0,
     terminalInputQueue: Promise.resolve(),
-    terminalDataListeners: new Set()
+    terminalDataListeners: new Set(),
+    terminalDataWaiterCancellers: new Set()
   };
 }
 
@@ -326,7 +329,12 @@ function markTerminalDataReceived(state: TerminalSubmitState, data: string) {
 function resetTerminalSessionState(state: TerminalSubmitState) {
   state.terminalDataVersion = 0;
   state.terminalInputQueue = Promise.resolve();
+  const pendingCancellers = [...state.terminalDataWaiterCancellers];
+  for (const cancel of pendingCancellers) {
+    cancel();
+  }
   state.terminalDataListeners.clear();
+  state.terminalDataWaiterCancellers.clear();
 }
 
 export function useTerminalSubmit(options: UseTerminalSubmitOptions) {
@@ -340,6 +348,11 @@ export function useTerminalSubmit(options: UseTerminalSubmitOptions) {
     waitForTerminalQuiet: (quietMs: number, timeoutMs: number) =>
       waitForTerminalQuiet(state, quietMs, timeoutMs),
     waitForTerminalPattern: (pattern: string, timeoutMs: number) =>
-      waitForPattern(state.terminalDataListeners, pattern, timeoutMs)
+      waitForPattern(
+        state.terminalDataListeners,
+        state.terminalDataWaiterCancellers,
+        pattern,
+        timeoutMs
+      )
   };
 }

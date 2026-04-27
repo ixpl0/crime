@@ -30,6 +30,8 @@ const APP_TOAST_STORE_KEY: InjectionKey<AppToastStore> = Symbol(
 const DEFAULT_DURATION_MS = 4500;
 const DEFAULT_DEDUPE_WINDOW_MS = 1500;
 const MAX_TOASTS = 6;
+const RECENT_TOAST_RETENTION_MS = 30000;
+const RECENT_TOAST_SWEEP_THRESHOLD = 32;
 
 interface RecentToastEntry {
   id: number;
@@ -82,6 +84,19 @@ function findRecentDuplicate(
   return null;
 }
 
+function sweepStaleRecentToasts(state: ToastState) {
+  if (state.recentToasts.size < RECENT_TOAST_SWEEP_THRESHOLD) {
+    return;
+  }
+
+  const now = Date.now();
+  for (const [key, entry] of state.recentToasts.entries()) {
+    if (now - entry.shownAt >= RECENT_TOAST_RETENTION_MS) {
+      state.recentToasts.delete(key);
+    }
+  }
+}
+
 function pushToast(state: ToastState, message: string, options: PushToastOptions = {}) {
   const trimmedMessage = message.trim();
   if (trimmedMessage.length === 0) {
@@ -91,6 +106,7 @@ function pushToast(state: ToastState, message: string, options: PushToastOptions
   const tone = options.tone ?? "info";
   const dedupeWindowMs = options.dedupeWindowMs ?? DEFAULT_DEDUPE_WINDOW_MS;
   const dedupeKey = options.dedupeKey ?? `${tone}:${trimmedMessage}`;
+  sweepStaleRecentToasts(state);
   const duplicateId = findRecentDuplicate(state, dedupeKey, dedupeWindowMs);
   if (duplicateId !== null) {
     return duplicateId;

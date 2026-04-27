@@ -85,6 +85,7 @@ import {
   computed,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   ref,
   shallowRef,
   watch,
@@ -483,7 +484,9 @@ function handleReopenShortcut(event: KeyboardEvent) {
   void reopenLastClosedSession();
 }
 
-window.addEventListener("keydown", handleReopenShortcut, true);
+onMounted(() => {
+  window.addEventListener("keydown", handleReopenShortcut, true);
+});
 
 async function restartSession(sessionId: string) {
   const session = getSessionById(sessionId);

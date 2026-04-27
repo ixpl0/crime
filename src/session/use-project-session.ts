@@ -68,6 +68,7 @@ export interface UseProjectSessionOptions {
 interface ProjectSessionState {
   readonly options: UseProjectSessionOptions;
   unsubscribeSettingsFileChanged: (() => void) | null;
+  settingsChangeQueue: Promise<void>;
 }
 
 interface SettingsFileChange {
@@ -78,7 +79,8 @@ interface SettingsFileChange {
 function createProjectSessionState(options: UseProjectSessionOptions): ProjectSessionState {
   return {
     options,
-    unsubscribeSettingsFileChanged: null
+    unsubscribeSettingsFileChanged: null,
+    settingsChangeQueue: Promise.resolve()
   };
 }
 
@@ -236,15 +238,29 @@ async function handleSettingsFileChanged(state: ProjectSessionState, filename: s
   }
 }
 
-function subscribeToSettingsFileChanges(state: ProjectSessionState) {
-  state.unsubscribeSettingsFileChanged = window.projectApi.settings.onFileChanged((filename) => {
-    void handleSettingsFileChanged(state, filename).catch((error: unknown) => {
+function enqueueSettingsFileChange(state: ProjectSessionState, filename: string) {
+  const next = state.settingsChangeQueue.then(
+    () => handleSettingsFileChanged(state, filename).catch((error: unknown) => {
       state.options.reportUiError(
         "Settings watcher event",
         error,
         "Не удалось перезагрузить настройки после изменения файла."
       );
-    });
+    }),
+    () => handleSettingsFileChanged(state, filename).catch((error: unknown) => {
+      state.options.reportUiError(
+        "Settings watcher event",
+        error,
+        "Не удалось перезагрузить настройки после изменения файла."
+      );
+    })
+  );
+  state.settingsChangeQueue = next.then(() => undefined, () => undefined);
+}
+
+function subscribeToSettingsFileChanges(state: ProjectSessionState) {
+  state.unsubscribeSettingsFileChanged = window.projectApi.settings.onFileChanged((filename) => {
+    enqueueSettingsFileChange(state, filename);
   });
 }
 
