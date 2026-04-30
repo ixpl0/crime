@@ -216,11 +216,12 @@ function initializeTerminalView(state: TerminalViewState) {
 function getTerminalSize(state: TerminalViewState) {
   const { terminal, fitAddon } = state;
   const container = state.options.terminalContainer.value;
-  if (!terminal || !fitAddon || !container || container.offsetWidth === 0 || container.offsetHeight === 0) {
+  if (!terminal || !fitAddon || !container) {
     return null;
   }
-
-  fitAddon.fit();
+  if (container.offsetWidth > 0 && container.offsetHeight > 0) {
+    fitAddon.fit();
+  }
   return { cols: terminal.cols, rows: terminal.rows };
 }
 
