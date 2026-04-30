@@ -26,6 +26,10 @@ function createMockRunCommand(responses = {}) {
   });
 }
 
+function expectReadOnlyGitOptions(call) {
+  expect(call[3]?.env?.GIT_OPTIONAL_LOCKS).toBe("0");
+}
+
 describe("createGitService", () => {
   describe("getRepositoryState", () => {
     it("returns available: true for valid git repository", async () => {
@@ -81,6 +85,23 @@ describe("createGitService", () => {
       expect(result.ok).toBe(true);
       expect(result.available).toBe(true);
       expect(result.entries).toEqual([]);
+    });
+
+    it("disables optional git locks for background status reads", async () => {
+      const runCommand = vi.fn(async (_cmd, args) => {
+        if (args.includes("--is-inside-work-tree")) {
+          return makeCommandResult(0, "true\n");
+        }
+        return makeCommandResult(0, "");
+      });
+      const service = createGitService(runCommand);
+      await service.getStatusForProject("/project");
+
+      const statusCall = runCommand.mock.calls.find(
+        ([, args]) => args.includes("status") && args.includes("--porcelain=v1")
+      );
+      expect(statusCall).toBeDefined();
+      expectReadOnlyGitOptions(statusCall);
     });
 
     it("returns empty entries for non-repository", async () => {
@@ -227,6 +248,7 @@ describe("createGitService", () => {
       const result = await service.restorePath("/project", "file.ts");
       expect(result).toEqual({ ok: true, available: true });
       expect(runCommand).toHaveBeenCalledTimes(2);
+      expect(runCommand.mock.calls.every((call) => call[3] === undefined)).toBe(true);
     });
 
     it("falls back to rm --cached when HEAD cannot be resolved", async () => {

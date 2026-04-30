@@ -65,6 +65,8 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
   let requestId = 0;
   let pollingIntervalId: ReturnType<typeof setInterval> | null = null;
   let isRefreshInFlight = false;
+  let isRefreshQueued = false;
+  let isDisposed = false;
   let unsubscribeWatcher: (() => void) | null = null;
   let lastSnapshot = "";
 
@@ -86,7 +88,32 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
     state.repositoryRefreshToken.value += 1;
   };
 
+  function queueRefresh() {
+    requestId += 1;
+    isRefreshQueued = true;
+  }
+
+  function finishRefresh(currentRequestId: number) {
+    if (currentRequestId === requestId) {
+      state.isLoading.value = false;
+    }
+    isRefreshInFlight = false;
+    if (isRefreshQueued) {
+      isRefreshQueued = false;
+      void refresh();
+    }
+  }
+
   const refresh = async () => {
+    if (isDisposed) {
+      return;
+    }
+
+    if (isRefreshInFlight) {
+      queueRefresh();
+      return;
+    }
+
     const currentRequestId = ++requestId;
     isRefreshInFlight = true;
 
@@ -104,10 +131,7 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
         );
       }
     } finally {
-      if (currentRequestId === requestId) {
-        isRefreshInFlight = false;
-        state.isLoading.value = false;
-      }
+      finishRefresh(currentRequestId);
     }
   };
 
@@ -199,6 +223,8 @@ export function useGitStatus(projectPath: Ref<string>, activeTab: Readonly<Ref<A
   });
 
   onBeforeUnmount(() => {
+    isDisposed = true;
+    isRefreshQueued = false;
     requestId += 1;
     stopPolling();
     stopWatcher();

@@ -2,6 +2,7 @@ import { ipcMain } from "electron";
 import { readdir, readFile, open } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { toIpcErrorResponse } from "../error-utils.mjs";
+import { GIT_READ_ONLY_COMMAND_OPTIONS } from "../git-utils.mjs";
 
 const DEFAULT_MAX_RESULTS = 50;
 const BINARY_CHECK_SIZE = 8192;
@@ -38,7 +39,7 @@ async function collectFilePathsViaGit(projectPath, runCommand, includeIgnored) {
     ? ["ls-files", "--cached", "--others"]
     : ["ls-files", "--cached", "--others", "--exclude-standard"];
 
-  const result = await runCommand("git", args, projectPath);
+  const result = await runCommand("git", args, projectPath, GIT_READ_ONLY_COMMAND_OPTIONS);
   if (result.code !== 0) {
     return null;
   }
@@ -213,7 +214,8 @@ async function searchContentViaGit(projectPath, query, maxResults, runCommand) {
   const result = await runCommand(
     "git",
     ["grep", "-F", "-n", "--no-color", "-I", "-i", "--", query],
-    projectPath
+    projectPath,
+    GIT_READ_ONLY_COMMAND_OPTIONS
   );
 
   if (result.code !== 0 && result.code !== 1) {

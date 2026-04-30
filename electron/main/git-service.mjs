@@ -10,6 +10,7 @@ import {
   toLineEntries
 } from "./git-parsers.mjs";
 import {
+  GIT_READ_ONLY_COMMAND_OPTIONS,
   getFileEntrySortGroup,
   getGitCommandError,
   isCommandNotFoundError,
@@ -21,9 +22,19 @@ import {
 } from "./git-utils.mjs";
 
 export function createGitService(runCommand) {
+  function runGitReadOnly(projectPath, args, options) {
+    return runCommand("git", args, projectPath, {
+      ...options,
+      env: {
+        ...GIT_READ_ONLY_COMMAND_OPTIONS.env,
+        ...(options?.env ?? {})
+      }
+    });
+  }
+
   async function getRepositoryRoot(path) {
     try {
-      const result = await runCommand("git", ["rev-parse", "--show-toplevel"], path);
+      const result = await runGitReadOnly(path, ["rev-parse", "--show-toplevel"]);
       if (result.code !== 0) {
         return null;
       }
@@ -37,7 +48,7 @@ export function createGitService(runCommand) {
 
   async function getGitDir(path) {
     try {
-      const result = await runCommand("git", ["rev-parse", "--absolute-git-dir"], path);
+      const result = await runGitReadOnly(path, ["rev-parse", "--absolute-git-dir"]);
       if (result.code !== 0) {
         return null;
       }
@@ -72,10 +83,9 @@ export function createGitService(runCommand) {
     }
 
     try {
-      const checkIgnoreResult = await runCommand(
-        "git",
+      const checkIgnoreResult = await runGitReadOnly(
+        repositoryRoot,
         ["-c", "core.quotepath=false", "check-ignore", "--", ...relativeEntryPaths],
-        repositoryRoot
       );
       if (checkIgnoreResult.code !== 0 && checkIgnoreResult.code !== 1) {
         return new Set();
@@ -102,10 +112,9 @@ export function createGitService(runCommand) {
 
   async function getRepositoryState(projectPath) {
     try {
-      const revParseResult = await runCommand(
-        "git",
+      const revParseResult = await runGitReadOnly(
+        projectPath,
         ["rev-parse", "--is-inside-work-tree"],
-        projectPath
       );
       const isInsideWorkTree = revParseResult.stdout.toString("utf-8").trim() === "true";
       if (revParseResult.code !== 0 || !isInsideWorkTree) {
@@ -126,10 +135,9 @@ export function createGitService(runCommand) {
 
   async function getStatusForPath(projectPath, relativePath) {
     try {
-      const statusResult = await runCommand(
-        "git",
+      const statusResult = await runGitReadOnly(
+        projectPath,
         ["-c", "core.quotepath=false", "status", "--porcelain=v1", "-z", "--", relativePath],
-        projectPath
       );
       if (statusResult.code !== 0) {
         const stderr = statusResult.stderr.toString("utf-8").trim();
@@ -167,8 +175,8 @@ export function createGitService(runCommand) {
 
     try {
       const [statusResult, branch, mergeState] = await Promise.all([
-        runCommand(
-          "git",
+        runGitReadOnly(
+          projectPath,
           [
             "-c",
             "core.quotepath=false",
@@ -178,8 +186,7 @@ export function createGitService(runCommand) {
             "--untracked-files=all",
             "--",
             "."
-          ],
-          projectPath
+          ]
         ),
         getCurrentBranch(projectPath),
         getMergeState(projectPath)
@@ -211,6 +218,19 @@ export function createGitService(runCommand) {
   async function runGitCommandSafe(projectPath, args, fallbackMessage) {
     try {
       const result = await runCommand("git", args, projectPath);
+      return { ok: true, available: true, result };
+    } catch (error) {
+      if (isCommandNotFoundError(error)) {
+        return { ok: true, available: false, reason: "git-not-installed" };
+      }
+
+      return { ok: false, error: toErrorMessage(error, fallbackMessage) };
+    }
+  }
+
+  async function runGitReadOnlySafe(projectPath, args, fallbackMessage) {
+    try {
+      const result = await runGitReadOnly(projectPath, args);
       return { ok: true, available: true, result };
     } catch (error) {
       if (isCommandNotFoundError(error)) {
@@ -283,8 +303,8 @@ export function createGitService(runCommand) {
   }
 
   async function runDiffForPath(projectPath, relativePath, extraArgs = []) {
-    const diffResult = await runCommand(
-      "git",
+    const diffResult = await runGitReadOnly(
+      projectPath,
       [
         "-c",
         "core.quotepath=false",
@@ -295,8 +315,7 @@ export function createGitService(runCommand) {
         ...extraArgs,
         "--",
         relativePath
-      ],
-      projectPath
+      ]
     );
     if (diffResult.code !== 0) {
       const stderr = diffResult.stderr.toString("utf-8").trim();
@@ -351,10 +370,9 @@ export function createGitService(runCommand) {
 
     if (diffLines.length === 0 && fileStatusResponse.status === "deleted") {
       try {
-        const showResult = await runCommand(
-          "git",
+        const showResult = await runGitReadOnly(
+          projectPath,
           ["-c", "core.quotepath=false", "show", `HEAD:${relativePath}`],
-          projectPath
         );
         if (showResult.code === 0) {
           diffLines = toLineEntries(showResult.stdout.toString("utf-8"), "removed");
@@ -374,7 +392,7 @@ export function createGitService(runCommand) {
 
   async function getRemoteNames(repositoryRoot) {
     try {
-      const result = await runCommand("git", ["remote"], repositoryRoot);
+      const result = await runGitReadOnly(repositoryRoot, ["remote"]);
       if (result.code !== 0) {
         return [];
       }
@@ -402,10 +420,9 @@ export function createGitService(runCommand) {
 
     try {
       const [result, remotes] = await Promise.all([
-        runCommand(
-          "git",
+        runGitReadOnly(
+          repositoryRoot,
           ["log", "--all", "--date-order", `--max-count=${String(limit)}`, `--format=${format}`],
-          repositoryRoot
         ),
         getRemoteNames(repositoryRoot)
       ]);
@@ -454,10 +471,9 @@ export function createGitService(runCommand) {
 
     let metaResult;
     try {
-      metaResult = await runCommand(
-        "git",
+      metaResult = await runGitReadOnly(
+        repositoryRoot,
         ["log", "-1", `--format=${format}`, hash],
-        repositoryRoot
       );
     } catch (error) {
       if (isCommandNotFoundError(error)) {
@@ -491,15 +507,13 @@ export function createGitService(runCommand) {
     let files = [];
     try {
       const [statsResult, nameStatusResult] = await Promise.all([
-        runCommand(
-          "git",
+        runGitReadOnly(
+          repositoryRoot,
           ["diff-tree", "--no-commit-id", "-r", "--numstat", hash],
-          repositoryRoot
         ),
-        runCommand(
-          "git",
+        runGitReadOnly(
+          repositoryRoot,
           ["diff-tree", "--no-commit-id", "-r", "--name-status", hash],
-          repositoryRoot
         )
       ]);
       if (statsResult.code === 0) {
@@ -550,10 +564,9 @@ export function createGitService(runCommand) {
 
       if (diffResponse.lines.length === 0) {
         // Possibly a newly added file in this commit — show full content as added lines
-        const showResult = await runCommand(
-          "git",
-          ["-c", "core.quotepath=false", "show", `${hash}:${filePath}`],
-          repositoryRoot
+        const showResult = await runGitReadOnly(
+          repositoryRoot,
+          ["-c", "core.quotepath=false", "show", `${hash}:${filePath}`]
         );
         if (showResult.code === 0) {
           return {
@@ -576,7 +589,7 @@ export function createGitService(runCommand) {
 
   async function getUnmergedFiles(projectPath) {
     try {
-      const result = await runCommand("git", ["diff", "--name-only", "--diff-filter=U"], projectPath);
+      const result = await runGitReadOnly(projectPath, ["diff", "--name-only", "--diff-filter=U"]);
       if (result.code !== 0) {
         return [];
       }
@@ -588,7 +601,7 @@ export function createGitService(runCommand) {
 
   async function hasLocalChanges(projectPath) {
     try {
-      const result = await runCommand("git", ["status", "--porcelain"], projectPath);
+      const result = await runGitReadOnly(projectPath, ["status", "--porcelain"]);
       return result.code === 0 && result.stdout.toString("utf-8").trim().length > 0;
     } catch {
       return false;
@@ -613,7 +626,7 @@ export function createGitService(runCommand) {
     let response;
     if (remote) {
       // Check if local branch already exists
-      const localExists = await runGitCommandSafe(
+      const localExists = await runGitReadOnlySafe(
         projectPath,
         ["rev-parse", "--verify", `refs/heads/${target}`],
         "Failed to check branch."
@@ -684,7 +697,7 @@ export function createGitService(runCommand) {
 
   async function getCurrentBranch(projectPath) {
     try {
-      const result = await runCommand("git", ["symbolic-ref", "--short", "HEAD"], projectPath);
+      const result = await runGitReadOnly(projectPath, ["symbolic-ref", "--short", "HEAD"]);
       if (result.code !== 0) {
         return null;
       }

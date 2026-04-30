@@ -1,5 +1,9 @@
 import { normalize, relative, resolve } from "node:path";
 
+export const GIT_READ_ONLY_COMMAND_OPTIONS = Object.freeze({
+  env: Object.freeze({ GIT_OPTIONAL_LOCKS: "0" })
+});
+
 export function toPathKey(path) {
   const normalizedPath = normalize(resolve(path));
   return process.platform === "win32" ? normalizedPath.toLowerCase() : normalizedPath;

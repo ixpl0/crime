@@ -52,6 +52,7 @@ async function resolveGitDir(projectPath) {
     const { stdout } = await execFileAsync("git", ["rev-parse", "--absolute-git-dir"], {
       cwd: projectPath,
       encoding: "utf-8",
+      env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
       windowsHide: true,
       timeout: 5000
     });

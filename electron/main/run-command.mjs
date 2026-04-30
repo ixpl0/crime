@@ -61,7 +61,10 @@ function collectChildProcessResult(child, description, timeoutMs) {
 export function createCommandRunner(ideNodeModulesBinPath) {
   return function runCommand(command, args, cwd, options) {
     const timeoutMs = options?.timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS;
-    const env = buildChildProcessEnv(cwd, ideNodeModulesBinPath);
+    const env = {
+      ...buildChildProcessEnv(cwd, ideNodeModulesBinPath),
+      ...(options?.env ?? {})
+    };
     const child = spawn(command, args, {
       cwd,
       env,
@@ -76,7 +79,10 @@ export function createCommandRunner(ideNodeModulesBinPath) {
 export function createShellCommandRunner(ideNodeModulesBinPath) {
   return function runShellCommand(commandLine, cwd, options) {
     const timeoutMs = options?.timeoutMs ?? DEFAULT_SHELL_COMMAND_TIMEOUT_MS;
-    const env = buildChildProcessEnv(cwd, ideNodeModulesBinPath);
+    const env = {
+      ...buildChildProcessEnv(cwd, ideNodeModulesBinPath),
+      ...(options?.env ?? {})
+    };
     const child = spawn(commandLine, {
       cwd,
       env,
