@@ -117,6 +117,7 @@ export function useAppShell() {
     handleTodoTextareaKeydown,
     handleTodoTextareaBlur,
     confirmTodoEntry,
+    addTodoEntry,
     loadTodoEntriesForProject,
     getTodoEntry,
     removeTodoEntry,
@@ -206,6 +207,7 @@ export function useAppShell() {
     terminalInputTextarea,
     lastPrompt,
     resizeTerminalInputTextareaElement,
+    clearTerminalInput,
     appendTerminalInputHistory,
     loadTerminalInputHistoryForProject,
     handleTextareaKeydown,
@@ -554,6 +556,7 @@ export function useAppShell() {
     handleTextareaInput,
     handleTextareaPaste,
     sendTextareaToTerminal,
+    saveTerminalInputToTodo,
     sendQuickKey: (quickKey: QuickKeyBinding) => {
       sendQuickKey(quickKey);
       acknowledgeBellReminder();
@@ -693,6 +696,16 @@ export function useAppShell() {
 
   function setTerminalInputText(value: string) {
     terminalInputText.value = value;
+  }
+
+  function saveTerminalInputToTodo() {
+    const text = terminalInputText.value;
+    if (text.trim().length === 0) {
+      return;
+    }
+
+    addTodoEntry(text);
+    clearTerminalInput();
   }
 
   function setDebugTodoPanelVisible(visible: boolean) {

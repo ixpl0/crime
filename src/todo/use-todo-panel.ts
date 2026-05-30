@@ -311,6 +311,20 @@ function removeTodoEntry(state: TodoPanelState, index: number) {
   return true;
 }
 
+function addTodoEntry(state: TodoPanelState, text: string) {
+  if (text.trim().length === 0) {
+    return false;
+  }
+  const persistedEntries = getPersistedTodoEntries(state.todoDrafts.value);
+  const nextVersion = updateTodoDrafts(
+    state,
+    getNormalizedTodoDrafts([...persistedEntries, text])
+  );
+  persistCurrentTodoEntries(state, nextVersion);
+  scheduleTodoTextareasResize(state.textareaDataAttribute);
+  return true;
+}
+
 function resetTodoRuntimeState(state: TodoPanelState) {
   state.todoDrafts.value = [""];
   resetTodoDragState(state);
@@ -333,6 +347,7 @@ export function useTodoPanel(options: UseTodoPanelOptions) {
     confirmTodoEntry: () => { finalizeTodoDraftEditing(state, { focusComposer: true }); },
     loadTodoEntriesForProject: loadTodoEntriesForProject.bind(null, state),
     getTodoEntry: getTodoEntry.bind(null, state), removeTodoEntry: removeTodoEntry.bind(null, state),
+    addTodoEntry: addTodoEntry.bind(null, state),
     forcePersistTodoEntries: () => { persistCurrentTodoEntries(state, state.todoDraftEditVersion); },
     resetTodoRuntimeState: resetTodoRuntimeState.bind(null, state),
     resizeTodoTextareas: () => { resizeTodoTextareas(state.textareaDataAttribute); }

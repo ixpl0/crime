@@ -44,6 +44,17 @@
             @toggle-suffix="handlePromptSuffixToggle"
             @open-config-editor="openPromptSuffixConfigEditor"
           />
+          <button
+            class="btn btn-sm btn-ghost shrink-0 self-start gap-1"
+            type="button"
+            tabindex="-1"
+            title="Сохранить промпт в задачи"
+            :disabled="!terminalInputText.trim()"
+            @click="saveTerminalInputToTodo"
+          >
+            <ListPlus :size="14" />
+            В задачи
+          </button>
           <div :title="lastPrompt" class="shrink-0 self-start">
             <button
               class="btn btn-sm"
@@ -88,7 +99,8 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  CornerDownLeft
+  CornerDownLeft,
+  ListPlus
 } from "lucide-vue-next";
 import { computed } from "vue";
 import { useAppConfigStore } from "../config/config-store";
@@ -121,6 +133,7 @@ const {
   handleTextareaInput,
   handleTextareaPaste,
   sendTextareaToTerminal,
+  saveTerminalInputToTodo,
   sendQuickKey
 } = useAppTerminalStore();
 

@@ -96,6 +96,11 @@ function resetTerminalInputHistoryNavigation(state: TerminalInputHistoryState) {
   state.terminalInputDraft.value = "";
 }
 
+function clearTerminalInput(state: TerminalInputHistoryState) {
+  state.terminalInputText.value = "";
+  resetTerminalInputHistoryNavigation(state);
+}
+
 function focusTerminalInput(state: TerminalInputHistoryState) {
   void nextTick(() => {
     state.terminalInputTextarea.value?.focus();
@@ -312,6 +317,7 @@ export function useTerminalInputHistory(options: UseTerminalInputHistoryOptions)
     terminalInputTextarea: state.terminalInputTextarea,
     lastPrompt: state.lastPrompt,
     resizeTerminalInputTextareaElement: resizeTerminalInputTextareaElement.bind(null, state),
+    clearTerminalInput: clearTerminalInput.bind(null, state),
     appendTerminalInputHistory: appendTerminalInputHistory.bind(null, state),
     loadTerminalInputHistoryForProject: loadTerminalInputHistoryForProject.bind(null, state),
     handleTextareaKeydown: handlers.handleTextareaKeydown,
