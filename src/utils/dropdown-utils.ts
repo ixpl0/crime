@@ -1,4 +1,4 @@
-import { computed, nextTick, onBeforeUnmount, watch, type Ref } from "vue";
+import { nextTick, onBeforeUnmount, watch, type Ref } from "vue";
 
 export const DROPDOWN_OPEN_KEYS = new Set(["Enter", " ", "ArrowDown"]);
 
@@ -117,16 +117,4 @@ export const useDropdownClickOutside = (
   onBeforeUnmount(() => {
     document.removeEventListener("mousedown", handleDocumentMousedown);
   });
-};
-
-/**
- * Creates a computed boolean from a nullable ref and wires up a drag-region backdrop.
- * Use this for context menus where the state is `Ref<T | null>`.
- */
-export const useContextMenuDragRegionBackdrop = <T>(
-  contextMenu: Ref<T | null>,
-  close: () => void
-): void => {
-  const isOpen = computed(() => contextMenu.value !== null);
-  useDragRegionBackdrop(isOpen, close);
 };

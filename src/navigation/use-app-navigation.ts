@@ -1,7 +1,7 @@
 ﻿import { computed, nextTick, ref, type Ref } from "vue";
 import { DROPDOWN_OPEN_KEYS, focusFirstDropdownItem, useDropdownClickOutside } from "../utils/dropdown-utils";
 
-export type AppTab = "agent" | "terminal" | "files" | "changes" | "git";
+export type AppTab = "agent" | "terminal";
 export type HiddenPanelId = "todo";
 
 export interface HiddenPanelOption {

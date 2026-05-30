@@ -1,15 +1,11 @@
 # Crime
 
-General-purpose desktop IDE for projects in any language. Built with Electron + Vue 3, features integrated terminal, configurable toolbars, git integration and agent panel.
+General-purpose desktop IDE for projects in any language. Built with Electron + Vue 3, features integrated terminal, configurable toolbars and agent panel.
 
 ## Features
 
 - **Integrated terminal** with multiple sessions, scenarios, input history and bell reminders
-- **File manager** with tree view, context menu, drag-drop
-- **Git integration** — status, diff viewer, commit history graph, branch management, merge conflict resolution
-- **Configurable toolbars** — agent, git and terminal toolbars with JSON configs per project
-- **Code viewer** — CodeMirror 6 with diff/conflict decorations and language detection
-- **File search** — search by file name and content across the project
+- **Configurable toolbars** — agent and terminal toolbars with JSON configs per project
 - **Todo panel** with drafts
 - **Prompt suffix presets** for agent workflows
 - **Per-project settings** stored in `.crime/` directory
@@ -24,7 +20,6 @@ General-purpose desktop IDE for projects in any language. Built with Electron + 
 | Styling | Tailwind CSS 4.2 + daisyUI 5.5 |
 | Icons | Lucide Vue Next |
 | Terminal | xterm.js + node-pty |
-| Code viewer | CodeMirror 6 |
 | Build | Vite 7.3, Bun |
 | Linting | ESLint 10 (flat config) + TypeScript ESLint |
 | Testing | Vitest 4 (happy-dom / node) |
@@ -84,19 +79,16 @@ electron/                — Electron main process
   preload.cjs            — Context bridge (auto-generated shared constants)
   ipc-channels.cjs       — IPC channel name constants
   main/                  — Main process modules
-    git-service.mjs      — Git operations
-    ipc/                 — IPC handlers (filesystem, git, terminal, search, etc.)
+    ipc/                 — IPC handlers (filesystem, terminal, settings, shell, etc.)
 
 src/                     — Vue renderer process
   app/                   — App shell, store initialization
-  codemirror/            — CodeMirror integration (diff, conflicts, language detection)
-  components/            — Vue components (file manager, changes, git graph, etc.)
+  components/            — Vue components (toolbars, dialogs, config editors, etc.)
   composables/           — Shared composables and stores
   config/                — Config management
   defaults/              — Default JSON configs for toolbars
   layout/                — Layout management
   navigation/            — Navigation stores
-  search/                — File search dialog
   session/               — Session and recent projects
   settings/              — Settings storage
   terminal/              — Terminal module
@@ -118,7 +110,6 @@ Each project stores its configuration in a `.crime/` directory:
 |------|---------|
 | `settings.json` | Zoom, terminal, slash-command settings |
 | `agent-toolbar.json` | Agent toolbar actions and dropdowns |
-| `git-toolbar.json` | Git operations toolbar |
 | `terminal-toolbar.json` | Terminal workspace toolbar |
 | `prompt-suffixes.json` | Prompt suffix presets |
 | `todo.json` | Todo list |

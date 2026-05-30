@@ -274,7 +274,6 @@ function createWorkspaceSession(title: string, commandText: string): WorkspaceSe
     getTerminalFontSize: () => terminalFontSize.value,
     sendTerminalInput: async (data, fallbackMessage) =>
       sendInputToSession(sessionId, data, fallbackMessage),
-    openTerminalPath: async () => {},
     reportUiError: reportPanelError,
     writeClipboardText: (text) => window.projectApi.clipboard.writeText(text),
     resizeTerminalBackendRequest: (size) =>

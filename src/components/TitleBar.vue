@@ -150,38 +150,7 @@
       </ul>
     </Teleport>
 
-    <button
-      v-if="gitBranch"
-      type="button"
-      class="flex cursor-pointer items-center gap-1 hover:text-base-content"
-      tabindex="-1"
-      title="Перейти к ветке в Git-графе"
-      @click="navigateToBranch"
-    >
-      <GitBranch :size="12" />
-      {{ gitBranch }}
-    </button>
-    <button
-      v-if="gitChangesCount > 0"
-      type="button"
-      class="flex cursor-pointer items-center gap-1 text-warning hover:text-warning/80"
-      tabindex="-1"
-      title="Показать изменения"
-      @click="setActiveTab('changes')"
-    >
-      <Pencil :size="11" />
-      {{ gitChangesCount }}
-    </button>
-
     <div class="ml-1 flex items-center gap-2">
-      <button
-        class="icon-btn text-base-content/40 hover:text-accent"
-        tabindex="-1"
-        title="Поиск файлов"
-        @click="openSearchDialog()"
-      >
-        <Search :size="14" />
-      </button>
       <button
         class="icon-btn text-base-content/40 hover:text-warning"
         tabindex="-1"
@@ -213,10 +182,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Check, ExternalLink, FolderPlus, GitBranch, KeyRound, Moon, Pencil, Search, Settings, Sun, X } from "lucide-vue-next";
-import { useStatusBarStore } from "../composables/status-bar-store";
+import { Check, ExternalLink, FolderPlus, KeyRound, Moon, Settings, Sun, X } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
-import { useSearchDialogStore } from "../search/search-dialog-store";
 import { useTheme } from "../composables/use-theme";
 import { useAppConfigStore } from "../config/config-store";
 import { PROJECT_COLOR_PRESETS, useProjectColorMenu } from "../composables/use-project-color-menu";
@@ -237,12 +204,8 @@ const {
   closeProject,
   openRecentProject,
   removeRecentProject,
-  openProjectInNewWindow,
-  navigateToBranch,
-  setActiveTab
+  openProjectInNewWindow
 } = useAppNavigationStore();
-const { gitBranch, gitChangesCount } = useStatusBarStore();
-const { openSearchDialog } = useSearchDialogStore();
 const { currentTheme, toggleTheme } = useTheme();
 const {
   openProjectSettingsEditor: openProjectSettings,

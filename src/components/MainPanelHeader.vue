@@ -16,9 +16,6 @@
           <component :is="tab.icon" :size="14" class="text-base-content/40" />
           {{ tab.label }}
           <span v-if="tab.id === 'terminal' && terminalSessionCount > 0" class="badge badge-xs badge-secondary ml-1">{{ terminalSessionCount }}</span>
-          <span v-if="tab.id === 'changes' && changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
-          <span v-if="tab.id === 'changes' && conflictCount > 0" class="badge badge-xs badge-warning ml-1">C</span>
-          <span v-if="tab.id === 'git' && conflictCount > 0" class="badge badge-xs badge-warning ml-1">{{ conflictCount }}</span>
           <template v-if="tab.id === 'terminal' && terminalSessionCount > 0">
             <button
               type="button"
@@ -88,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bot, ChevronDown, Eye, FolderOpen, GitCompareArrows, GitGraph, PanelRightOpen, RotateCw, Terminal, X } from "lucide-vue-next";
+import { Bot, ChevronDown, Eye, PanelRightOpen, RotateCw, Terminal, X } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTerminalWorkspaceActionsStore } from "../terminal/terminal-workspace-actions-store";
 import { positionFixedDropdown } from "../utils/dropdown-utils";
@@ -96,15 +93,10 @@ import { positionFixedDropdown } from "../utils/dropdown-utils";
 const MAIN_TABS = [
   { id: "agent" as const, label: "Агент", icon: Bot },
   { id: "terminal" as const, label: "Терминал", icon: Terminal },
-  { id: "files" as const, label: "Файлы", icon: FolderOpen },
-  { id: "changes" as const, label: "Изменения", icon: GitCompareArrows },
-  { id: "git" as const, label: "Гит", icon: GitGraph },
 ];
 
 defineProps<{
-  changesCount: number;
   terminalSessionCount: number;
-  conflictCount: number;
 }>();
 
 const {

@@ -11,8 +11,3 @@ export const clampContextMenuX = (value: number) =>
 
 export const clampContextMenuY = (value: number) =>
   clampCoordinate(value, window.innerHeight - CONTEXT_MENU_HEIGHT);
-
-export const getGitUnavailableMessage = (reason?: GitMutateResponse["reason"]) =>
-  reason === "git-not-installed"
-    ? "Git не установлен."
-    : "Выбранная папка не является Git-репозиторием.";

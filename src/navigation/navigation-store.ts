@@ -34,24 +34,6 @@ export interface AppNavigationStore {
   handleHiddenPanelsDropdownTriggerKeydown: (event: KeyboardEvent) => void;
   setHiddenPanelsDropdownOpen: (shouldOpen: boolean) => void;
   showHiddenPanel: (panelId: HiddenPanelId) => void;
-  filesDisplayPath: ReadableRef<string | null>;
-  fileTreeRevealPath: ReadableRef<string | null>;
-  fileTreeRevealRequestToken: ReadableRef<number>;
-  handleFileSelect: (path: string, options?: { targetLine?: number }) => void;
-  selectedFilePath: ReadableRef<string | null>;
-  selectedFileTargetLine: ReadableRef<number | null>;
-  selectedFileTargetRequestToken: ReadableRef<number>;
-  changesSelectedFilePath: ReadableRef<string | null>;
-  handleChangesFileSelect: (path: string) => void;
-  resetSelectedFile: () => void;
-  resetChangesSelectedFile: () => void;
-  handleChangesPathOpen: (path: string) => void;
-  navigateToFile: (path: string, targetLine?: number | null) => void;
-  navigateToDirectory: (path: string) => void;
-  inFileSearchRequestToken: ReadableRef<number>;
-  requestInFileSearch: () => void;
-  gitBranchHighlightRequestToken: ReadableRef<number>;
-  navigateToBranch: () => void;
 }
 
 const appNavigationStoreKey: InjectionKey<AppNavigationStore> = Symbol(

@@ -5,19 +5,13 @@ import ipcChannelsModule from "./ipc-channels.cjs";
 import settingsConstantsModule from "./settings-constants.cjs";
 import quickKeyBindingsModule from "./quick-key-bindings.cjs";
 import { buildChildProcessEnv } from "./main/child-process-env.mjs";
-import { createCommandRunner, createShellCommandRunner } from "./main/run-command.mjs";
-import { createGitService } from "./main/git-service.mjs";
 import { attachWindowStatePersistence, getInitialWindowState } from "./main/window-state.mjs";
 import { registerClipboardIpcHandlers } from "./main/ipc/register-clipboard-ipc.mjs";
 import { registerFilesystemIpcHandlers } from "./main/ipc/register-filesystem-ipc.mjs";
-import { registerGitIpcHandlers } from "./main/ipc/register-git-ipc.mjs";
 import { registerShellIpcHandlers } from "./main/ipc/register-shell-ipc.mjs";
 import { registerProjectIpcHandlers } from "./main/ipc/register-project-ipc.mjs";
 import { registerSettingsIpcHandlers } from "./main/ipc/register-settings-ipc.mjs";
 import { registerTerminalIpcHandlers } from "./main/ipc/register-terminal-ipc.mjs";
-import { registerGitWatcherIpcHandlers } from "./main/ipc/register-git-watcher-ipc.mjs";
-import { registerSearchIpcHandlers } from "./main/ipc/register-search-ipc.mjs";
-import { registerCommandIpcHandlers } from "./main/ipc/register-command-ipc.mjs";
 import { toErrorMessage, toIpcErrorResponse } from "./main/error-utils.mjs";
 import { logger } from "./main/logger.mjs";
 
@@ -37,7 +31,6 @@ const IDE_ROOT_PATH = resolve(__dirname, "..");
 const IDE_NODE_MODULES_BIN_PATH = join(IDE_ROOT_PATH, "node_modules", ".bin");
 const terminalSessions = new Map();
 const settingsWatchers = new Map();
-const gitWatchers = new Map();
 const { IPC_CHANNELS } = ipcChannelsModule;
 const { SETTINGS_DIRNAME } = settingsConstantsModule;
 const { quickKeyBindings } = quickKeyBindingsModule;
@@ -45,10 +38,6 @@ const { quickKeyBindings } = quickKeyBindingsModule;
 const WINDOW_STATE_SAVE_DEBOUNCE_MS = 250;
 const IS_FAIL_FAST = !app.isPackaged;
 const DEFAULT_TERMINAL_SESSION_ID = "primary";
-
-const runCommand = createCommandRunner(IDE_NODE_MODULES_BIN_PATH);
-const runShellCommand = createShellCommandRunner(IDE_NODE_MODULES_BIN_PATH);
-const gitService = createGitService(runCommand);
 
 function toIpcFailure(error, fallbackMessage) {
   const response = toIpcErrorResponse(error, fallbackMessage);
@@ -67,16 +56,6 @@ function stopSettingsWatcher(webContentsId) {
 
   watcher.close();
   settingsWatchers.delete(webContentsId);
-}
-
-function stopGitWatcher(webContentsId) {
-  const watcher = gitWatchers.get(webContentsId);
-  if (!watcher) {
-    return;
-  }
-
-  watcher.close();
-  gitWatchers.delete(webContentsId);
 }
 
 function resolveShell() {
@@ -252,7 +231,6 @@ function createWindow({ skipLastProjectRestore = false, openProjectPath = null }
     }
     stopAllTerminalSessions(webContentsId);
     stopSettingsWatcher(webContentsId);
-    stopGitWatcher(webContentsId);
   });
 
   // Re-apply bounds once the window is fully initialized on the target display.
@@ -366,15 +344,7 @@ function registerIpcHandlers() {
   });
   registerClipboardIpcHandlers({ IPC_CHANNELS });
   registerShellIpcHandlers({ IPC_CHANNELS });
-  registerFilesystemIpcHandlers({ IPC_CHANNELS, gitService });
-  registerGitIpcHandlers({ IPC_CHANNELS, gitService });
-  registerGitWatcherIpcHandlers({
-    IPC_CHANNELS,
-    gitWatchers,
-    stopGitWatcher
-  });
-  registerSearchIpcHandlers({ IPC_CHANNELS, runCommand });
-  registerCommandIpcHandlers({ IPC_CHANNELS, runShellCommand });
+  registerFilesystemIpcHandlers({ IPC_CHANNELS });
 
   ipcMain.handle(IPC_CHANNELS.windowFlashFrame, (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);

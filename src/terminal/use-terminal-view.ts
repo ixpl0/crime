@@ -3,7 +3,6 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { Terminal } from "@xterm/xterm";
 import { type Ref } from "vue";
 import { playTerminalBell } from "./play-terminal-bell";
-import { collectTerminalPathMatches } from "./terminal-path-utils";
 
 type TerminalBackendResponse = {
   ok: boolean;
@@ -21,11 +20,6 @@ type UseTerminalViewOptions = {
   isTerminalReady: Ref<boolean>;
   getTerminalFontSize: () => number;
   sendTerminalInput: (data: string, fallbackMessage: string) => Promise<boolean>;
-  openTerminalPath: (
-    path: string,
-    line: number | null,
-    column: number | null
-  ) => void | Promise<void>;
   reportUiError: (context: string, error: unknown, fallbackMessage: string) => void;
   writeClipboardText: (text: string) => Promise<TerminalBackendResponse>;
   resizeTerminalBackendRequest: (size: TerminalSize) => Promise<TerminalBackendResponse>;
@@ -42,7 +36,6 @@ type TerminalViewState = {
   terminal: Terminal | null;
   fitAddon: FitAddon | null;
   webLinksAddon: WebLinksAddon | null;
-  terminalPathLinkProvider: { dispose: () => void } | null;
   resizeObserver: ResizeObserver | null;
 };
 
@@ -74,53 +67,8 @@ function createTerminalViewState(options: UseTerminalViewOptions): TerminalViewS
     terminal: null,
     fitAddon: null,
     webLinksAddon: null,
-    terminalPathLinkProvider: null,
     resizeObserver: null
   };
-}
-
-function createTerminalPathLinks(state: TerminalViewState, bufferLineNumber: number) {
-  const currentProjectPath = state.options.projectPath.value;
-  const { terminal } = state;
-  if (!currentProjectPath || !terminal) {
-    return undefined;
-  }
-
-  const line = terminal.buffer.active.getLine(bufferLineNumber - 1);
-  const lineText = line?.translateToString(false) ?? "";
-  const pathMatches = collectTerminalPathMatches(lineText, currentProjectPath);
-  if (pathMatches.length === 0) {
-    return undefined;
-  }
-
-  return pathMatches.map((pathMatch) => ({
-    range: {
-      start: { x: pathMatch.start + 1, y: bufferLineNumber },
-      end: { x: pathMatch.end, y: bufferLineNumber }
-    },
-    text: pathMatch.displayText,
-    activate: () => {
-      void state.options.openTerminalPath(pathMatch.resolvedPath, pathMatch.line, pathMatch.column);
-    },
-    decorations: { underline: true, pointerCursor: true }
-  }));
-}
-
-function disposeTerminalPathLinkProvider(state: TerminalViewState) {
-  state.terminalPathLinkProvider?.dispose();
-  state.terminalPathLinkProvider = null;
-}
-
-function registerTerminalPathLinkProvider(state: TerminalViewState) {
-  if (!state.terminal) {
-    return;
-  }
-  disposeTerminalPathLinkProvider(state);
-  state.terminalPathLinkProvider = state.terminal.registerLinkProvider({
-    provideLinks(bufferLineNumber, callback) {
-      callback(createTerminalPathLinks(state, bufferLineNumber));
-    }
-  });
 }
 
 function isCtrlKeyShortcut(event: KeyboardEvent, code: string) {
@@ -205,7 +153,6 @@ function initializeTerminalView(state: TerminalViewState) {
   if (xtermTextarea instanceof HTMLElement) {
     xtermTextarea.tabIndex = -1;
   }
-  registerTerminalPathLinkProvider(state);
   fitAddon.fit();
   terminal.writeln(INITIAL_TERMINAL_MESSAGE);
   bindTerminalInput(state, terminal);
@@ -316,7 +263,6 @@ async function startTerminal(state: TerminalViewState, cwd: string) {
 
 function disposeTerminalView(state: TerminalViewState) {
   stopContainerResizeObserver(state);
-  disposeTerminalPathLinkProvider(state);
   state.terminal?.dispose();
   state.terminal = null;
   state.fitAddon = null;

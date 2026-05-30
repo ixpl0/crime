@@ -188,10 +188,6 @@ const handleGlobalMousedown = (event: MouseEvent) => {
     return;
   }
 
-  if (target.closest(".cm-editor")) {
-    return;
-  }
-
   const focusableElement = target.closest(FOCUSABLE_SELECTOR) ?? (target.matches(FOCUSABLE_SELECTOR) ? target : null);
   if (focusableElement && !(focusableElement instanceof HTMLElement && focusableElement.draggable)) {
     event.preventDefault();

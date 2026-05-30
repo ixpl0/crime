@@ -3,20 +3,10 @@ import { toIpcErrorResponse } from "../error-utils.mjs";
 
 function removeShellHandlers(IPC_CHANNELS) {
   ipcMain.removeHandler(IPC_CHANNELS.shellOpenExternal);
-  ipcMain.removeHandler(IPC_CHANNELS.shellOpenPath);
 }
 
 export function registerShellIpcHandlers({ IPC_CHANNELS }) {
   removeShellHandlers(IPC_CHANNELS);
-
-  ipcMain.handle(IPC_CHANNELS.shellOpenPath, (_event, filePath) => {
-    if (typeof filePath !== "string") {
-      return { ok: false, error: "Path must be a string." };
-    }
-
-    shell.showItemInFolder(filePath);
-    return { ok: true };
-  });
 
   ipcMain.handle(IPC_CHANNELS.shellOpenExternal, async (_event, url) => {
     if (typeof url !== "string") {

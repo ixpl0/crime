@@ -27,7 +27,6 @@ export interface AppTerminalStore {
   handleTextareaPaste: (event: ClipboardEvent) => MaybePromise;
   sendTextareaToTerminal: () => MaybePromise;
   sendQuickKey: (quickKey: QuickKeyBinding) => void;
-  focusTextarea: () => void;
 }
 
 const appTerminalStoreKey: InjectionKey<AppTerminalStore> = Symbol(

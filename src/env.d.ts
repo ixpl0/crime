@@ -25,7 +25,6 @@ interface ClipboardApi {
 
 interface ShellApi {
   openExternal: (url: string) => Promise<TerminalResponse>;
-  openPath: (filePath: string) => Promise<TerminalResponse>;
 }
 
 interface SettingsReadResponse {
@@ -66,213 +65,13 @@ interface QuickKeyBinding {
   gridIndex: number;
 }
 
-interface FileEntry {
-  name: string;
-  isDirectory: boolean;
-  path: string;
-  isVirtual?: boolean;
-  isIgnored?: boolean;
-}
-
 interface FilesystemReadResponse {
   ok: boolean;
-  entries?: FileEntry[];
-  error?: string;
-}
-
-interface FilesystemReadFileResponse {
-  ok: boolean;
-  content?: string | null;
-  binary?: boolean;
-  imageDataUrl?: string;
-  error?: string;
-}
-
-interface FilesystemDeleteResponse {
-  ok: boolean;
-  error?: string;
-}
-
-interface FilesystemWriteFileResponse {
-  ok: boolean;
-  error?: string;
-}
-
-interface FilesystemMoveResponse {
-  ok: boolean;
-  error?: string;
-}
-
-interface FilesystemCopyResponse {
-  ok: boolean;
-  error?: string;
-}
-
-interface FilesystemCreatePathResponse {
-  ok: boolean;
-  path?: string;
-  error?: string;
-}
-
-interface FileSearchResult {
-  relativePath: string;
-  name: string;
-  isDirectory: boolean;
-}
-
-interface FileSearchResponse {
-  ok: boolean;
-  results?: FileSearchResult[];
-  error?: string;
-}
-
-interface ContentSearchResult {
-  relativePath: string;
-  line: number;
-  text: string;
-}
-
-interface ContentSearchResponse {
-  ok: boolean;
-  results?: ContentSearchResult[];
   error?: string;
 }
 
 interface FilesystemApi {
   readDirectory: (path: string) => Promise<FilesystemReadResponse>;
-  readFile: (projectPath: string, filePath: string) => Promise<FilesystemReadFileResponse>;
-  deletePath: (projectPath: string, targetPath: string) => Promise<FilesystemDeleteResponse>;
-  writeFile: (projectPath: string, filePath: string, content: string) => Promise<FilesystemWriteFileResponse>;
-  movePath: (projectPath: string, sourcePath: string, destinationDirectory: string) => Promise<FilesystemMoveResponse>;
-  copyPaths: (projectPath: string, sourcePaths: readonly string[], destinationDirectory: string) => Promise<FilesystemCopyResponse>;
-  createPath: (projectPath: string, parentDirectory: string, name: string, isDirectory: boolean) => Promise<FilesystemCreatePathResponse>;
-  getPathForFile: (file: File) => string;
-  search: (projectPath: string, query: string, maxResults?: number, includeIgnored?: boolean) => Promise<FileSearchResponse>;
-  searchContent: (projectPath: string, query: string, maxResults?: number, includeIgnored?: boolean) => Promise<ContentSearchResponse>;
-}
-
-type GitFileStatus = "added" | "modified" | "deleted" | "conflict";
-
-type GitMergeStateKind = "none" | "merge" | "squash-merge" | "rebase" | "cherry-pick" | "revert" | "am" | "bisect";
-
-interface GitStatusEntry {
-  path: string;
-  status: GitFileStatus;
-}
-
-interface GitStatusResponse {
-  ok: boolean;
-  available?: boolean;
-  reason?: "git-not-installed" | "not-a-repository";
-  branch?: string | null;
-  mergeState?: GitMergeStateKind;
-  entries?: GitStatusEntry[];
-  error?: string;
-}
-
-interface GitMergeStateResponse {
-  ok: boolean;
-  state: GitMergeStateKind;
-}
-
-interface GitMutateResponse {
-  ok: boolean;
-  available?: boolean;
-  reason?: "git-not-installed" | "not-a-repository";
-  error?: string;
-}
-
-type GitDiffLineType = "context" | "added" | "removed";
-
-interface GitDiffLine {
-  type: GitDiffLineType;
-  text: string;
-}
-
-interface GitFileDiffResponse {
-  ok: boolean;
-  available?: boolean;
-  reason?: "git-not-installed" | "not-a-repository";
-  status?: GitFileStatus | null;
-  lines?: GitDiffLine[];
-  error?: string;
-}
-
-interface GitLogEntry {
-  hash: string;
-  parentHashes: string[];
-  author: string;
-  authorEmail: string;
-  date: string;
-  subject: string;
-  refs: string[];
-}
-
-interface GitLogResponse {
-  ok: boolean;
-  available?: boolean;
-  reason?: "git-not-installed" | "not-a-repository";
-  entries?: GitLogEntry[];
-  remotes?: string[];
-  error?: string;
-}
-
-interface GitCommitFileChange {
-  path: string;
-  additions: number;
-  deletions: number;
-  status?: GitFileStatus;
-}
-
-interface GitCommitDetails {
-  hash: string;
-  parentHashes: string[];
-  authorName: string;
-  authorEmail: string;
-  authorDate: string;
-  committerName: string;
-  committerEmail: string;
-  committerDate: string;
-  subject: string;
-  body: string;
-  refs: string[];
-  files: GitCommitFileChange[];
-}
-
-interface GitCommitDetailsResponse {
-  ok: boolean;
-  available?: boolean;
-  reason?: "git-not-installed" | "not-a-repository";
-  details?: GitCommitDetails;
-  error?: string;
-}
-
-interface GitWatchResponse {
-  ok: boolean;
-  error?: string;
-}
-
-interface GitApi {
-  getStatus: (projectPath: string) => Promise<GitStatusResponse>;
-  getFileDiff: (projectPath: string, filePath: string) => Promise<GitFileDiffResponse>;
-  revertFile: (projectPath: string, filePath: string) => Promise<GitMutateResponse>;
-  revertAll: (projectPath: string) => Promise<GitMutateResponse>;
-  getLog: (projectPath: string, maxCount?: number) => Promise<GitLogResponse>;
-  getCommitDetails: (projectPath: string, hash: string) => Promise<GitCommitDetailsResponse>;
-  getCommitFileDiff: (projectPath: string, hash: string, filePath: string) => Promise<GitFileDiffResponse>;
-  checkout: (projectPath: string, target: string, remote?: string) => Promise<GitMutateResponse & { stashConflict?: boolean; conflictFiles?: string[] }>;
-  getUnmergedFiles: (projectPath: string) => Promise<string[]>;
-  getMergeState: (projectPath: string) => Promise<GitMergeStateResponse>;
-  resolveFile: (projectPath: string, filePath: string) => Promise<GitMutateResponse>;
-  acceptConflictVersion: (projectPath: string, filePath: string, version: "ours" | "theirs") => Promise<GitMutateResponse>;
-  abortMerge: (projectPath: string) => Promise<GitMutateResponse>;
-  continueMerge: (projectPath: string) => Promise<GitMutateResponse>;
-  createBranch: (projectPath: string, branchName: string, startPoint?: string) => Promise<GitMutateResponse>;
-  deleteBranch: (projectPath: string, branchName: string) => Promise<GitMutateResponse>;
-  deleteRemoteBranch: (projectPath: string, remoteName: string, branchName: string) => Promise<GitMutateResponse>;
-  watch: (projectPath: string) => Promise<GitWatchResponse>;
-  unwatch: () => Promise<GitWatchResponse>;
-  onChanged: (listener: () => void) => () => void;
 }
 
 interface ZoomApi {
@@ -282,18 +81,6 @@ interface ZoomApi {
 
 interface WindowApi {
   flashFrame: () => Promise<void>;
-}
-
-interface CommandRunSilentResponse {
-  ok: boolean;
-  code?: number;
-  stdout?: string;
-  stderr?: string;
-  error?: string;
-}
-
-interface CommandApi {
-  runSilent: (commandLine: string, cwd: string) => Promise<CommandRunSilentResponse>;
 }
 
 type LogLevel = "info" | "warn" | "error";
@@ -312,10 +99,8 @@ interface ProjectApi {
   clipboard: ClipboardApi;
   shell: ShellApi;
   filesystem: FilesystemApi;
-  git: GitApi;
   zoom: ZoomApi;
   window: WindowApi;
-  command: CommandApi;
   log: LogApi;
   onGlobalQuickKey: (listener: (input: string) => void) => () => void;
 }

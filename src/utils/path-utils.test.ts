@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   normalizePathForComparison,
-  isPathInsideBase,
-  isSamePath
+  isPathInsideBase
 } from "./path-utils";
 
 describe("normalizePathForComparison", () => {
@@ -74,27 +73,5 @@ describe("isPathInsideBase", () => {
 
   it("returns false for completely unrelated paths", () => {
     expect(isPathInsideBase("/a/b/c", "/x/y/z")).toBe(false);
-  });
-});
-
-describe("isSamePath", () => {
-  it("returns true for identical paths", () => {
-    expect(isSamePath("/project/src", "/project/src")).toBe(true);
-  });
-
-  it("returns true for paths with different separators", () => {
-    expect(isSamePath("C:\\project\\src", "C:/project/src")).toBe(true);
-  });
-
-  it("returns true for Windows paths differing only in case", () => {
-    expect(isSamePath("C:\\Project\\SRC", "c:/project/src")).toBe(true);
-  });
-
-  it("returns false for different paths", () => {
-    expect(isSamePath("/project/src", "/project/dist")).toBe(false);
-  });
-
-  it("ignores trailing slashes", () => {
-    expect(isSamePath("/project/src/", "/project/src")).toBe(true);
   });
 });

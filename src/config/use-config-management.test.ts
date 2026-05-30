@@ -12,11 +12,6 @@ vi.mock("../toolbar/terminal-toolbar-storage", () => ({
   saveTerminalToolbarConfig: vi.fn().mockResolvedValue(undefined)
 }));
 
-vi.mock("../toolbar/git-toolbar-storage", () => ({
-  defaultGitToolbarConfig: { actions: [] },
-  saveGitToolbarConfig: vi.fn().mockResolvedValue(undefined)
-}));
-
 vi.mock("../prompt-suffix/prompt-suffix-storage", () => ({
   defaultPromptSuffixConfig: { items: [] },
   savePromptSuffixConfig: vi.fn().mockResolvedValue(undefined)
@@ -58,14 +53,6 @@ describe("editor open/close toggles", () => {
     expect(cm.isTerminalToolbarConfigEditorOpen.value).toBe(true);
     cm.closeTerminalToolbarConfigEditor();
     expect(cm.isTerminalToolbarConfigEditorOpen.value).toBe(false);
-  });
-
-  it("toggles git toolbar config editor", () => {
-    const cm = createConfigManagement();
-    cm.openGitToolbarConfigEditor();
-    expect(cm.isGitToolbarConfigEditorOpen.value).toBe(true);
-    cm.closeGitToolbarConfigEditor();
-    expect(cm.isGitToolbarConfigEditorOpen.value).toBe(false);
   });
 
   it("toggles prompt suffix config editor", () => {

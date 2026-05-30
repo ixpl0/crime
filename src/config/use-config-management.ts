@@ -15,7 +15,6 @@ import {
   defaultSecretsContent,
   saveSecrets
 } from "../settings/secrets-storage";
-import { defaultGitToolbarConfig, saveGitToolbarConfig } from "../toolbar/git-toolbar-storage";
 import { defaultTerminalToolbarConfig, saveTerminalToolbarConfig } from "../toolbar/terminal-toolbar-storage";
 import { defaultToolbarConfig, saveToolbarConfig } from "../toolbar/toolbar-storage";
 import { applyToolbarActionTracking } from "../toolbar/toolbar-tracking";
@@ -35,13 +34,11 @@ export function useConfigManagement({
 }: ConfigManagementDeps) {
   const toolbarConfig = ref<ToolbarConfig>(defaultToolbarConfig);
   const terminalToolbarConfig = ref<ToolbarConfig>(defaultTerminalToolbarConfig);
-  const gitToolbarConfig = ref<ToolbarConfig>(defaultGitToolbarConfig);
   const promptSuffixConfig = ref<PromptSuffixConfig>(defaultPromptSuffixConfig);
   const projectSettings = ref<ProjectSettings>(defaultProjectSettings);
   const secretsConfig = ref<string>(defaultSecretsContent);
   const isToolbarConfigEditorOpen = ref(false);
   const isTerminalToolbarConfigEditorOpen = ref(false);
-  const isGitToolbarConfigEditorOpen = ref(false);
   const isPromptSuffixConfigEditorOpen = ref(false);
   const isProjectSettingsEditorOpen = ref(false);
   const isSecretsEditorOpen = ref(false);
@@ -54,22 +51,18 @@ export function useConfigManagement({
   return {
     toolbarConfig,
     terminalToolbarConfig,
-    gitToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
     isToolbarConfigEditorOpen,
     isTerminalToolbarConfigEditorOpen,
-    isGitToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
     isSecretsEditorOpen,
     openToolbarConfigEditor,
     openTerminalToolbarConfigEditor,
-    openGitToolbarConfigEditor,
     closeToolbarConfigEditor,
     closeTerminalToolbarConfigEditor,
-    closeGitToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     closePromptSuffixConfigEditor,
     openProjectSettingsEditor,
@@ -78,7 +71,6 @@ export function useConfigManagement({
     closeSecretsEditor,
     handleToolbarConfigSave,
     handleTerminalToolbarConfigSave,
-    handleGitToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handlePromptSuffixToggle,
     handleSecretsSave,
@@ -103,14 +95,6 @@ export function useConfigManagement({
 
   function closeTerminalToolbarConfigEditor() {
     isTerminalToolbarConfigEditorOpen.value = false;
-  }
-
-  function openGitToolbarConfigEditor() {
-    isGitToolbarConfigEditorOpen.value = true;
-  }
-
-  function closeGitToolbarConfigEditor() {
-    isGitToolbarConfigEditorOpen.value = false;
   }
 
   function openPromptSuffixConfigEditor() {
@@ -233,23 +217,6 @@ export function useConfigManagement({
       }
     }
     isTerminalToolbarConfigEditorOpen.value = false;
-  }
-
-  async function handleGitToolbarConfigSave(config: ToolbarConfig) {
-    gitToolbarConfig.value = config;
-    if (projectPath.value) {
-      try {
-        await saveGitToolbarConfig(projectPath.value, config);
-      } catch (error) {
-        reportUiError(
-          "Git toolbar config",
-          error,
-          "Не удалось сохранить конфигурацию панели Git."
-        );
-        return;
-      }
-    }
-    isGitToolbarConfigEditorOpen.value = false;
   }
 
   function handlePromptSuffixToggle(index: number) {

@@ -19,9 +19,6 @@ import {
   TOOLBAR_CONFIG_FILENAME
 } from "../toolbar/toolbar-storage";
 import {
-  GIT_TOOLBAR_CONFIG_FILENAME
-} from "../toolbar/git-toolbar-storage";
-import {
   TERMINAL_TOOLBAR_CONFIG_FILENAME
 } from "../toolbar/terminal-toolbar-storage";
 import { toContextualErrorMessage } from "../utils/fail-fast";
@@ -32,7 +29,6 @@ import { provideAppNavigationStore } from "../navigation/navigation-store";
 import { useAppNavigation } from "../navigation/use-app-navigation";
 import { useAppRuntime } from "../session/use-app-runtime";
 import { useConfigManagement } from "../config/use-config-management";
-import { useFileNavigation } from "../navigation/use-file-navigation";
 import { useProjectLayout } from "../layout/use-project-layout";
 import { useProjectSession } from "../session/use-project-session";
 import { useRecentProjects } from "../session/use-recent-projects";
@@ -46,8 +42,6 @@ import { provideDebugTodoStore } from "../todo/debug-todo-store";
 import { provideAppTodoStore } from "../todo/todo-store";
 import { useTodoPanel } from "../todo/use-todo-panel";
 import { useToolbarShortcuts } from "../composables/use-toolbar-shortcuts";
-import { provideSearchDialogStore } from "../search/search-dialog-store";
-import { provideStatusBarStore } from "../composables/status-bar-store";
 import { provideAppToastStore } from "../toast/toast-store";
 
 // eslint-disable-next-line max-lines-per-function
@@ -150,22 +144,18 @@ export function useAppShell() {
   const {
     toolbarConfig,
     terminalToolbarConfig,
-    gitToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
     isToolbarConfigEditorOpen,
     isTerminalToolbarConfigEditorOpen,
-    isGitToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
     isSecretsEditorOpen,
     openToolbarConfigEditor,
     openTerminalToolbarConfigEditor,
-    openGitToolbarConfigEditor,
     closeToolbarConfigEditor,
     closeTerminalToolbarConfigEditor,
-    closeGitToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     closePromptSuffixConfigEditor,
     openProjectSettingsEditor,
@@ -174,7 +164,6 @@ export function useAppShell() {
     closeSecretsEditor,
     handleToolbarConfigSave,
     handleTerminalToolbarConfigSave,
-    handleGitToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handlePromptSuffixToggle,
     handleSecretsSave,
@@ -306,37 +295,6 @@ export function useAppShell() {
     }
   });
 
-  const {
-    selectedFilePath,
-    filesDisplayPath,
-    changesSelectedFilePath,
-    selectedFileTargetLine,
-    selectedFileTargetRequestToken,
-    fileTreeRevealPath,
-    fileTreeRevealRequestToken,
-    openTerminalPathInFiles,
-    handleFileSelect,
-    handleChangesFileSelect,
-    resetSelectedFile,
-    resetChangesSelectedFile,
-    handleChangesPathOpen,
-    navigateToFile,
-    navigateToDirectory,
-    inFileSearchRequestToken,
-    requestInFileSearch,
-    resetFileNavigationState
-  } = useFileNavigation({
-    projectPath,
-    errorMessage,
-    activateFilesTab: () => {
-      setActiveTab("files");
-    },
-    reportUiError,
-    readDirectory: (path) => window.projectApi.filesystem.readDirectory(path),
-    readFile: (currentProjectPath, path) =>
-      window.projectApi.filesystem.readFile(currentProjectPath, path)
-  });
-
   const bellReminderSettings = computed(() => projectSettings.value.bellReminder);
 
   const { handleBell, acknowledgeBellReminder } = useBellReminder({
@@ -361,7 +319,6 @@ export function useAppShell() {
     getTerminalFontSize: () =>
       normalizeTerminalFontSize(projectSettings.value.zoom.terminalFontSize),
     sendTerminalInput,
-    openTerminalPath: openTerminalPathInFiles,
     reportUiError,
     writeClipboardText: (text) => window.projectApi.clipboard.writeText(text),
     resizeTerminalBackendRequest: (size) => window.projectApi.terminal.resize(size),
@@ -424,7 +381,6 @@ export function useAppShell() {
     errorMessage,
     toolbarConfig,
     terminalToolbarConfig,
-    gitToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
@@ -495,10 +451,8 @@ export function useAppShell() {
 
   useToolbarShortcuts(toolbarConfig, executeToolbarAction);
 
-  provideStatusBarStore();
   provideConfirmDialog();
   providePromptDialog();
-  provideSearchDialogStore();
   watch(errorMessage, (message) => {
     if (!message) {
       return;
@@ -511,12 +465,6 @@ export function useAppShell() {
       }
     });
   });
-
-  const gitBranchHighlightRequestToken = ref(0);
-  const navigateToBranch = () => {
-    setActiveTab("git");
-    gitBranchHighlightRequestToken.value += 1;
-  };
 
   provideAppNavigationStore({
     projectPath,
@@ -545,62 +493,38 @@ export function useAppShell() {
     toggleHiddenPanelsDropdown,
     handleHiddenPanelsDropdownTriggerKeydown,
     setHiddenPanelsDropdownOpen,
-    showHiddenPanel: handleHiddenPanelOptionClick,
-    filesDisplayPath,
-    fileTreeRevealPath,
-    fileTreeRevealRequestToken,
-    handleFileSelect,
-    selectedFilePath,
-    selectedFileTargetLine,
-    selectedFileTargetRequestToken,
-    changesSelectedFilePath,
-    handleChangesFileSelect,
-    resetSelectedFile,
-    resetChangesSelectedFile,
-    handleChangesPathOpen,
-    navigateToFile,
-    navigateToDirectory,
-    inFileSearchRequestToken,
-    requestInFileSearch,
-    gitBranchHighlightRequestToken,
-    navigateToBranch
+    showHiddenPanel: handleHiddenPanelOptionClick
   });
   provideAppConfigStore({
     settingsDirectoryName,
     toolbarConfigFilename: TOOLBAR_CONFIG_FILENAME,
     terminalToolbarConfigFilename: TERMINAL_TOOLBAR_CONFIG_FILENAME,
-    gitToolbarConfigFilename: GIT_TOOLBAR_CONFIG_FILENAME,
     promptSuffixConfigFilename: PROMPT_SUFFIX_CONFIG_FILENAME,
     projectSettingsFilename: PROJECT_SETTINGS_FILENAME,
     secretsFilename: SECRETS_FILENAME,
     errorMessage,
     toolbarConfig,
     terminalToolbarConfig,
-    gitToolbarConfig,
     promptSuffixConfig,
     projectSettings,
     secretsConfig,
     isToolbarConfigEditorOpen,
     isTerminalToolbarConfigEditorOpen,
-    isGitToolbarConfigEditorOpen,
     isPromptSuffixConfigEditorOpen,
     isProjectSettingsEditorOpen,
     isSecretsEditorOpen,
     handleToolbarConfigSave,
     handleTerminalToolbarConfigSave,
-    handleGitToolbarConfigSave,
     handlePromptSuffixConfigSave,
     handleProjectSettingsSave,
     handleSecretsSave,
     openToolbarConfigEditor,
     openTerminalToolbarConfigEditor,
-    openGitToolbarConfigEditor,
     openPromptSuffixConfigEditor,
     openProjectSettingsEditor,
     openSecretsEditor,
     closeToolbarConfigEditor,
     closeTerminalToolbarConfigEditor,
-    closeGitToolbarConfigEditor,
     closePromptSuffixConfigEditor,
     closeProjectSettingsEditor,
     closeSecretsEditor,
@@ -629,8 +553,7 @@ export function useAppShell() {
     sendQuickKey: (quickKey: QuickKeyBinding) => {
       sendQuickKey(quickKey);
       acknowledgeBellReminder();
-    },
-    focusTextarea: () => terminalInputTextarea.value?.focus()
+    }
   });
 
   provideAppTodoStore({
@@ -719,7 +642,6 @@ export function useAppShell() {
 
   function resetProjectRuntimeState() {
     clearTabNavigationHistory();
-    resetFileNavigationState();
     resetTerminalInputRuntimeState();
     resetTodoRuntimeState();
     resetConfigPersistState();

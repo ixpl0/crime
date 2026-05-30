@@ -42,38 +42,6 @@
               </button>
             </template>
           </div>
-          <button
-            role="tab"
-            class="tab gap-1"
-            tabindex="-1"
-            :class="{ 'tab-active': activeTab === 'files' }"
-            @click="setActiveTab('files')"
-          >
-            <FolderOpen :size="14" class="text-base-content/40" />
-            Файлы
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1"
-            tabindex="-1"
-            :class="{ 'tab-active': activeTab === 'changes' }"
-            @click="setActiveTab('changes')"
-          >
-            <GitCompareArrows :size="14" class="text-base-content/40" />
-            Изменения
-            <span v-if="changesCount > 0" class="badge badge-xs badge-primary ml-1">{{ changesCount }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1"
-            tabindex="-1"
-            :class="{ 'tab-active': activeTab === 'git' }"
-            @click="setActiveTab('git')"
-          >
-            <GitGraph :size="14" class="text-base-content/40" />
-            Гит
-            <span v-if="conflictCount > 0" class="badge badge-xs badge-warning ml-1">{{ conflictCount }}</span>
-          </button>
       </div>
 
       <!-- Teleport target: non-agent tab content is teleported here when detached -->
@@ -83,14 +51,12 @@
 </template>
 
 <script setup lang="ts">
-import { FolderOpen, GitCompareArrows, GitGraph, PanelLeftClose, RotateCw, Terminal, X } from "lucide-vue-next";
+import { PanelLeftClose, RotateCw, Terminal, X } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTerminalWorkspaceActionsStore } from "../terminal/terminal-workspace-actions-store";
 
 defineProps<{
-  changesCount: number;
   terminalSessionCount: number;
-  conflictCount: number;
 }>();
 
 const { activeTab, setActiveTab, dockAgent } = useAppNavigationStore();

@@ -14,11 +14,6 @@ import { defaultSecretsContent, loadSecrets, SECRETS_FILENAME } from "../setting
 import { TERMINAL_INPUT_HISTORY_FILENAME } from "../settings/terminal-input-history-storage";
 import { TODO_FILENAME } from "../settings/todo-storage";
 import {
-  defaultGitToolbarConfig,
-  loadGitToolbarConfig,
-  GIT_TOOLBAR_CONFIG_FILENAME
-} from "../toolbar/git-toolbar-storage";
-import {
   defaultTerminalToolbarConfig,
   loadTerminalToolbarConfig,
   TERMINAL_TOOLBAR_CONFIG_FILENAME
@@ -46,7 +41,6 @@ export interface UseProjectSessionOptions {
   errorMessage: Ref<string>;
   toolbarConfig: Ref<ToolbarConfig>;
   terminalToolbarConfig: Ref<ToolbarConfig>;
-  gitToolbarConfig: Ref<ToolbarConfig>;
   promptSuffixConfig: Ref<PromptSuffixConfig>;
   projectSettings: Ref<ProjectSettings>;
   secretsConfig: Ref<string>;
@@ -130,7 +124,6 @@ function resetProjectSessionToDefaults(state: ProjectSessionState) {
   state.options.resetProjectRuntimeState();
   state.options.toolbarConfig.value = defaultToolbarConfig;
   state.options.terminalToolbarConfig.value = defaultTerminalToolbarConfig;
-  state.options.gitToolbarConfig.value = defaultGitToolbarConfig;
   state.options.promptSuffixConfig.value = defaultPromptSuffixConfig;
   state.options.secretsConfig.value = defaultSecretsContent;
   assignProjectSettings(state, defaultProjectSettings);
@@ -193,7 +186,6 @@ async function loadProjectSettingsForProject(state: ProjectSessionState, path: s
 async function loadProjectResources(state: ProjectSessionState, path: string) {
   state.options.toolbarConfig.value = await loadToolbarConfig(path);
   state.options.terminalToolbarConfig.value = await loadTerminalToolbarConfig(path);
-  state.options.gitToolbarConfig.value = await loadGitToolbarConfig(path);
   state.options.secretsConfig.value = await loadSecrets(path);
   await loadPromptSuffixConfigForProject(state, path);
   await loadProjectSettingsForProject(state, path);
@@ -214,9 +206,6 @@ async function handleSettingsFileChanged(state: ProjectSessionState, filename: s
   }
   if (matchesWatchedSettingsFile(change, TERMINAL_TOOLBAR_CONFIG_FILENAME)) {
     state.options.terminalToolbarConfig.value = await loadTerminalToolbarConfig(path);
-  }
-  if (matchesWatchedSettingsFile(change, GIT_TOOLBAR_CONFIG_FILENAME)) {
-    state.options.gitToolbarConfig.value = await loadGitToolbarConfig(path);
   }
   if (matchesWatchedSettingsFile(change, SECRETS_FILENAME)) {
     state.options.secretsConfig.value = await loadSecrets(path);
