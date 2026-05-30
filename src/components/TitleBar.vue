@@ -161,6 +161,21 @@
         <Moon v-else :size="14" />
       </button>
       <button
+        class="icon-btn text-base-content/40"
+        :class="isSoundEnabled ? 'hover:text-success' : 'hover:text-error'"
+        tabindex="-1"
+        :title="isSoundEnabled ? 'Звук оповещений включён' : 'Звук оповещений выключен'"
+        @click="toggleSound"
+      >
+        <span class="relative inline-flex">
+          <Music :size="14" />
+          <template v-if="!isSoundEnabled">
+            <span class="pointer-events-none absolute left-1/2 top-1/2 h-[3px] w-[19px] -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-base-100" />
+            <span class="pointer-events-none absolute left-1/2 top-1/2 h-[1.5px] w-[19px] -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current" />
+          </template>
+        </span>
+      </button>
+      <button
         class="icon-btn text-base-content/40 hover:text-primary"
         tabindex="-1"
         title="Секреты проекта (.env)"
@@ -183,10 +198,11 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { Check, ExternalLink, FolderPlus, KeyRound, Moon, Settings, Sun, X } from "lucide-vue-next";
+import { Check, ExternalLink, FolderPlus, KeyRound, Moon, Music, Settings, Sun, X } from "lucide-vue-next";
 import PanelVisibilityMenu from "./PanelVisibilityMenu.vue";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
+import { useSoundSettings } from "../composables/use-sound-settings";
 import { useAppConfigStore } from "../config/config-store";
 import { PROJECT_COLOR_PRESETS, useProjectColorMenu } from "../composables/use-project-color-menu";
 
@@ -209,6 +225,7 @@ const {
   openProjectInNewWindow
 } = useAppNavigationStore();
 const { currentTheme, toggleTheme } = useTheme();
+const { isSoundEnabled, toggleSound } = useSoundSettings();
 const {
   openProjectSettingsEditor: openProjectSettings,
   openSecretsEditor,

@@ -1,4 +1,10 @@
+import { getIsSoundEnabled } from "../composables/use-sound-settings";
+
 export function playImagePasteSound() {
+  if (!getIsSoundEnabled()) {
+    return;
+  }
+
   try {
     const audioContext = new AudioContext();
     const currentTime = audioContext.currentTime;

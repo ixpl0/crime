@@ -1,3 +1,5 @@
+import { getIsSoundEnabled } from "../composables/use-sound-settings";
+
 function createAudioContext() {
   return new window.AudioContext();
 }
@@ -54,6 +56,10 @@ function configureOscillator(
 }
 
 export function playTerminalBell() {
+  if (!getIsSoundEnabled()) {
+    return;
+  }
+
   try {
     const audioContext = createAudioContext();
 
