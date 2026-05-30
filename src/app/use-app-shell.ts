@@ -239,6 +239,7 @@ export function useAppShell() {
     isProjectDropdownOpen,
     isHiddenPanelsDropdownOpen,
     hiddenPanelOptions,
+    panelVisibilityOptions,
     setProjectDropdownOpen,
     setHiddenPanelsDropdownOpen,
     toggleProjectDropdown,
@@ -253,6 +254,7 @@ export function useAppShell() {
     handleProjectDropdownRecentClick,
     handleProjectDropdownOpenInNewWindowClick,
     handleHiddenPanelOptionClick,
+    togglePanelVisibility,
     setActiveTab,
     clearTabNavigationHistory,
     handleHistoryNavigationMouseButton,
@@ -474,6 +476,7 @@ export function useAppShell() {
     isProjectDropdownOpen,
     isHiddenPanelsDropdownOpen,
     hiddenPanelOptions,
+    panelVisibilityOptions,
     recentProjects,
     getProjectNameFromPath,
     setActiveTab,
@@ -493,7 +496,8 @@ export function useAppShell() {
     toggleHiddenPanelsDropdown,
     handleHiddenPanelsDropdownTriggerKeydown,
     setHiddenPanelsDropdownOpen,
-    showHiddenPanel: handleHiddenPanelOptionClick
+    showHiddenPanel: handleHiddenPanelOptionClick,
+    togglePanelVisibility
   });
   provideAppConfigStore({
     settingsDirectoryName,

@@ -38,38 +38,6 @@
           </template>
         </div>
       </template>
-    <div
-      v-if="hiddenPanelOptions.length > 0"
-      class="dropdown dropdown-end manual-dropdown ml-4 self-center"
-      :class="{ 'dropdown-open': isHiddenPanelsDropdownOpen }"
-    >
-      <button
-        type="button"
-        class="icon-btn flex items-center gap-0.5 text-base-content/40 hover:text-info"
-        tabindex="-1"
-        :aria-expanded="isHiddenPanelsDropdownOpen"
-        title="Показать скрытые панели"
-        @click="handleHiddenPanelsDropdownClick"
-        @keydown="handleHiddenPanelsDropdownKeydown"
-      >
-        <Eye :size="16" />
-        <ChevronDown :size="14" />
-      </button>
-      <ul
-        class="dropdown-content menu bg-base-100 rounded-box z-10 mt-1 w-56 p-1 shadow"
-        @keydown.esc.stop.prevent="setHiddenPanelsDropdownOpen(false)"
-      >
-        <li v-for="panelOption in hiddenPanelOptions" :key="panelOption.id">
-          <button
-            type="button"
-            tabindex="-1"
-            @click="showHiddenPanel(panelOption.id)"
-          >
-            {{ panelOption.title }}
-          </button>
-        </li>
-      </ul>
-    </div>
 
     <button
       v-if="!isAgentDetached"
@@ -85,10 +53,9 @@
 </template>
 
 <script setup lang="ts">
-import { Bot, ChevronDown, Eye, PanelRightOpen, RotateCw, Terminal, X } from "lucide-vue-next";
+import { Bot, PanelRightOpen, RotateCw, Terminal, X } from "lucide-vue-next";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTerminalWorkspaceActionsStore } from "../terminal/terminal-workspace-actions-store";
-import { positionFixedDropdown } from "../utils/dropdown-utils";
 
 const MAIN_TABS = [
   { id: "agent" as const, label: "Агент", icon: Bot },
@@ -102,14 +69,8 @@ defineProps<{
 const {
   activeTab,
   isAgentDetached,
-  isHiddenPanelsDropdownOpen,
-  hiddenPanelOptions,
   setActiveTab,
-  detachAgent,
-  toggleHiddenPanelsDropdown,
-  handleHiddenPanelsDropdownTriggerKeydown,
-  setHiddenPanelsDropdownOpen,
-  showHiddenPanel
+  detachAgent
 } = useAppNavigationStore();
 
 const workspaceActionsStore = useTerminalWorkspaceActionsStore();
@@ -120,19 +81,5 @@ const restartAllTerminals = () => {
 
 const closeAllTerminals = () => {
   void workspaceActionsStore.value?.closeAllSessions();
-};
-
-const handleHiddenPanelsDropdownClick = (event: MouseEvent) => {
-  toggleHiddenPanelsDropdown();
-  if (isHiddenPanelsDropdownOpen.value) {
-    positionFixedDropdown(event.currentTarget);
-  }
-};
-
-const handleHiddenPanelsDropdownKeydown = (event: KeyboardEvent) => {
-  handleHiddenPanelsDropdownTriggerKeydown(event);
-  if (isHiddenPanelsDropdownOpen.value) {
-    positionFixedDropdown(event.currentTarget);
-  }
 };
 </script>

@@ -9,6 +9,12 @@ export interface HiddenPanelOption {
   title: string;
 }
 
+export interface PanelVisibilityOption {
+  id: HiddenPanelId;
+  title: string;
+  isVisible: boolean;
+}
+
 interface UseAppNavigationOptions {
   isTodoPanelCollapsed: Ref<boolean>;
   isAgentDetached: Ref<boolean>;
@@ -174,13 +180,23 @@ function createDropdownActionApi(options: UseAppNavigationOptions, state: Dropdo
     options.isTodoPanelCollapsed.value ? [{ id: "todo", title: "Задачи" }] : []
   );
 
+  const panelVisibilityOptions = computed<PanelVisibilityOption[]>(() => [
+    { id: "todo", title: "Задачи", isVisible: !options.isTodoPanelCollapsed.value }
+  ]);
+
   return {
     hiddenPanelOptions,
+    panelVisibilityOptions,
     ...createProjectDropdownActionApi(options, state),
     handleHiddenPanelOptionClick: (panelId: HiddenPanelId) => {
       void panelId;
       setHiddenPanelsDropdownOpen(false, state);
       options.isTodoPanelCollapsed.value = false;
+    },
+    togglePanelVisibility: (panelId: HiddenPanelId) => {
+      void panelId;
+      setHiddenPanelsDropdownOpen(false, state);
+      options.isTodoPanelCollapsed.value = !options.isTodoPanelCollapsed.value;
     }
   };
 }

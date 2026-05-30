@@ -3,7 +3,8 @@ import { type ReadableRef } from "../types/utils";
 import {
   type AppTab,
   type HiddenPanelId,
-  type HiddenPanelOption
+  type HiddenPanelOption,
+  type PanelVisibilityOption
 } from "./use-app-navigation";
 
 export interface AppNavigationStore {
@@ -14,6 +15,7 @@ export interface AppNavigationStore {
   isProjectDropdownOpen: ReadableRef<boolean>;
   isHiddenPanelsDropdownOpen: ReadableRef<boolean>;
   hiddenPanelOptions: ReadableRef<HiddenPanelOption[]>;
+  panelVisibilityOptions: ReadableRef<PanelVisibilityOption[]>;
   recentProjects: ReadableRef<string[]>;
   getProjectNameFromPath: (path: string) => string;
   setActiveTab: (tab: AppTab) => void;
@@ -34,6 +36,7 @@ export interface AppNavigationStore {
   handleHiddenPanelsDropdownTriggerKeydown: (event: KeyboardEvent) => void;
   setHiddenPanelsDropdownOpen: (shouldOpen: boolean) => void;
   showHiddenPanel: (panelId: HiddenPanelId) => void;
+  togglePanelVisibility: (panelId: HiddenPanelId) => void;
 }
 
 const appNavigationStoreKey: InjectionKey<AppNavigationStore> = Symbol(

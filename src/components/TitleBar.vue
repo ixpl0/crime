@@ -168,6 +168,7 @@
       >
         <KeyRound :size="14" />
       </button>
+      <PanelVisibilityMenu />
       <button
         class="icon-btn text-base-content/40 hover:text-info"
         tabindex="-1"
@@ -183,6 +184,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { Check, ExternalLink, FolderPlus, KeyRound, Moon, Settings, Sun, X } from "lucide-vue-next";
+import PanelVisibilityMenu from "./PanelVisibilityMenu.vue";
 import { useAppNavigationStore } from "../navigation/navigation-store";
 import { useTheme } from "../composables/use-theme";
 import { useAppConfigStore } from "../config/config-store";
